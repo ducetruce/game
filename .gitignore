@@ -1,0 +1,29 @@
+# Godot 4 ------------------------------------------------------------------
+# Import cache and generated metadata. Regenerated on first editor open.
+.godot/
+# Legacy Godot 3 import folder, harmless to ignore.
+.import/
+
+# Exported builds
+build/
+builds/
+export_presets.cfg
+*.exe
+*.pck
+*.zip
+*.dmg
+*.app
+
+# Godot may emit these next to the project
+*.translation
+
+# OS cruft -----------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / tooling ---------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*~

@@ -1,0 +1,203 @@
+# Hollowmere — Design Decisions
+
+Decisions recorded here are the expensive-to-change ones. Each entry says what
+we chose, why, and what it would cost to reverse. Anything not listed here is
+still open.
+
+Status: locked 2026-09-11, at project start.
+
+---
+
+## 1. Capture: Attunement
+
+**Decision.** Capture is earned through battle turns, deterministically. There
+is no capture item and no dice roll.
+
+Every wild creature carries a hidden **Resonance** meter (0–100) and a
+**Temperament**. The Temperament is a rule set describing what raises and
+lowers Resonance. At 100, the creature joins the party. Each turn the creature
+emits a line of flavour text telegraphing its state, so a player reads the
+Temperament from the fight rather than from a wiki.
+
+A universal non-damaging action, **Still**, is available every turn alongside
+the normal move list. It is the primary Attunement verb, and it is deliberately
+useless in some matchups.
+
+**Temperaments at launch** (three; the set is data, and grows):
+
+| Temperament | Resonance rises | Resonance falls |
+|---|---|---|
+| **Skittish** | You take no aggressive action (`Still`) | Any damage you deal — resets to 0 |
+| **Proud** | You land a hit with **no** type advantage, while above 50% HP | `Still` (reads as weakness); exploiting a type weakness (reads as disrespect) |
+| **Feral** | Its HP is low | Its HP is restored |
+
+Each wild encounter also runs a **flee timer**. Attunement has a fail state:
+push the wrong verb long enough and the creature leaves.
+
+**Why.** It moves the interesting decision inside the turn loop instead of
+outside it. Determinism kills save-scumming and makes capture a skill to learn
+rather than a slot machine. It reuses the battle system rather than adding an
+item economy. And it fits the tone — the fantasy is understanding a creature,
+not subduing it.
+
+**Reversal cost.** Low-to-moderate. Resonance is one integer on the battle
+state and one rules table in `data/`. Adding, removing or retuning a
+Temperament is a data edit. Replacing Attunement wholesale would mean
+rewriting the wild-encounter turn loop but nothing below it.
+
+---
+
+## 2. Types: seven, sparse
+
+**Decision.** Seven types. Multipliers are only ×2, ×1 and ×0.5 — **no
+immunities**. Creatures are single-type at launch, but `types` is stored as an
+array from day one, so dual-typing is later a data change and a damage-calc
+tweak, not a schema migration.
+
+The chart lives in `data/type_chart.json`, not in code.
+
+**The types.** Bloom, Stone, Gale, Mire, Cinder, Wane, Beast.
+
+- **Bloom** — growth, root, leaf
+- **Stone** — mineral, weight, permanence
+- **Gale** — wind, height, open air
+- **Mire** — swamp, silt, standing water
+- **Cinder** — flame, ash, heat, light
+- **Wane** — entropy, twilight, decline
+- **Beast** — flesh, instinct, the living animal
+
+**Structure.** The seven sit on a ring:
+
+```
+Bloom → Stone → Gale → Mire → Cinder → Wane → Beast → (back to Bloom)
+```
+
+Each type deals ×2 to **the next type on the ring and the type three steps
+ahead**. Whatever a type is ×2 against deals ×0.5 back to it. That is the whole
+rule — 14 cells at ×2, 14 at ×0.5, 21 neutral. Every type has exactly two
+strengths and exactly two weaknesses, so nothing is structurally dominant.
+
+Full matrix, **row = attacker, column = defender**:
+
+|  ATK ↓ / DEF → | Bloom | Stone | Gale | Mire | Cinder | Wane | Beast |
+|---|---|---|---|---|---|---|---|
+| **Bloom**  |  1  |  2  |  1  |  2  | ½   |  1  | ½   |
+| **Stone**  | ½   |  1  |  2  |  1  |  2  | ½   |  1  |
+| **Gale**   |  1  | ½   |  1  |  2  |  1  |  2  | ½   |
+| **Mire**   | ½   |  1  | ½   |  1  |  2  |  1  |  2  |
+| **Cinder** |  2  | ½   |  1  | ½   |  1  |  2  |  1  |
+| **Wane**   |  1  |  2  | ½   |  1  | ½   |  1  |  2  |
+| **Beast**  |  2  |  1  |  2  | ½   |  1  | ½   |  1  |
+
+Every pairing has a reading: roots crack stone and drink the swamp; stone is
+unmoved by wind and smothers flame; wind dries the mire and disperses the
+fading; the mire douses fire and bogs down the beast; fire burns growth and
+drives back twilight; entropy claims the living and wears down stone; the
+beast tramples growth and takes the flier.
+
+**Why seven.** Eighteen types is 324 cells and only works with a thousand
+creatures to fill it. Seven is 49 cells, 28 of them non-neutral — small enough
+to hold in your head, large enough that team composition is a real decision.
+Adding an eighth type later costs 15 new cells, not 37.
+
+**Reversal cost.** Adding a type: cheap, hand-tune 15 cells. Removing one:
+cheap. Going to a Pokémon-scale matrix with immunities: moderate — the damage
+formula would need an immunity branch and every creature would need retyping.
+
+---
+
+## 3. World: one connected region
+
+**Decision.** A single continuous region. Internally it is authored
+**scene-per-map**: each map is its own `.tscn`, joined to its neighbours by
+named **warp nodes** at the edges. There is no world-map menu and no level
+select.
+
+Saves store `map_id` plus position, which works for any topology.
+
+**Why.** An exploration-led game wants the world to read as a place. Hub-and-
+spoke reads as a menu. Scene-per-map is the structure we would use for
+hub-and-spoke anyway, so choosing "connected" costs nothing and keeps the other
+option live.
+
+**First pass.** One area, growing to three: a village, a route out of it, and a
+wooded hollow.
+
+**Reversal cost.** Near zero. Switching to hub-and-spoke means changing which
+warps exist, not how maps load.
+
+---
+
+## 4. Data format: JSON
+
+**Decision.** All game content — creatures, moves, type chart, encounter
+tables — is JSON in `data/`, parsed into typed GDScript objects at load.
+Not Godot `.tres` Resources.
+
+**Why.** `.tres` buys inspector editing and engine-side type checking, but it
+is verbose, merge-hostile in git, and its references break when a class is
+renamed. Plain-text editability is the stated reason this project is in Godot
+at all, so JSON is the consistent choice.
+
+**Accepted trade-off.** No inspector editing of content, and no load-time type
+safety from the engine. Mitigated by parsing into typed GDScript classes with
+explicit validation, so a malformed data file fails loudly at load with the
+offending file and key named, rather than producing a null deep in a battle.
+
+**Reversal cost.** Moderate but mechanical — content would need converting, but
+only the loader layer touches the format.
+
+---
+
+## 5. Save format: versioned JSON
+
+**Decision.** Saves are JSON in `user://`, with a top-level `save_version`
+integer and a migration function that upgrades older saves forward on load.
+
+**Why.** Debuggable and hand-editable during development, which matters far
+more right now than save size or tamper resistance. This is single-player;
+there is nothing to cheat against.
+
+**Rule.** `save_version` increments whenever a field is removed or its meaning
+changes. Adding an optional field with a sane default does not need a bump.
+Every bump gets a migration step, and the migration chain is never broken —
+old saves must keep loading.
+
+**Reversal cost.** Low, and the version field exists precisely so this stays
+low.
+
+---
+
+## 6. Art pipeline
+
+**Decision.** **16×16 tiles.** Base render resolution 320×180 (20 tiles wide),
+integer-scaled to the window. Texture filtering is nearest-neighbour
+project-wide. Character and creature sprites are authored at the same pixel
+density as the environment — a flat-looking creature against a densely
+textured world is the specific failure to avoid.
+
+**Placeholders.** Gameplay is never blocked on art. Everything visible early is
+shapes and colour drawn in code or from a generated placeholder atlas.
+
+**On third-party tilesets.** Buying a licensed tileset as placeholder or final
+environment art is reasonable and keeps the world dense from the start.
+Two constraints:
+
+1. **Verify the grid before committing.** If a pack ships at 32×32 rather than
+   16×16, that is a project-settings change — cheap now, painful after maps
+   exist. Either match the pack's tile size or don't use it.
+2. **Creatures stay original regardless.** Licensed environment art does not
+   extend to creature designs, and creature art is the thing that has to be
+   ours.
+
+**Reversal cost.** Tile size is the expensive one — it is baked into every map,
+collision shape and sprite. Everything else about art is swappable.
+
+---
+
+## Open questions
+
+- Party size, and whether creatures are stored or all carried.
+- Whether Attunement is available against tamer-owned creatures, or wild only.
+- Levelling: experience curve, or milestone-based growth.
+- Whether moves are learned by level, by taught item, or by Temperament.
