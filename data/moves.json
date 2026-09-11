@@ -1,0 +1,179 @@
+{
+  "_comment": "Move definitions. 'type' may be \"none\" only for status moves. Categories: physical (attack vs defense), spirit (spirit vs spirit), status (no damage). Validated by tools/validate_data.py.",
+  "moves": [
+    {
+      "id": "thorn_lash",
+      "name": "Thorn Lash",
+      "type": "bloom",
+      "category": "physical",
+      "power": 45,
+      "accuracy": 100,
+      "uses": 25,
+      "description": "A whip of barbed runner, drawn quick across the flank."
+    },
+    {
+      "id": "seedburst",
+      "name": "Seedburst",
+      "type": "bloom",
+      "category": "spirit",
+      "power": 55,
+      "accuracy": 95,
+      "uses": 15,
+      "description": "Pods split all at once, and the air turns to chaff and noise."
+    },
+    {
+      "id": "shale_strike",
+      "name": "Shale Strike",
+      "type": "stone",
+      "category": "physical",
+      "power": 50,
+      "accuracy": 95,
+      "uses": 20,
+      "description": "A plate of flat rock brought down on an angle."
+    },
+    {
+      "id": "weight_of_years",
+      "name": "Weight of Years",
+      "type": "stone",
+      "category": "spirit",
+      "power": 55,
+      "accuracy": 95,
+      "uses": 15,
+      "description": "Something very old leans on the mind, and the mind sags."
+    },
+    {
+      "id": "updraft",
+      "name": "Updraft",
+      "type": "gale",
+      "category": "physical",
+      "power": 45,
+      "accuracy": 100,
+      "uses": 25,
+      "description": "A column of warm air, shoved upward hard enough to lift."
+    },
+    {
+      "id": "keening",
+      "name": "Keening",
+      "type": "gale",
+      "category": "spirit",
+      "power": 50,
+      "accuracy": 95,
+      "uses": 20,
+      "description": "A thin note held far past where a throat should manage."
+    },
+    {
+      "id": "silt_drag",
+      "name": "Silt Drag",
+      "type": "mire",
+      "category": "physical",
+      "power": 50,
+      "accuracy": 95,
+      "uses": 20,
+      "description": "The ground goes soft underfoot and does not give the foot back."
+    },
+    {
+      "id": "miasma",
+      "name": "Miasma",
+      "type": "mire",
+      "category": "spirit",
+      "power": 45,
+      "accuracy": 100,
+      "uses": 20,
+      "description": "Marsh gas off standing water, sweet and wrong."
+    },
+    {
+      "id": "ember_bite",
+      "name": "Ember Bite",
+      "type": "cinder",
+      "category": "physical",
+      "power": 45,
+      "accuracy": 100,
+      "uses": 25,
+      "description": "Contact just long enough to leave a mark shaped like teeth."
+    },
+    {
+      "id": "kindle",
+      "name": "Kindle",
+      "type": "cinder",
+      "category": "spirit",
+      "power": 55,
+      "accuracy": 95,
+      "uses": 15,
+      "description": "Heat gathered somewhere behind the eyes and then let go."
+    },
+    {
+      "id": "witherpalm",
+      "name": "Witherpalm",
+      "type": "wane",
+      "category": "physical",
+      "power": 50,
+      "accuracy": 95,
+      "uses": 20,
+      "description": "A touch that takes a little of whatever it lands on."
+    },
+    {
+      "id": "long_dusk",
+      "name": "Long Dusk",
+      "type": "wane",
+      "category": "spirit",
+      "power": 55,
+      "accuracy": 95,
+      "uses": 15,
+      "description": "Evening arrives early and stays, in a radius, for a while."
+    },
+    {
+      "id": "gore",
+      "name": "Gore",
+      "type": "beast",
+      "category": "physical",
+      "power": 60,
+      "accuracy": 90,
+      "uses": 15,
+      "description": "Head down, weight behind it, no particular art to it."
+    },
+    {
+      "id": "howl",
+      "name": "Howl",
+      "type": "beast",
+      "category": "status",
+      "power": 0,
+      "accuracy": 100,
+      "uses": 20,
+      "effect": { "kind": "stat_stage", "target": "self", "stat": "attack", "stages": 1 },
+      "description": "Not a warning. An appetite, announced."
+    },
+    {
+      "id": "bristle",
+      "name": "Bristle",
+      "type": "none",
+      "category": "status",
+      "power": 0,
+      "accuracy": 100,
+      "uses": 20,
+      "effect": { "kind": "stat_stage", "target": "self", "stat": "defense", "stages": 1 },
+      "description": "Everything that can be raised is raised."
+    },
+    {
+      "id": "quicken",
+      "name": "Quicken",
+      "type": "none",
+      "category": "status",
+      "power": 0,
+      "accuracy": 100,
+      "uses": 20,
+      "effect": { "kind": "stat_stage", "target": "self", "stat": "speed", "stages": 1 },
+      "description": "A shudder that runs the length of the body and settles."
+    },
+    {
+      "id": "mend",
+      "name": "Mend",
+      "type": "none",
+      "category": "status",
+      "power": 0,
+      "accuracy": 100,
+      "uses": 10,
+      "effect": { "kind": "heal", "target": "self", "percent": 50 },
+      "description": "Slow, deliberate, and visibly costly."
+    }
+  ]
+}

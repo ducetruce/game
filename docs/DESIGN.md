@@ -257,9 +257,80 @@ into the scene file.
 
 ---
 
+## 9. Stats: five, with Spirit doing double duty
+
+**Decision.** Five stats: **hp, attack, defense, spirit, speed**. Moves are
+`physical` (attack vs defense), `spirit` (spirit vs spirit) or `status` (no
+damage).
+
+**Why not six.** The usual six-stat layout splits the non-physical side into
+separate offensive and defensive stats. Collapsing them into one `spirit` stat
+keeps the creature schema small, which is the same instinct behind a seven-type
+chart: fewer numbers, each of which matters more.
+
+**The cost, stated plainly.** A single Spirit stat is a superstat — a
+high-Spirit creature is simultaneously the best spirit attacker and the best
+spirit wall. That is a real imbalance and it is deliberate: it creates a
+distinct archetype that beats other spirit users and has to be answered
+physically, which is a legible rock-paper-scissors on top of the type chart.
+If it turns out to be degenerate in play, splitting `spirit` into two stats is
+a data migration of one field per species plus one line in the damage formula.
+
+**Note.** There is no Normal-equivalent type, so there are no typeless
+damaging moves. Status moves may use `"type": "none"`; damaging moves may not,
+and the validator enforces it.
+
+---
+
+## 10. Levelling and damage
+
+**Levels 1–50, per-level stat curves.** Linear growth from base stats:
+
+```
+hp    = floor(base * level / 50 * 2.0) + level + 10
+other = floor(base * level / 50 * 1.5) + 5
+```
+
+The flat terms stop level 1 from being degenerate; the scales decide how much
+of a stat is earned by levelling rather than granted by the species. No IVs, no
+EVs, no per-species growth rates — all three can be added later without
+invalidating anything already stored, because a creature persists its
+experience total, not its stats.
+
+**Experience.** One curve for every species: `(level - 1)³` cumulative, so
+level 50 is 117,649. Per-species rates can come later behind the same API.
+
+**Damage.**
+
+```
+base   = ((2 * level / 5 + 2) * power * A / D) / 50 + 2
+damage = max(1, floor(base * type_multiplier * stab * variance))
+```
+
+STAB is ×1.5. Variance is ×0.85–1.00.
+
+**Tuning target, and why it matters here specifically.** A neutral same-type
+hit should take about four turns to KO, super effective two to three, resisted
+six or more. That is slower than the genre norm on purpose: **Attunement needs
+the fight to last**. Reading a creature's Temperament and acting on it takes
+several turns, and a two-turn battle would make the entire capture mechanic
+unreachable. The damage divisor is the single knob that controls this.
+
+**On variance.** Attunement is deterministic by design, and damage variance is
+the one place randomness remains. It is small, and it is kept because a fully
+deterministic battle is solvable rather than played. It does mean a Proud
+capture (which requires acting while above half HP) can be disrupted by an
+unlucky roll — that is tension, not unfairness, but it is worth watching in
+play.
+
+---
+
 ## Open questions
 
 - Party size, and whether creatures are stored or all carried.
+- Whether critical hits exist at all, given how much the design leans on
+  readable, near-deterministic combat.
+- Whether Spirit needs splitting into offence and defence (see § 9).
 - Whether Attunement is available against tamer-owned creatures, or wild only.
 - Levelling: experience curve, or milestone-based growth.
 - Whether moves are learned by level, by taught item, or by Temperament.

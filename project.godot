@@ -11,6 +11,12 @@ run/main_scene="res://scenes/overworld/overworld.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+; Parses data/*.json once at startup. No class_name on the script -- an
+; autoload and a global class cannot share a name.
+Content="*res://src/data/content.gd"
+
 [display]
 
 ; Base render resolution: 320x180.

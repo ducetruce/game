@@ -1,0 +1,56 @@
+{
+  "_comment": "Sparse type chart. Omitted pairs are 1.0. There are no immunities. Generated from the ring rule in docs/DESIGN.md section 2: each type is x2 against the next type along the ring and the one three steps ahead. tools/validate_data.py re-checks that property.",
+  "ring": [
+    "bloom",
+    "stone",
+    "gale",
+    "mire",
+    "cinder",
+    "wane",
+    "beast"
+  ],
+  "multipliers": {
+    "bloom": {
+      "stone": 2.0,
+      "mire": 2.0,
+      "cinder": 0.5,
+      "beast": 0.5
+    },
+    "stone": {
+      "bloom": 0.5,
+      "gale": 2.0,
+      "cinder": 2.0,
+      "wane": 0.5
+    },
+    "gale": {
+      "stone": 0.5,
+      "mire": 2.0,
+      "wane": 2.0,
+      "beast": 0.5
+    },
+    "mire": {
+      "bloom": 0.5,
+      "gale": 0.5,
+      "cinder": 2.0,
+      "beast": 2.0
+    },
+    "cinder": {
+      "bloom": 2.0,
+      "stone": 0.5,
+      "mire": 0.5,
+      "wane": 2.0
+    },
+    "wane": {
+      "stone": 2.0,
+      "gale": 0.5,
+      "cinder": 0.5,
+      "beast": 2.0
+    },
+    "beast": {
+      "bloom": 2.0,
+      "gale": 2.0,
+      "mire": 0.5,
+      "wane": 0.5
+    }
+  }
+}

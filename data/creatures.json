@@ -1,0 +1,117 @@
+{
+  "_comment": "Species definitions. Stats are base values; actual stats are derived per level by SpeciesData.compute_stat. 'temperament' drives Attunement (docs/DESIGN.md section 1). 'attunement_rate' scales how fast Resonance builds -- lower is harder to tame. Validated by tools/validate_data.py.",
+  "creatures": [
+    {
+      "id": "thistlecalf",
+      "name": "Thistlecalf",
+      "types": ["bloom"],
+      "temperament": "skittish",
+      "attunement_rate": 1.2,
+      "base_stats": { "hp": 64, "attack": 58, "defense": 62, "spirit": 44, "speed": 46 },
+      "learnset": [
+        { "level": 1, "move": "thorn_lash" },
+        { "level": 1, "move": "bristle" },
+        { "level": 7, "move": "seedburst" },
+        { "level": 14, "move": "mend" },
+        { "level": 22, "move": "gore" }
+      ],
+      "description": "A yearling grazer, matted to the shoulder in burr-thistle it has stopped trying to shed. Bolts at a raised hand."
+    },
+    {
+      "id": "cairnling",
+      "name": "Cairnling",
+      "types": ["stone"],
+      "temperament": "proud",
+      "attunement_rate": 1.0,
+      "base_stats": { "hp": 58, "attack": 54, "defense": 78, "spirit": 42, "speed": 32 },
+      "learnset": [
+        { "level": 1, "move": "shale_strike" },
+        { "level": 1, "move": "bristle" },
+        { "level": 9, "move": "weight_of_years" },
+        { "level": 17, "move": "mend" },
+        { "level": 26, "move": "witherpalm" }
+      ],
+      "description": "Seven stones stacked by nobody, in an order it will restore if you knock them down. It waits for you to finish."
+    },
+    {
+      "id": "skirling",
+      "name": "Skirling",
+      "types": ["gale"],
+      "temperament": "feral",
+      "attunement_rate": 0.9,
+      "base_stats": { "hp": 46, "attack": 52, "defense": 40, "spirit": 58, "speed": 82 },
+      "learnset": [
+        { "level": 1, "move": "updraft" },
+        { "level": 1, "move": "quicken" },
+        { "level": 6, "move": "keening" },
+        { "level": 16, "move": "long_dusk" },
+        { "level": 25, "move": "gore" }
+      ],
+      "description": "Audible well before it is visible. Hunts the high air over the moor and comes down only to argue."
+    },
+    {
+      "id": "sloughback",
+      "name": "Sloughback",
+      "types": ["mire"],
+      "temperament": "feral",
+      "attunement_rate": 1.0,
+      "base_stats": { "hp": 78, "attack": 62, "defense": 58, "spirit": 46, "speed": 30 },
+      "learnset": [
+        { "level": 1, "move": "silt_drag" },
+        { "level": 1, "move": "bristle" },
+        { "level": 8, "move": "miasma" },
+        { "level": 16, "move": "gore" },
+        { "level": 27, "move": "weight_of_years" }
+      ],
+      "description": "Carries a hand's depth of the fen on its back, complete with its own small weather. Moves once a minute and regrets it."
+    },
+    {
+      "id": "emberwick",
+      "name": "Emberwick",
+      "types": ["cinder"],
+      "temperament": "proud",
+      "attunement_rate": 0.8,
+      "base_stats": { "hp": 48, "attack": 40, "defense": 44, "spirit": 76, "speed": 64 },
+      "learnset": [
+        { "level": 1, "move": "ember_bite" },
+        { "level": 1, "move": "quicken" },
+        { "level": 7, "move": "kindle" },
+        { "level": 15, "move": "keening" },
+        { "level": 24, "move": "long_dusk" }
+      ],
+      "description": "Burns from a wick that runs its whole length. It is aware of how much of itself is left and does not discuss it."
+    },
+    {
+      "id": "gloamkin",
+      "name": "Gloamkin",
+      "types": ["wane"],
+      "temperament": "skittish",
+      "attunement_rate": 0.7,
+      "base_stats": { "hp": 52, "attack": 44, "defense": 48, "spirit": 72, "speed": 58 },
+      "learnset": [
+        { "level": 1, "move": "witherpalm" },
+        { "level": 1, "move": "mend" },
+        { "level": 8, "move": "long_dusk" },
+        { "level": 17, "move": "miasma" },
+        { "level": 26, "move": "keening" }
+      ],
+      "description": "Easier to see from the side than head-on. Keeps to the hour between the sun going and the dark arriving, and is thinner outside it."
+    },
+    {
+      "id": "moorhound",
+      "name": "Moorhound",
+      "types": ["beast"],
+      "temperament": "proud",
+      "attunement_rate": 0.85,
+      "base_stats": { "hp": 60, "attack": 76, "defense": 52, "spirit": 38, "speed": 62 },
+      "learnset": [
+        { "level": 1, "move": "gore" },
+        { "level": 1, "move": "howl" },
+        { "level": 6, "move": "thorn_lash" },
+        { "level": 14, "move": "silt_drag" },
+        { "level": 23, "move": "quicken" }
+      ],
+      "description": "Runs the ridgeline in a straight line for hours. Will not be driven off, and will not be first to look away."
+    }
+  ]
+}
