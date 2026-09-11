@@ -15,6 +15,7 @@ const GROUND := {
 	"g": Vector2i(1, 0),  # grass, tufted
 	"P": Vector2i(2, 0),  # packed dirt path
 	"p": Vector2i(3, 0),  # worn path
+	"b": Vector2i(4, 0),  # bracken -- walkable, and where encounters happen
 }
 
 ## Painted into the Obstacles layer, which carries the tileset's physics layer.

@@ -39,6 +39,10 @@ var turn := 0
 var log_lines := PackedStringArray()
 var rng := RandomNumberGenerator.new()
 
+## Party slots that were sent out at any point. Only these share the reward, so
+## experience follows the risk rather than being handed to the whole party.
+var participants := PackedInt32Array()
+
 var _flee_attempts := 0
 
 
@@ -55,6 +59,7 @@ static func create(party_creatures: Array, wild_creature: Creature, seed_value: 
 		if not state.party[i].creature.is_fainted():
 			state.active_index = i
 			break
+	state._mark_participant(state.active_index)
 	return state
 
 
@@ -130,6 +135,7 @@ func replace_active(index: int) -> PackedStringArray:
 		return log_lines
 	active_index = index
 	active().clear_stages()
+	_mark_participant(index)
 	log_lines.append("%s steps up." % active().creature.display_name())
 	if phase == Phase.REPLACING:
 		phase = Phase.CHOOSING
@@ -223,6 +229,7 @@ func _do_switch(side: Side, index: int) -> void:
 	log_lines.append("%s is called back." % active().creature.display_name())
 	active_index = index
 	active().clear_stages()
+	_mark_participant(index)
 	log_lines.append("%s steps up." % active().creature.display_name())
 
 
@@ -245,10 +252,69 @@ func _resolve_faints() -> void:
 	if foe.creature.is_fainted():
 		log_lines.append("%s goes down." % foe.log_name())
 		phase = Phase.WON
+		_grant_experience()
 		return
 	if active().creature.is_fainted():
 		log_lines.append("%s goes down." % active().creature.display_name())
 		phase = Phase.REPLACING if _has_healthy_reserve() else Phase.LOST
+
+
+func _mark_participant(index: int) -> void:
+	if index >= 0 and not participants.has(index):
+		participants.append(index)
+
+
+## What the defeated creature is worth. Scales with its level and with how
+## strong its species is, so a rare heavy hitter pays better than a common one
+## at the same level.
+func experience_award() -> int:
+	var species := foe.creature.species()
+	if species == null:
+		return 1
+	var total := 0
+	for stat_name in SpeciesData.STATS:
+		total += int(species.base_stats.get(stat_name, 0))
+	return maxi(1, int(float(foe.creature.level) * float(total) / 55.0))
+
+
+func _grant_experience() -> void:
+	var award := experience_award()
+	for index in participants:
+		if index < 0 or index >= party.size():
+			continue
+		var creature := party[index].creature
+		# A creature that went down does not get paid for it.
+		if creature.is_fainted():
+			continue
+		var before := creature.level
+		var levels := creature.gain_experience(award)
+		log_lines.append("%s gains %d." % [creature.display_name(), award])
+		if levels > 0:
+			log_lines.append("%s reaches level %d." % [creature.display_name(), creature.level])
+			_learn_new_moves(creature, before)
+
+
+## Moves learned by levelling. With a full list the move is announced and
+## skipped rather than silently replacing something -- choosing what to forget
+## needs a prompt, which does not exist yet.
+func _learn_new_moves(creature: Creature, from_level: int) -> void:
+	var species := creature.species()
+	if species == null:
+		return
+	for level in range(from_level + 1, creature.level + 1):
+		for move_id in species.moves_learned_at(level):
+			if creature.moves.has(move_id):
+				continue
+			var move := Content.get_move(move_id)
+			var move_name := move.display_name if move != null else move_id
+			if creature.moves.size() >= Creature.MAX_MOVES:
+				log_lines.append("%s could learn %s, but has no room." % [
+					creature.display_name(), move_name,
+				])
+				continue
+			creature.moves.append(move_id)
+			creature.move_uses.append(move.uses if move != null else 0)
+			log_lines.append("%s learns %s." % [creature.display_name(), move_name])
 
 
 func _has_healthy_reserve() -> bool:

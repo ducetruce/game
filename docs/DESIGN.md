@@ -421,9 +421,62 @@ on wild battles, will be needed eventually.
 
 ---
 
+## 12. Encounters, and the overworld/battle seam
+
+**Encounters are distance-driven.** Grid movement counts steps; free movement
+has no steps to count. `EncounterTracker` accumulates world distance instead
+and rolls once every 28 pixels travelled inside an encounter zone.
+
+The consequence is the one worth stating: **risk is per distance, not per
+second.** Running through bracken does not dodge encounters, it meets the same
+number of them sooner. Creeping is safer per second and identical per tile.
+Tuned with the map's 0.12 chance, a check lands about every 14 tiles — roughly
+four seconds at a walk, a little over two at a run.
+
+Leaving a zone resets accumulated progress, so clipping the corner of a patch
+repeatedly cannot bank a check. After a battle there is a short travel grace,
+so walking out of the bracken you just fought in does not immediately drop you
+into another fight.
+
+**Encounter tables live in the map file, keyed by tile symbol**, so different
+terrain on the same map can hold different creatures without any code change.
+
+**Battles overlay, they do not replace.** The battle scene is instanced onto a
+`CanvasLayer` inside the overworld rather than swapped in via
+`change_scene_to`. The map stays loaded, the player returns exactly where they
+were standing, and nothing has to be saved and restored across the transition.
+This is the same seam map-to-map travel will use.
+
+**The party is a singleton passed by reference.** `Party` holds the player's
+creatures; battles receive those same `Creature` objects, which is why damage
+and experience persist without any copy-back step. It is also already the thing
+step 6 will serialise.
+
+**Experience follows risk.** Only creatures that were actually sent out share
+the reward, and a creature that fainted does not collect. The award scales with
+the defeated creature's level *and* its species' total base stats, so a rare
+heavy hitter pays better than a common one at the same level. Measured against
+the map's own table, a starting pair at level 5 gains a level every 3 battles,
+slowing to every 13 by level 12 — which is the pressure that should push the
+player toward somewhere with stronger creatures rather than grinding here.
+
+**Losing** restores the party and returns the player to the map's start. There
+is no penalty beyond the walk back. A `spring` object on the map restores the
+party on interaction, so winning a fight at low HP is recoverable without
+having to lose one deliberately.
+
+**Move learning on level up** announces and skips when a creature already knows
+four moves, rather than silently replacing one. Choosing what to forget needs a
+prompt that does not exist yet, and guessing on the player's behalf is worse
+than waiting.
+
+---
+
 ## Open questions
 
-- Party size, and whether creatures are stored or all carried.
+- Party size beyond the current cap of six, and whether there is storage.
+- A prompt for choosing which move to forget at level up.
+- Whether losing should cost anything at all.
 - How a pulled punch works, so an over-levelled party can still tame
   (see § 11). Blocks Attunement.
 - What ends a battle in which both sides have exhausted every move.

@@ -57,17 +57,28 @@ python3 tools/validate_data.py
 Validates `data/*.json` against the rules in `docs/DESIGN.md` — schema, stat
 ranges, and cross-references (every learnset move exists, every creature type
 is in the chart), plus the structural property that each of the seven types has
-exactly two strengths and two weaknesses. Exits non-zero on error.
+exactly two strengths and two weaknesses. It also checks every map: tile
+symbols, that the player start and every object sit on walkable ground, and
+that encounter tables name real species with sane level ranges. Exits non-zero
+on error.
 
 To inspect the same data in-engine, open `scenes/debug/codex.tscn` and press
 **F6** (Run Current Scene). `W`/`S` cycles the creature, `A`/`D` the opponent.
 It shows base stats, the derived stats at levels 5/25/50, the type matchups,
 and live damage numbers from the real `Damage` code.
 
+## Playing it
+
+Press **F5**. You start on the path with a party of two at level 5. Walk into
+the dark, busy **bracken** — there are two fields, one southwest and one
+northeast — and you will be pulled into battles. The **spring** east of the
+path restores your party when you interact with it.
+
 ## Running a battle
 
-Open `scenes/battle/battle.tscn` and press **F6**. You get a demo fight with a
-party of three against a wild Sloughback. Arrows or `W`/`S` move the cursor,
+Encounters run in the overworld, but the battle scene also runs standalone:
+open `scenes/battle/battle.tscn` and press **F6** for a demo fight with a party
+of three against a wild Sloughback. Arrows or `W`/`S` move the cursor,
 `Z` confirms, `X` backs out. The lead is at a type disadvantage on purpose, so
 the opening move worth making is a switch.
 
@@ -80,7 +91,7 @@ win rate, and whether any failed to terminate. `Z` re-runs with a new seed.
 `data/maps/hollow_clearing.json` holds the tile grid as one string per row.
 The symbol table is in `src/overworld/tile_legend.gd`:
 
-- Walkable: `G` grass, `g` tufted grass, `P` path, `p` worn path
+- Walkable: `G` grass, `g` tufted grass, `P` path, `p` worn path, `b` bracken
 - Solid: `W` water, `R` rock, `T` tree, `F` fence
 
 Edit it in a text editor and re-run the game. This is temporary — see
@@ -91,6 +102,6 @@ Edit it in a text editor and re-run the game. This is temporary — see
 1. ✅ Project setup — scaffolding, folder structure, git
 2. ✅ Overworld movement & map
 3. ✅ Creature data model
-4. 🚧 Turn-based battle system — turn loop done, overworld encounters next
+4. ✅ Turn-based battle system
 5. ⬜ Attunement (capture) mechanic
 6. ⬜ Save/load

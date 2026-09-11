@@ -13,6 +13,7 @@ signal dialogue_requested(pages: PackedStringArray)
 
 const TILE_SIZE := 16
 const SIGN_SCENE := preload("res://scenes/overworld/sign_post.tscn")
+const SPRING_SCENE := preload("res://scenes/overworld/rest_spring.tscn")
 
 @export_file("*.json") var map_data_path: String = ""
 
@@ -20,6 +21,8 @@ var display_name := ""
 var grid_size := Vector2i.ZERO
 
 var _player_start := Vector2i.ZERO
+var _rows := PackedStringArray()
+var _encounters := {}
 
 @onready var _ground: TileMapLayer = $Ground
 @onready var _obstacles: TileMapLayer = $Obstacles
@@ -32,6 +35,7 @@ func _ready() -> void:
 		return
 	display_name = str(data.get("display_name", name))
 	_player_start = _tile_from(data["player_start"])
+	_encounters = data.get("encounters", {})
 	_paint(data["tiles"])
 	_spawn_objects(data.get("objects", []))
 
@@ -89,9 +93,11 @@ func _paint(rows: Array) -> void:
 	_ground.clear()
 	_obstacles.clear()
 	grid_size = Vector2i(0, rows.size())
+	_rows = PackedStringArray()
 
 	for y in rows.size():
 		var row := str(rows[y])
+		_rows.append(row)
 		grid_size.x = maxi(grid_size.x, row.length())
 		for x in row.length():
 			var symbol := row[x]
@@ -117,6 +123,8 @@ func _spawn_objects(objects: Array) -> void:
 		match kind:
 			"sign":
 				_spawn_sign(spec)
+			"spring":
+				_spawn_spring(spec)
 			_:
 				push_warning("%s: unknown object type '%s'." % [map_data_path, kind])
 
@@ -129,8 +137,68 @@ func _spawn_sign(spec: Dictionary) -> void:
 	_objects.add_child(post)
 
 
+func _spawn_spring(spec: Dictionary) -> void:
+	var spring: RestSpring = SPRING_SCENE.instantiate()
+	spring.pages = _to_string_array(spec.get("text", []))
+	spring.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
+	spring.used.connect(_on_read_requested)
+	_objects.add_child(spring)
+
+
 func _on_read_requested(pages: PackedStringArray) -> void:
 	dialogue_requested.emit(pages)
+
+
+# --- encounters ------------------------------------------------------------
+
+## Tile symbol under a world position, or "" if it is off the map.
+func terrain_at(world_position: Vector2) -> String:
+	var tile := Vector2i(
+		int(floorf(world_position.x / float(TILE_SIZE))),
+		int(floorf(world_position.y / float(TILE_SIZE))))
+	if tile.y < 0 or tile.y >= _rows.size():
+		return ""
+	var row := _rows[tile.y]
+	if tile.x < 0 or tile.x >= row.length():
+		return ""
+	return row[tile.x]
+
+
+## Per-check probability for this terrain. Zero means no encounters here.
+func encounter_chance(symbol: String) -> float:
+	if symbol.is_empty() or not _encounters.has(symbol):
+		return 0.0
+	return float(_encounters[symbol].get("chance", 0.0))
+
+
+## Picks a creature from this terrain's weighted table. Returns null if the
+## terrain has no table, or if it names a species that does not exist.
+func roll_encounter(symbol: String, rng: RandomNumberGenerator) -> Creature:
+	if not _encounters.has(symbol):
+		return null
+	var table: Array = _encounters[symbol].get("table", [])
+	var total := 0
+	for entry in table:
+		total += maxi(0, int(entry.get("weight", 0)))
+	if total <= 0:
+		return null
+
+	var pick := rng.randi_range(1, total)
+	for entry in table:
+		pick -= maxi(0, int(entry.get("weight", 0)))
+		if pick > 0:
+			continue
+		var species_id := str(entry.get("species", ""))
+		if not Content.has_species(species_id):
+			push_error("%s: encounter table names unknown species '%s'." % [
+				map_data_path, species_id,
+			])
+			return null
+		var levels: Array = entry.get("levels", [1, 1])
+		var low := int(levels[0]) if levels.size() > 0 else 1
+		var high := int(levels[1]) if levels.size() > 1 else low
+		return Creature.create(species_id, rng.randi_range(mini(low, high), maxi(low, high)))
+	return null
 
 
 func _tile_from(value: Variant) -> Vector2i:

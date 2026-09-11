@@ -13,3 +13,16 @@ script = ExtResource("1_overworld")
 [node name="Player" parent="." instance=ExtResource("3_player")]
 
 [node name="DialogueBox" parent="." instance=ExtResource("4_dialogue")]
+
+[node name="BattleLayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="FadeLayer" type="CanvasLayer" parent="."]
+layer = 4
+
+[node name="Fade" type="ColorRect" parent="FadeLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

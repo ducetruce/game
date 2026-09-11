@@ -18,32 +18,90 @@
         "NORTH: the mere. Keep to the path.",
         "Someone has scratched beneath it: they do not hunt you. they are only curious."
       ]
+    },
+    {
+      "type": "spring",
+      "tile": [
+        26,
+        16
+      ],
+      "text": [
+        "A seep of cold water, ringed with flat stones someone set there on purpose.",
+        "Your creatures drink, and something in them settles."
+      ]
     }
   ],
   "tiles": [
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
     "TTGGGggGGGGGGGgGggGGGGGGGGGGGGGGGGGGgGTT",
-    "TTGgWWWWgGGGGGGGGgGGGGGGGGGGgGGGGGgGGgTT",
-    "TTGWWWWWWGGgGGGGGGGGGGGGGGGGGGgGGGGGGGTT",
-    "TTGWWWWWWGgGgGGggGGGGGGggGGgGgGGGGGGGGTT",
-    "TTGGWWWWGgGGGgGggGggGgGGGGGGGggGGGGGGGTT",
-    "TTGgGGGGGGGggGGGggGGGGGGGgGGGGGGGGGGGGTT",
-    "TTGGGGGGGgGGGgRRRgGGGGggGgGGGGGGgGGGGGTT",
-    "TTGGGgGgGGGGGRRgGGGGGGGGGGgGGGGGGGGGGGTT",
+    "TTGgWWWWgGGGGGGGGgGGGGGGbGbbgbGbbGgGGgTT",
+    "TTGWWWWWWGGgGGGGGGGGGGGGGbbbbbbbbbbbGGTT",
+    "TTGWWWWWWGgGgGGggGGGGGGgbbbbbbbbbbbGGGTT",
+    "TTGGWWWWGgGGGgGggGggGgGGbbbbbbbbbbbGGGTT",
+    "TTGgGGGGGGGggGGGggGGGGGGGbbbbbbbbbbbGGTT",
+    "TTGGGGGGGgGGGgRRRgGGGGggGbbbbbbbbbbbGGTT",
+    "TTGGGgGgGGGGGRRgGGGGGGGGbbgbGGbGGbGbGGTT",
     "TTGGGGGGGgGGggGGgGGGGGGGggGGGgGGgGGGGgTT",
     "TTGGGGGGgGGgGGGGGGGgGGGGgGGGGgGGGGGGgGTT",
     "TTGGggGgGGGGGGgGgGGgPPPPPpPPPPPppPGGGGTT",
     "TTGggGGGGGGGGGggGGGGPpPpPPpPPpPppPGGGGTT",
-    "TTGGgGGgGggGGGGGGGGGPPgGGGFFFFFFFFGGGGTT",
-    "TTgGGGGgGGGGGGgGGgGGPPGGGGGgGGgGGGgGGGTT",
-    "TTGGGGGGGggGGGGGGGGGPPGGGGgGGGgGGGGGGGTT",
-    "TTgGGGGTTTGGgGGGGGGgPPGGGgGGGGGgGgGGGGTT",
-    "TTGgGGTTTTGGGGGGGGgGPPGgGGGGGGGGGGGGggTT",
-    "TTGGGGGGGGGGGGGGGGGGpPGgGGGGGGGggGGggGTT",
-    "TTGgGGGGGggGGggGGGggpPGgGGGGGGGGGGGGGGTT",
-    "TTgGGGGGgGGGGGGGGGGgpPGGgGGGGGGgRRRRGGTT",
+    "TTGGbbGbGggGbbGGbGGGPPgGGGFFFFFFFFGGGGTT",
+    "TTgGbbbbbbbbbbbbbgGGPPGGGGGgGGgGGGgGGGTT",
+    "TTGGGbbbbbbbbbbbbGGGPPGGGGgGGGgGGGGGGGTT",
+    "TTgGGbbTTTbbbbbbbGGgPPGGGgGGGGGgGgGGGGTT",
+    "TTGgbbTTTTbbbbbbbGgGPPGgGGGGGGGGGGGGggTT",
+    "TTGGbbbbbbbbbbbbbGGGpPGgGGGGGGGggGGggGTT",
+    "TTGgGbbbbbbbbbbbbGggpPGgGGGGGGGGGGGGGGTT",
+    "TTgGbGbGgbGbGbGbbGGgpPGGgGGGGGGgRRRRGGTT",
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
-  ]
+  ],
+  "encounters": {
+    "b": {
+      "chance": 0.12,
+      "table": [
+        {
+          "species": "thistlecalf",
+          "weight": 40,
+          "levels": [
+            3,
+            5
+          ]
+        },
+        {
+          "species": "skirling",
+          "weight": 25,
+          "levels": [
+            3,
+            6
+          ]
+        },
+        {
+          "species": "sloughback",
+          "weight": 20,
+          "levels": [
+            4,
+            6
+          ]
+        },
+        {
+          "species": "moorhound",
+          "weight": 10,
+          "levels": [
+            4,
+            6
+          ]
+        },
+        {
+          "species": "gloamkin",
+          "weight": 5,
+          "levels": [
+            5,
+            7
+          ]
+        }
+      ]
+    }
+  }
 }

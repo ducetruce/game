@@ -1,24 +1,60 @@
 extends Node2D
-## Hosts the active map, the player, and the overworld UI.
+## Hosts the active map, the player, the overworld UI, and any battle in
+## progress.
 ##
-## This is the seam that map-to-map travel will go through in a later step: the
-## map is a child scene that can be swapped, and nothing inside a map holds a
-## reference to the player or the UI.
+## Battles are overlaid on a CanvasLayer rather than swapped in as a scene, so
+## the map stays loaded and the player comes back exactly where they were
+## standing. This is also the seam map-to-map travel will go through: nothing
+## inside a map holds a reference to the player, the UI, or the party.
+
+const BATTLE_SCENE := preload("res://scenes/battle/battle.tscn")
+const FADE_SECONDS := 0.28
 
 @onready var _map: GameMap = $Map
 @onready var _player: Player = $Player
 @onready var _dialogue: DialogueBox = $DialogueBox
 @onready var _camera: Camera2D = $Player/Camera
+@onready var _battle_layer: CanvasLayer = $BattleLayer
+@onready var _fade: ColorRect = $FadeLayer/Fade
+
+var _tracker := EncounterTracker.new()
+var _rng := RandomNumberGenerator.new()
+## Untyped on purpose: statically typing this as Node makes GDScript reject
+## the configure() call, which only exists on the battle scene's script.
+var _battle = null
+var _last_position := Vector2.ZERO
+
+## Set while a transition is running, so a second encounter cannot start on top
+## of the one already fading in.
+var _busy := false
 
 
 func _ready() -> void:
-	# Children are ready before we are, so the map has already parsed its data.
+	_rng.randomize()
 	_map.dialogue_requested.connect(_dialogue.show_pages)
 	_dialogue.opened.connect(_on_dialogue_opened)
 	_dialogue.closed.connect(_on_dialogue_closed)
 
 	_player.global_position = _map.player_spawn_position()
+	_last_position = _player.global_position
 	_apply_camera_limits()
+	_fade.color.a = 0.0
+
+
+func _physics_process(_delta: float) -> void:
+	if _busy or _battle != null or not _player.input_enabled:
+		# Keep the anchor current so pausing does not bank distance.
+		_last_position = _player.global_position
+		return
+
+	var moved := _player.global_position.distance_to(_last_position)
+	_last_position = _player.global_position
+	if moved <= 0.0:
+		return
+
+	var symbol := _map.terrain_at(_player.global_position)
+	if _tracker.advance(moved, _map.encounter_chance(symbol), _rng):
+		_begin_encounter(symbol)
 
 
 func _apply_camera_limits() -> void:
@@ -31,9 +67,69 @@ func _apply_camera_limits() -> void:
 	_camera.reset_smoothing()
 
 
+# --- encounters ------------------------------------------------------------
+
+func _begin_encounter(symbol: String) -> void:
+	if not Party.has_any() or Party.all_fainted():
+		return
+	var wild := _map.roll_encounter(symbol, _rng)
+	if wild == null:
+		return
+
+	_busy = true
+	_player.input_enabled = false
+	await _fade_to(1.0)
+
+	_battle = BATTLE_SCENE.instantiate()
+	# The party is passed by reference, so damage and experience stick.
+	_battle.configure(Party.members, wild)
+	_battle.finished.connect(_on_battle_finished)
+	_battle_layer.add_child(_battle)
+
+	await _fade_to(0.0)
+	_busy = false
+
+
+func _on_battle_finished(outcome: int) -> void:
+	_busy = true
+	await _fade_to(1.0)
+
+	if _battle != null:
+		_battle.queue_free()
+		_battle = null
+
+	var lost := outcome == BattleState.Phase.LOST
+	if lost:
+		Party.restore_all()
+		_player.global_position = _map.player_spawn_position()
+		_camera.reset_smoothing()
+
+	_last_position = _player.global_position
+	_tracker.start_grace()
+
+	await _fade_to(0.0)
+	_player.input_enabled = true
+	_busy = false
+
+	if lost:
+		_dialogue.show_pages(PackedStringArray([
+			"You come to on the path, further back than you remember walking.",
+			"Everything you carry is standing again. You are not certain by whose doing.",
+		]))
+
+
+func _fade_to(alpha: float) -> void:
+	var tween := create_tween()
+	tween.tween_property(_fade, "color:a", alpha, FADE_SECONDS)
+	await tween.finished
+
+
 func _on_dialogue_opened() -> void:
 	_player.input_enabled = false
 
 
 func _on_dialogue_closed() -> void:
+	# The dialogue box only ever opens while the overworld owns input, so it is
+	# safe to hand it straight back.
 	_player.input_enabled = true
+	_last_position = _player.global_position

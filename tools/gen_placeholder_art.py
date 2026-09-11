@@ -129,11 +129,16 @@ def speckle(c: Canvas, ox: int, oy: int, base, hi, lo, seed: int, density: int =
 
 
 # --- tile atlas ------------------------------------------------------------
-# Layout is 4 columns x 2 rows. Row 0 is walkable, row 1 is solid. The tileset
+# Layout is 5 columns x 2 rows. Row 0 is walkable, row 1 is solid. The tileset
 # resource and src/overworld/tile_legend.gd both depend on these coordinates.
 
+BRACKEN = (52, 84, 54, A)
+BRACKEN_HI = (74, 112, 70, A)
+BRACKEN_LO = (36, 62, 42, A)
+
+
 def build_atlas() -> Canvas:
-    c = Canvas(TILE * 4, TILE * 2)
+    c = Canvas(TILE * 5, TILE * 2)
 
     # (0,0) grass
     speckle(c, 0, 0, GRASS, GRASS_HI, GRASS_LO, 11)
@@ -175,6 +180,15 @@ def build_atlas() -> Canvas:
     c.rect(TILE * 3 + 0, TILE + 9, TILE, 2, WOOD_LO)
     c.rect(TILE * 3 + 3, TILE + 3, 2, 11, WOOD_HI)
     c.rect(TILE * 3 + 11, TILE + 3, 2, 11, WOOD_HI)
+
+    # (4,0) bracken -- walkable, and the terrain wild creatures come out of.
+    # Deliberately darker and busier than plain grass so an encounter zone is
+    # readable at a glance without a legend.
+    speckle(c, TILE * 4, 0, BRACKEN, BRACKEN_HI, BRACKEN_LO, 67, density=170)
+    for bx, by in ((2, 9), (5, 5), (8, 11), (11, 4), (13, 9), (6, 14), (10, 1)):
+        c.rect(TILE * 4 + bx, by, 1, 4, BRACKEN_LO)
+        c.set(TILE * 4 + bx - 1, by + 1, BRACKEN_HI)
+        c.set(TILE * 4 + bx + 1, by + 1, BRACKEN_HI)
 
     return c
 

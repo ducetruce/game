@@ -26,6 +26,12 @@ CATEGORIES = ("physical", "spirit", "status")
 TEMPERAMENTS = ("skittish", "proud", "feral")
 EFFECT_KINDS = ("stat_stage", "heal")
 
+# Mirrors src/overworld/tile_legend.gd. Duplicated on purpose: the point of
+# this check is to catch the two drifting apart.
+WALKABLE_TILES = set("GgPpb")
+SOLID_TILES = set("WRTF")
+OBJECT_TYPES = ("sign", "spring")
+
 errors: list[str] = []
 warnings: list[str] = []
 
@@ -288,6 +294,113 @@ def check_creatures(doc, types: list[str], moves: dict) -> dict:
     return by_id
 
 
+def check_maps(types: list[str], creatures: dict) -> int:
+    """Validates every map in data/maps/. Returns how many were checked."""
+    maps_dir = os.path.join(DATA, "maps")
+    if not os.path.isdir(maps_dir):
+        return 0
+
+    checked = 0
+    for filename in sorted(os.listdir(maps_dir)):
+        if not filename.endswith(".json"):
+            continue
+        checked += 1
+        where = "maps/" + filename
+        try:
+            with open(os.path.join(maps_dir, filename)) as fh:
+                doc = json.load(fh)
+        except json.JSONDecodeError as exc:
+            err(where, "invalid JSON: %s" % exc)
+            continue
+
+        rows = doc.get("tiles")
+        if not isinstance(rows, list) or not rows:
+            err(where, "'tiles' must be a non-empty array of row strings")
+            continue
+
+        width = len(rows[0])
+        known = WALKABLE_TILES | SOLID_TILES
+        seen = set()
+        for y, row in enumerate(rows):
+            if len(row) != width:
+                err(where, "row %d is %d wide, expected %d" % (y, len(row), width))
+            for x, symbol in enumerate(row):
+                seen.add(symbol)
+                if symbol not in known:
+                    err(where, "unknown tile symbol '%s' at (%d, %d)" % (symbol, x, y))
+
+        def walkable_at(tile, label):
+            if (not isinstance(tile, list) or len(tile) < 2
+                    or not all(isinstance(v, int) for v in tile[:2])):
+                err(where, "%s must be an [x, y] pair of integers" % label)
+                return
+            x, y = tile[0], tile[1]
+            if not (0 <= y < len(rows) and 0 <= x < len(rows[y])):
+                err(where, "%s at (%d, %d) is outside the map" % (label, x, y))
+                return
+            if rows[y][x] not in WALKABLE_TILES:
+                err(where, "%s at (%d, %d) sits on solid tile '%s'"
+                    % (label, x, y, rows[y][x]))
+
+        walkable_at(doc.get("player_start"), "player_start")
+
+        for i, spec in enumerate(doc.get("objects", [])):
+            label = "objects[%d]" % i
+            if not isinstance(spec, dict):
+                err(where, "%s must be an object" % label)
+                continue
+            if spec.get("type") not in OBJECT_TYPES:
+                err(where, "%s has unknown type '%s'" % (label, spec.get("type")))
+            walkable_at(spec.get("tile"), label + ".tile")
+
+        encounters = doc.get("encounters", {})
+        if not isinstance(encounters, dict):
+            err(where, "'encounters' must be an object keyed by tile symbol")
+            encounters = {}
+        for symbol, config in encounters.items():
+            label = "encounters['%s']" % symbol
+            if symbol not in WALKABLE_TILES:
+                err(where, "%s is keyed on '%s', which is not walkable terrain"
+                    % (label, symbol))
+            elif symbol not in seen:
+                warn(where, "%s has a table but no '%s' tile appears on the map"
+                     % (label, symbol))
+            chance = config.get("chance", 0)
+            if not isinstance(chance, (int, float)) or not (0.0 < chance <= 1.0):
+                err(where, "%s chance must be a number in (0, 1], got %r" % (label, chance))
+            table = config.get("table")
+            if not isinstance(table, list) or not table:
+                err(where, "%s needs a non-empty 'table'" % label)
+                continue
+            for j, entry in enumerate(table):
+                row_label = "%s.table[%d]" % (label, j)
+                if not isinstance(entry, dict):
+                    err(where, "%s must be an object" % row_label)
+                    continue
+                if entry.get("species") not in creatures:
+                    err(where, "%s names unknown species '%s'"
+                        % (row_label, entry.get("species")))
+                weight = entry.get("weight")
+                if not isinstance(weight, int) or weight <= 0:
+                    err(where, "%s weight must be a positive integer, got %r"
+                        % (row_label, weight))
+                levels = entry.get("levels")
+                if (not isinstance(levels, list) or len(levels) != 2
+                        or not all(isinstance(v, int) for v in levels)):
+                    err(where, "%s levels must be [low, high] integers" % row_label)
+                elif not (1 <= levels[0] <= levels[1] <= MAX_LEVEL):
+                    err(where, "%s levels %r must satisfy 1 <= low <= high <= %d"
+                        % (row_label, levels, MAX_LEVEL))
+
+        # A map whose walkable tiles are all encounter terrain has nowhere safe
+        # to stand, which is almost always a mistake rather than a design.
+        walkable_seen = seen & WALKABLE_TILES
+        if walkable_seen and walkable_seen <= set(encounters.keys()):
+            warn(where, "every walkable tile on this map triggers encounters")
+
+    return checked
+
+
 def main() -> int:
     types = check_type_chart(load("type_chart.json"))
     moves = check_moves(load("moves.json"), types)
@@ -300,13 +413,15 @@ def main() -> int:
         if not any(m.get("type") == t for m in moves.values()):
             warn("moves.json", "no move has type '%s'" % t)
 
+    map_count = check_maps(types, creatures)
+
     for line in warnings:
         print("warning  %s" % line)
     for line in errors:
         print("ERROR    %s" % line)
 
-    print("\n%d types, %d moves, %d creatures -- %d error(s), %d warning(s)"
-          % (len(types), len(moves), len(creatures), len(errors), len(warnings)))
+    print("\n%d types, %d moves, %d creatures, %d map(s) -- %d error(s), %d warning(s)"
+          % (len(types), len(moves), len(creatures), map_count, len(errors), len(warnings)))
     return 1 if errors else 0
 
 
