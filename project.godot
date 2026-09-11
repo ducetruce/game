@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Hollowmere"
 config/description="A top-down monster-taming RPG. Original world, original creatures."
-run/main_scene="res://scenes/bootstrap/main.tscn"
+run/main_scene="res://scenes/overworld/overworld.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -30,6 +30,12 @@ textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.05, 0.05, 0.07, 1)
+
+; Free movement puts the player at fractional world positions. Without
+; these, sub-pixel offsets round differently frame to frame and the whole
+; scene shimmers as you walk.
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
 
 [input]
 

@@ -1,0 +1,47 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/dialogue_box.gd" id="1_dialogue"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_box"]
+bg_color = Color(0.0705882, 0.0823529, 0.105882, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.427451, 0.470588, 0.541176, 1)
+
+[node name="DialogueBox" type="CanvasLayer"]
+script = ExtResource("1_dialogue")
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 8.0
+offset_top = 126.0
+offset_right = 312.0
+offset_bottom = 172.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 5
+
+[node name="Text" type="Label" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.811765, 0.839216, 0.878431, 1)
+theme_override_font_sizes/font_size = 8
+autowrap_mode = 3
+
+[node name="More" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 284.0
+offset_top = 32.0
+offset_right = 300.0
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.552941, 0.607843, 0.690196, 1)
+theme_override_font_sizes/font_size = 8
+text = ">>"

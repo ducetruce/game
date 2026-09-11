@@ -1,0 +1,49 @@
+{
+  "id": "hollow_clearing",
+  "display_name": "The Hollow Clearing",
+  "_comment": "Tile grid, one string per row. See src/overworld/tile_legend.gd for the symbol table. Walkable: G g P p. Solid: W R T F.",
+  "player_start": [
+    20,
+    20
+  ],
+  "objects": [
+    {
+      "type": "sign",
+      "tile": [
+        19,
+        18
+      ],
+      "text": [
+        "A plank of split alder, lettered in tar.",
+        "NORTH: the mere. Keep to the path.",
+        "Someone has scratched beneath it: they do not hunt you. they are only curious."
+      ]
+    }
+  ],
+  "tiles": [
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTGGGggGGGGGGGgGggGGGGGGGGGGGGGGGGGGgGTT",
+    "TTGgWWWWgGGGGGGGGgGGGGGGGGGGgGGGGGgGGgTT",
+    "TTGWWWWWWGGgGGGGGGGGGGGGGGGGGGgGGGGGGGTT",
+    "TTGWWWWWWGgGgGGggGGGGGGggGGgGgGGGGGGGGTT",
+    "TTGGWWWWGgGGGgGggGggGgGGGGGGGggGGGGGGGTT",
+    "TTGgGGGGGGGggGGGggGGGGGGGgGGGGGGGGGGGGTT",
+    "TTGGGGGGGgGGGgRRRgGGGGggGgGGGGGGgGGGGGTT",
+    "TTGGGgGgGGGGGRRgGGGGGGGGGGgGGGGGGGGGGGTT",
+    "TTGGGGGGGgGGggGGgGGGGGGGggGGGgGGgGGGGgTT",
+    "TTGGGGGGgGGgGGGGGGGgGGGGgGGGGgGGGGGGgGTT",
+    "TTGGggGgGGGGGGgGgGGgPPPPPpPPPPPppPGGGGTT",
+    "TTGggGGGGGGGGGggGGGGPpPpPPpPPpPppPGGGGTT",
+    "TTGGgGGgGggGGGGGGGGGPPgGGGFFFFFFFFGGGGTT",
+    "TTgGGGGgGGGGGGgGGgGGPPGGGGGgGGgGGGgGGGTT",
+    "TTGGGGGGGggGGGGGGGGGPPGGGGgGGGgGGGGGGGTT",
+    "TTgGGGGTTTGGgGGGGGGgPPGGGgGGGGGgGgGGGGTT",
+    "TTGgGGTTTTGGGGGGGGgGPPGgGGGGGGGGGGGGggTT",
+    "TTGGGGGGGGGGGGGGGGGGpPGgGGGGGGGggGGggGTT",
+    "TTGgGGGGGggGGggGGGggpPGgGGGGGGGGGGGGGGTT",
+    "TTgGGGGGgGGGGGGGGGGgpPGGgGGGGGGgRRRRGGTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+  ]
+}

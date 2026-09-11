@@ -195,9 +195,73 @@ collision shape and sprite. Everything else about art is swappable.
 
 ---
 
+## 7. Movement: fully free
+
+**Decision.** Free 8-directional analogue movement over a collision grid. The
+player is never snapped to tiles and can stand at any sub-pixel position.
+Diagonals are normalised, so moving diagonally is not faster than moving
+straight.
+
+**The problem this creates.** Grid-locked movement answers "which tile is the
+player facing" for free — you are always on a tile, facing an axis. Free
+movement does not, so three systems need explicit answers:
+
+1. **Facing** is tracked as a discrete four-way value updated from *input*, not
+   from position. On an exact diagonal the horizontal axis wins; the rule is
+   arbitrary but it has to be deterministic or facing flickers as you walk.
+2. **Interaction targeting** uses a 12×12 probe box parented to the player and
+   offset in the facing direction, rather than a tile lookup. Anything solid
+   and in the `interactable` group that overlaps the probe can be acted on.
+   Interactables are solid, so bumping into one leaves you facing it.
+3. **Encounter triggers** cannot count steps. When encounters land, they
+   accumulate *distance travelled* inside an encounter zone and roll against a
+   threshold. This is arguably better than step-counting: it makes running
+   through tall grass genuinely riskier per second than creeping.
+
+**Pixel snapping.** `snap_2d_transforms_to_pixel` and
+`snap_2d_vertices_to_pixel` are both on. Without them, fractional positions
+round inconsistently between frames and the entire scene shimmers while
+walking. The cost is that motion is very slightly steppy at low speeds, which
+is inherent to pixel art and not worth fighting.
+
+**Accepted cost.** Tile-aligned puzzle mechanics — pushable blocks, ice
+sliding, pressure plates — get awkward, because "the block is on tile X" stops
+being naturally true. If we want those later they need their own snap-on-
+release logic rather than coming free from the movement system.
+
+**Reversal cost.** Low. The controller is one script; facing, the probe, and
+the encounter accumulator are the only things that assume free movement.
+
+---
+
+## 8. Map authoring: text now, editor later
+
+**Decision, and it is temporary.** Maps are JSON in `data/maps/`, holding a
+grid of one-character tile symbols plus a player start and an object list.
+`GameMap` parses that at runtime and paints it into two `TileMapLayer` nodes —
+`Ground` (no collision) and `Obstacles` (carries the tileset's physics layer).
+The symbol table lives in `src/overworld/tile_legend.gd`.
+
+**Why not paint in the editor now.** With eight placeholder tiles, a text grid
+is faster to edit, reviewable in a diff, and editable without opening Godot.
+
+**Why this does not last.** The stated art direction is dense, layered,
+painterly tiles. Authoring that in ASCII would be miserable, and Godot's
+TileMapLayer editor with terrain autotiling is the right tool for it. **When
+real tilesets land, maps get painted in the editor and this loader is
+deleted.** It is scaffolding, not architecture.
+
+**What survives the switch.** Map-as-its-own-scene, the Ground/Obstacles layer
+split, the object list, and `player_start`. Only the tile grid moves from JSON
+into the scene file.
+
+---
+
 ## Open questions
 
 - Party size, and whether creatures are stored or all carried.
 - Whether Attunement is available against tamer-owned creatures, or wild only.
 - Levelling: experience curve, or milestone-based growth.
 - Whether moves are learned by level, by taught item, or by Temperament.
+- Whether interactables should be solid by default, or whether some
+  (ground items, plaques) should be walkable and probed anyway.
