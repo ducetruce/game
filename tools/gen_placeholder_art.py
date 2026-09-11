@@ -14,6 +14,7 @@ never shows up as noise in a diff.
 
 from __future__ import annotations
 
+import json
 import os
 import struct
 import zlib
@@ -42,6 +43,15 @@ class Canvas:
         for yy in range(y, y + h):
             for xx in range(x, x + w):
                 self.set(xx, yy, rgba)
+
+    def blob(self, cx: float, cy: float, rx: float, ry: float, rgba) -> None:
+        """Filled ellipse. Crude, but it reads as a body at 32x32."""
+        for yy in range(int(cy - ry), int(cy + ry) + 1):
+            for xx in range(int(cx - rx), int(cx + rx) + 1):
+                dx = (xx + 0.5 - cx) / max(rx, 0.001)
+                dy = (yy + 0.5 - cy) / max(ry, 0.001)
+                if dx * dx + dy * dy <= 1.0:
+                    self.set(xx, yy, rgba)
 
     def save(self, path: str) -> None:
         rows = bytearray()
@@ -217,11 +227,113 @@ def build_character() -> Canvas:
     return c
 
 
+# --- creature sprites ------------------------------------------------------
+# One 32x32 frame per species, written to assets/sprites/creatures/<id>.png and
+# loaded by id at runtime. Shapes are rough silhouettes chosen per species so
+# the seven read as different animals on a battle screen; colours come from the
+# creature's type. Real creature art drops into the same paths.
+
+CREATURE = 32
+
+TYPE_PALETTE = {
+    "bloom":  ((70, 112, 68, A), (98, 146, 88, A), (46, 78, 50, A)),
+    "stone":  ((104, 106, 114, A), (140, 142, 150, A), (68, 70, 78, A)),
+    "gale":   ((150, 170, 186, A), (196, 212, 224, A), (104, 124, 144, A)),
+    "mire":   ((88, 96, 66, A), (118, 128, 88, A), (56, 62, 44, A)),
+    "cinder": ((178, 92, 54, A), (226, 150, 76, A), (118, 54, 38, A)),
+    "wane":   ((98, 86, 118, A), (136, 122, 158, A), (62, 54, 80, A)),
+    "beast":  ((122, 96, 70, A), (156, 128, 96, A), (82, 62, 46, A)),
+}
+DEFAULT_PALETTE = ((110, 110, 118, A), (150, 150, 158, A), (72, 72, 80, A))
+
+
+def draw_creature(c: Canvas, shape: str, base, hi, lo) -> None:
+    c.rect(8, CREATURE - 3, 16, 2, SHADOW)
+
+    if shape == "quadruped":                      # thistlecalf
+        c.blob(16, 19, 9, 6, base)
+        c.blob(23, 13, 5, 4.5, hi)                # head
+        for lx in (10, 14, 18, 21):
+            c.rect(lx, 24, 2, 5, lo)
+        c.rect(8, 16, 3, 2, lo)                   # tail
+        for bx, by in ((12, 15), (16, 18), (19, 14)):
+            c.rect(bx, by, 2, 2, lo)              # burrs
+    elif shape == "stack":                        # cairnling
+        c.blob(16, 26, 9, 4, lo)
+        c.blob(16, 19, 7, 4, base)
+        c.blob(16, 13, 5, 3.5, hi)
+        c.blob(16, 8, 3, 2.5, base)
+        c.set(14, 13, lo)
+        c.set(18, 13, lo)
+    elif shape == "flier":                        # skirling
+        c.blob(16, 17, 4, 6, base)
+        c.blob(7, 13, 6, 3, hi)                   # wings
+        c.blob(25, 13, 6, 3, hi)
+        c.blob(16, 9, 3, 3, hi)
+        c.rect(15, 23, 1, 4, lo)
+        c.rect(18, 23, 1, 4, lo)
+    elif shape == "lump":                         # sloughback
+        c.blob(16, 22, 12, 7, base)
+        c.blob(16, 17, 9, 4, hi)                  # ridge
+        c.blob(24, 21, 4, 3.5, hi)                # head
+        for bx in (9, 13, 17, 21):
+            c.rect(bx, 14, 2, 2, lo)
+    elif shape == "wick":                         # emberwick
+        c.rect(15, 12, 3, 16, lo)                 # wick
+        c.blob(16, 10, 5, 6, base)                # flame
+        c.blob(16, 8, 3, 4, hi)
+        c.blob(11, 20, 3, 2, base)                # wings
+        c.blob(21, 20, 3, 2, base)
+    elif shape == "wisp":                         # gloamkin
+        c.blob(16, 14, 6, 8, base)
+        c.blob(16, 11, 4, 5, hi)
+        for yy in range(21, 29):                  # dissolving lower half
+            width = 9 - (yy - 21)
+            if (yy % 2) == 0:
+                c.rect(16 - width // 2, yy, width, 1, lo)
+        c.set(14, 11, lo)
+        c.set(18, 11, lo)
+    else:                                          # moorhound
+        c.blob(15, 18, 10, 5, base)
+        c.blob(24, 14, 5, 4, hi)                  # head
+        c.rect(26, 10, 2, 3, lo)                  # ear
+        for lx in (9, 12, 18, 21):
+            c.rect(lx, 22, 2, 6, lo)
+        c.rect(4, 14, 4, 2, lo)                   # tail
+        c.set(25, 13, lo)
+
+
+SHAPES = {
+    "thistlecalf": "quadruped",
+    "cairnling": "stack",
+    "skirling": "flier",
+    "sloughback": "lump",
+    "emberwick": "wick",
+    "gloamkin": "wisp",
+    "moorhound": "hound",
+}
+
+
+def build_creature_sprites() -> None:
+    """Reads data/creatures.json so the sprite set always matches the roster."""
+    path = os.path.join(ROOT, "data", "creatures.json")
+    with open(path) as fh:
+        roster = json.load(fh)["creatures"]
+    for species in roster:
+        species_id = species["id"]
+        first_type = (species.get("types") or ["beast"])[0]
+        base, hi, lo = TYPE_PALETTE.get(first_type, DEFAULT_PALETTE)
+        canvas = Canvas(CREATURE, CREATURE)
+        draw_creature(canvas, SHAPES.get(species_id, "hound"), base, hi, lo)
+        canvas.save(os.path.join(ROOT, "assets", "sprites", "creatures", species_id + ".png"))
+
+
 def main() -> None:
     build_atlas().save(os.path.join(ROOT, "assets", "tilesets", "placeholder_atlas.png"))
     build_character().save(
         os.path.join(ROOT, "assets", "sprites", "placeholder_character.png")
     )
+    build_creature_sprites()
 
 
 if __name__ == "__main__":

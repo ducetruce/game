@@ -125,12 +125,12 @@ func _render_matchup(species: SpeciesData, foe: SpeciesData) -> void:
 
 	# Running the real Creature and Damage code rather than re-deriving the
 	# numbers here, so this pane fails when the game would fail.
-	var attacker := Creature.create(species.id, BATTLE_LEVEL)
-	var defender := Creature.create(foe.id, BATTLE_LEVEL)
+	var attacker := Combatant.of(Creature.create(species.id, BATTLE_LEVEL))
+	var defender := Combatant.of(Creature.create(foe.id, BATTLE_LEVEL))
 	var body: Array = []
 	var best := 0
 
-	for move_id in attacker.moves:
+	for move_id in attacker.creature.moves:
 		var move := Content.get_move(move_id)
 		if move == null:
 			continue
@@ -151,7 +151,7 @@ func _render_matchup(species: SpeciesData, foe: SpeciesData) -> void:
 
 	lines.append(_table(PackedStringArray(["move", "dmg", ""]), body))
 
-	var foe_hp := defender.max_hp()
+	var foe_hp := defender.creature.max_hp()
 	if best > 0:
 		lines.append("[color=#%s]%d HP — best move KOs in %.1f hits[/color]" % [
 			COLOR_DIM, foe_hp, float(foe_hp) / float(best),

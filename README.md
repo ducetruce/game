@@ -64,6 +64,17 @@ To inspect the same data in-engine, open `scenes/debug/codex.tscn` and press
 It shows base stats, the derived stats at levels 5/25/50, the type matchups,
 and live damage numbers from the real `Damage` code.
 
+## Running a battle
+
+Open `scenes/battle/battle.tscn` and press **F6**. You get a demo fight with a
+party of three against a wild Sloughback. Arrows or `W`/`S` move the cursor,
+`Z` confirms, `X` backs out. The lead is at a type disadvantage on purpose, so
+the opening move worth making is a switch.
+
+To check the turn loop in bulk, open `scenes/debug/battle_sim.tscn` and press
+**F6**: it runs 400 complete battles headlessly and reports average length,
+win rate, and whether any failed to terminate. `Z` re-runs with a new seed.
+
 ## Editing the map
 
 `data/maps/hollow_clearing.json` holds the tile grid as one string per row.
@@ -80,6 +91,6 @@ Edit it in a text editor and re-run the game. This is temporary — see
 1. ✅ Project setup — scaffolding, folder structure, git
 2. ✅ Overworld movement & map
 3. ✅ Creature data model
-4. ⬜ Turn-based battle system
+4. 🚧 Turn-based battle system — turn loop done, overworld encounters next
 5. ⬜ Attunement (capture) mechanic
 6. ⬜ Save/load

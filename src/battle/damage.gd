@@ -25,6 +25,12 @@ const RATIO_EXPONENT := 0.75
 const STAB_MULTIPLIER := 1.5
 const VARIANCE_MIN := 0.85
 const VARIANCE_MAX := 1.0
+
+## Every hit lands for at least this much. There is deliberately no flat bonus
+## added to `base` on top of it: a constant term is negligible against a level
+## 50 health pool but enormous against a level 8 one, and it was turning the
+## early game -- exactly where the player is learning to tame things -- into
+## three-turn fights with one-shots at level parity.
 const MINIMUM_DAMAGE := 1
 
 
@@ -32,13 +38,15 @@ static func roll_variance(rng: RandomNumberGenerator) -> float:
 	return rng.randf_range(VARIANCE_MIN, VARIANCE_MAX)
 
 
+## Takes Combatants, not Creatures, so stat stages are always applied -- there
+## is no overload here that quietly skips them.
+##
 ## Returns a breakdown rather than a bare number, because the battle log needs
-## to say *why* a hit landed the way it did ("it struck deep", "barely felt").
-## `variance` is a multiplier, normally from roll_variance; pass 1.0 for a
-## preview.
+## to say *why* a hit landed the way it did. `variance` is a multiplier,
+## normally from roll_variance; pass VARIANCE_MAX for a deterministic preview.
 static func compute(
-	attacker: Creature,
-	defender: Creature,
+	attacker: Combatant,
+	defender: Combatant,
 	move: MoveData,
 	variance: float = VARIANCE_MAX
 ) -> Dictionary:
@@ -60,8 +68,7 @@ static func compute(
 
 	var level_factor := 2.0 * float(attacker.level) / LEVEL_DIVISOR + 2.0
 	var ratio := pow(float(attack) / float(defence), RATIO_EXPONENT)
-	var base := level_factor * float(move.power) * ratio
-	base = base / DAMAGE_DIVISOR + 2.0
+	var base := level_factor * float(move.power) * ratio / DAMAGE_DIVISOR
 
 	var type_multiplier := Content.type_chart.multiplier(move.type, defender.types())
 	var stab := STAB_MULTIPLIER if attacker.types().has(move.type) else 1.0

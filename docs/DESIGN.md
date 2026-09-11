@@ -351,9 +351,82 @@ play.
 
 ---
 
+## 11. The battle loop
+
+**Decision.** All battle rules live in `BattleState`, which contains no nodes.
+The battle scene submits an action and renders the log it gets back.
+
+**Why the split earns its keep.** A turn loop is the one part of this game that
+can fail by never finishing, and that failure is invisible in a single
+playthrough. Because `BattleState` is headless, `scenes/debug/battle_sim.tscn`
+can run hundreds of complete battles and report whether any hit a turn cap.
+That check does not exist if the rules are tangled into the scene.
+
+**Turn structure.**
+
+1. The wild creature picks its action.
+2. Order: switching and fleeing always go first; otherwise higher effective
+   Speed, with a coin flip on an exact tie.
+3. Each side acts in turn. **A faint ends the turn immediately** — whoever went
+   down does not also get to act.
+4. If the player's creature fainted and a reserve is standing, the battle sits
+   in `REPLACING` until one is sent out. Backing out of that menu is refused.
+
+**Stat stages** use the standard curve: +1 is ×1.5, −1 is ×0.67, saturating at
+±6, cleared whenever a creature switches out. HP is never staged. `Damage`
+takes Combatants rather than Creatures specifically so stages cannot be
+forgotten — there is no call that quietly skips them.
+
+**The wild creature's AI** takes its single best damaging option 70% of the
+time and something random otherwise. A perfectly optimal opponent is both
+harder to read and less interesting than one that occasionally does something
+else — and Attunement depends on the player being able to read intent.
+
+**Fleeing** scales with the Speed ratio but mostly with the number of attempts,
+so a slow party is never permanently trapped by something fast.
+
+### What simulation found
+
+Running 3000 complete battles (parties of three, levels 10–20, both sides
+taking their hardest-hitting option every turn):
+
+- **Every battle terminated.** Average 6 turns, median 6, p99 16, longest 24.
+- **The flat damage term had to go.** The formula previously added a constant
+  +2 to base damage. That is negligible against a level 50 health pool and
+  enormous against a level 8 one: it was making the early game — exactly where
+  the player is learning to tame things — run three-turn fights, with one-shots
+  occurring at level *parity*. Removing it cut near-parity one-shots in the
+  5–10 band from 27 to 5 and lengthened early battles from 3.4 to 4.9 turns,
+  while leaving level 45–50 untouched. A minimum of 1 damage per hit is kept.
+
+### Known, and deliberately not fixed here
+
+**A sufficiently over-levelled creature still one-shots.** After the fix, the
+remaining one-shots come from level advantage rather than stat spreads — rare
+at +1 or +2 levels, common at +5 or more. For ordinary combat that is normal
+RPG behaviour. For Attunement it is a real problem: **Proud** requires landing
+a hit, and **Feral** only attunes at low HP, so a creature that dies to the
+first blow cannot be captured at all.
+
+This needs a rule, and the rule belongs with Attunement in § 1 rather than
+being improvised into the damage formula now. The obvious shape is that
+pulling a punch is a stated intent rather than an accident, but the design is
+not settled and inventing it here would couple two systems that should be
+decided separately.
+
+**Move exhaustion has no resolution.** If both sides run out of uses on every
+move, nothing in the rules ends the battle. Simulation never produced it at
+these levels, but the rules permit it. A Struggle-equivalent, or a turn limit
+on wild battles, will be needed eventually.
+
+---
+
 ## Open questions
 
 - Party size, and whether creatures are stored or all carried.
+- How a pulled punch works, so an over-levelled party can still tame
+  (see § 11). Blocks Attunement.
+- What ends a battle in which both sides have exhausted every move.
 - Whether critical hits exist at all, given how much the design leans on
   readable, near-deterministic combat.
 - Whether Attunement is available against tamer-owned creatures, or wild only.
