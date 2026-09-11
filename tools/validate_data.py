@@ -21,7 +21,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 
 MAX_LEVEL = 50
-STATS = ("hp", "attack", "defense", "spirit", "speed")
+STATS = ("hp", "attack", "defense", "spirit", "resolve", "speed")
 CATEGORIES = ("physical", "spirit", "status")
 TEMPERAMENTS = ("skittish", "proud", "feral")
 EFFECT_KINDS = ("stat_stage", "heal")

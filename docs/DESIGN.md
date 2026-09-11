@@ -257,28 +257,40 @@ into the scene file.
 
 ---
 
-## 9. Stats: five, with Spirit doing double duty
+## 9. Stats: six
 
-**Decision.** Five stats: **hp, attack, defense, spirit, speed**. Moves are
-`physical` (attack vs defense), `spirit` (spirit vs spirit) or `status` (no
-damage).
+**Decision.** Six stats: **hp, attack, defense, spirit, resolve, speed**.
+Physical moves are attack vs defense; spirit moves are spirit vs resolve;
+status moves deal no damage.
 
-**Why not six.** The usual six-stat layout splits the non-physical side into
-separate offensive and defensive stats. Collapsing them into one `spirit` stat
-keeps the creature schema small, which is the same instinct behind a seven-type
-chart: fewer numbers, each of which matters more.
+**This reverses an earlier decision, and the reason is worth keeping.** The
+first cut had five stats, with a single `spirit` doing both the offensive and
+the defensive job on the non-physical side — chosen for the same reason the
+type chart has seven types rather than eighteen: fewer numbers, each mattering
+more.
 
-**The cost, stated plainly.** A single Spirit stat is a superstat — a
-high-Spirit creature is simultaneously the best spirit attacker and the best
-spirit wall. That is a real imbalance and it is deliberate: it creates a
-distinct archetype that beats other spirit users and has to be answered
-physically, which is a legible rock-paper-scissors on top of the type chart.
-If it turns out to be degenerate in play, splitting `spirit` into two stats is
-a data migration of one field per species plus one line in the damage formula.
+It was the wrong call. A single Spirit stat is a superstat: the best spirit
+attacker is automatically the best spirit wall, so a creature's non-physical
+identity collapses into one axis. That *narrows* team-building instead of
+widening it, and it hides real weaknesses rather than exposing them.
 
-**Note.** There is no Normal-equivalent type, so there are no typeless
-damaging moves. Status moves may use `"type": "none"`; damaging moves may not,
-and the validator enforces it.
+Splitting it means a creature can now be:
+
+- a spirit attacker with a glass jaw — Moorhound, spirit 34 / resolve 38
+- a spirit wall that cannot hit back — Gloamkin, resolve 66 / defense 42
+- physically immense and mentally open — Sloughback, defense 60 / resolve 44
+
+Those are distinct, exploitable profiles. Under the five-stat model all three
+would have read as "low spirit" and played the same way.
+
+**Cost.** One more number per species, and one more row in every stat display.
+Base totals moved from ~275 to ~320-330 to absorb the sixth stat; the spread
+between creatures stayed tight (320-328) so nothing is strictly better than
+anything else.
+
+**Note.** There is no Normal-equivalent type, so there are no typeless damaging
+moves. Status moves may use `"type": "none"`; damaging moves may not, and the
+validator enforces it.
 
 ---
 
@@ -303,15 +315,29 @@ level 50 is 117,649. Per-species rates can come later behind the same API.
 **Damage.**
 
 ```
-base   = ((2 * level / 5 + 2) * power * A / D) / 50 + 2
+ratio  = (A / D) ^ 0.75
+base   = ((2 * level / 5 + 2) * power * ratio) / 50 + 2
 damage = max(1, floor(base * type_multiplier * stab * variance))
 ```
 
 STAB is ×1.5. Variance is ×0.85–1.00.
 
-**Tuning target, and why it matters here specifically.** A neutral same-type
-hit should take about four turns to KO, super effective two to three, resisted
-six or more. That is slower than the genre norm on purpose: **Attunement needs
+**The exponent is load-bearing.** With a raw `A / D` ratio, the hardest hitter
+in the roster one-shot the frailest: a ×2 type match and STAB multiply on top
+of an already lopsided stat ratio. Raising the ratio to the power 0.75 dampens
+it — doubling your attack against a given defence multiplies damage by 1.68
+rather than 2 — which removes every one-shot in the roster at every level
+without moving the medians at all. Stat advantages still matter; they just stop
+compounding into a single decisive number.
+
+One-shots are not merely unfun here, they are a design failure: a Feral
+creature is only attunable at low HP, so a creature that dies in one hit can
+never be captured.
+
+**Tuning target, and why it matters here specifically.** Measured across all
+78 same-type matchups in the roster at the level cap: neutral hits KO in a
+median 4.8 turns, super effective in 2.5, resisted in 9.8, with no one-shot at
+any level. That is slower than the genre norm on purpose: **Attunement needs
 the fight to last**. Reading a creature's Temperament and acting on it takes
 several turns, and a two-turn battle would make the entire capture mechanic
 unreachable. The damage divisor is the single knob that controls this.
@@ -330,7 +356,6 @@ play.
 - Party size, and whether creatures are stored or all carried.
 - Whether critical hits exist at all, given how much the design leans on
   readable, near-deterministic combat.
-- Whether Spirit needs splitting into offence and defence (see § 9).
 - Whether Attunement is available against tamer-owned creatures, or wild only.
 - Levelling: experience curve, or milestone-based growth.
 - Whether moves are learned by level, by taught item, or by Temperament.

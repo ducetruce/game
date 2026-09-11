@@ -13,6 +13,15 @@ extends RefCounted
 ## the creature and act on it.
 const DAMAGE_DIVISOR := 50.0
 const LEVEL_DIVISOR := 5.0
+
+## The attacker's stat is divided by the defender's, then raised to this power.
+## Below 1.0 it dampens the ratio: doubling your attack stat against a given
+## defence multiplies damage by 2^0.75 = 1.68, not 2. Stat advantages still
+## matter, they just stop compounding with STAB and a x2 type match into a
+## one-shot. Without it, the hardest hitter in the roster one-shots the
+## frailest -- which would make a Feral creature (attunable only at low HP)
+## impossible to capture at all.
+const RATIO_EXPONENT := 0.75
 const STAB_MULTIPLIER := 1.5
 const VARIANCE_MIN := 0.85
 const VARIANCE_MAX := 1.0
@@ -50,7 +59,8 @@ static func compute(
 	result["defense_stat"] = defence
 
 	var level_factor := 2.0 * float(attacker.level) / LEVEL_DIVISOR + 2.0
-	var base := level_factor * float(move.power) * float(attack) / float(defence)
+	var ratio := pow(float(attack) / float(defence), RATIO_EXPONENT)
+	var base := level_factor * float(move.power) * ratio
 	base = base / DAMAGE_DIVISOR + 2.0
 
 	var type_multiplier := Content.type_chart.multiplier(move.type, defender.types())

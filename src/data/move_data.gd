@@ -54,11 +54,10 @@ func is_damaging() -> bool:
 
 
 ## Which of the attacker's stats this move hits with, and which of the
-## defender's stats resists it. Spirit is both the offensive and the defensive
-## stat for non-physical moves -- see docs/DESIGN.md § 9.
+## defender's stats resists it.
 func attack_stat() -> String:
 	return "attack" if category == CATEGORY_PHYSICAL else "spirit"
 
 
 func defense_stat() -> String:
-	return "defense" if category == CATEGORY_PHYSICAL else "spirit"
+	return "defense" if category == CATEGORY_PHYSICAL else "resolve"

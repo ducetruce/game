@@ -8,9 +8,11 @@ extends RefCounted
 
 const MAX_LEVEL := 50
 
-## Five stats, not six: `spirit` serves as both the non-physical attack and the
-## non-physical defence. See docs/DESIGN.md § 9 for why, and what it costs.
-const STATS := ["hp", "attack", "defense", "spirit", "speed"]
+## Physical moves use attack vs defense; spirit moves use spirit vs resolve.
+## Keeping offence and defence separate on both sides is what lets a creature be
+## a spirit attacker with a glass jaw, or a wall that cannot hit back.
+## See docs/DESIGN.md § 9.
+const STATS := ["hp", "attack", "defense", "spirit", "resolve", "speed"]
 
 ## Linear growth from level 1 to MAX_LEVEL. The flat terms keep level 1 from
 ## being degenerate; the scales set how much of a stat is earned by levelling
