@@ -1,0 +1,13 @@
+{
+  "_comment": "Purchasable/usable items. Effect kinds: 'restrain_hit' caps a single hit's damage against a wild creature at cap_ratio * its max HP, for the rest of the current battle -- it does not stop a creature from being finished off over several hits, only from being ended in one. See docs/DESIGN.md section 13.",
+  "items": [
+    {
+      "id": "tempering_draught",
+      "name": "Tempering Draught",
+      "description": "Steadies the hand. For the rest of this fight, no single blow you land can end it outright.",
+      "price": 20,
+      "usable_in_battle": true,
+      "effect": { "kind": "restrain_hit", "cap_ratio": 0.25 }
+    }
+  ]
+}

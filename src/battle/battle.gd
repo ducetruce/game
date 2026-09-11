@@ -6,9 +6,9 @@ extends Control
 
 signal finished(outcome: int)
 
-enum Ui { MESSAGE, ACTIONS, MOVES, PARTY, OVER }
+enum Ui { MESSAGE, ACTIONS, MOVES, ITEMS, PARTY, OVER }
 
-const ACTION_LABELS := ["Fight", "Still", "Party", "Run"]
+const ACTION_LABELS := ["Fight", "Still", "Item", "Party", "Run"]
 const CREATURE_SPRITE_DIR := "res://assets/sprites/creatures/"
 
 const COLOR_TEXT := "cfd6e0"
@@ -20,6 +20,8 @@ const HP_BAR_WIDTH := 118.0
 const HP_GOOD := Color("6fae74")
 const HP_WARN := Color("d2b45c")
 const HP_LOW := Color("c4614f")
+const BOND_BAR_WIDTH := 118.0
+const BOND_COLOR := Color("d9a85c")
 
 var _state: BattleState = null
 var _ui := Ui.MESSAGE
@@ -35,6 +37,7 @@ var _wild_creature: Creature = null
 
 @onready var _foe_name: Label = $FoePanel/CreatureName
 @onready var _foe_fill: ColorRect = $FoePanel/HealthFill
+@onready var _bond_fill: ColorRect = $FoePanel/BondFill
 @onready var _foe_sprite: TextureRect = $FoeSprite
 @onready var _player_name: Label = $PlayerPanel/CreatureName
 @onready var _player_fill: ColorRect = $PlayerPanel/HealthFill
@@ -162,6 +165,8 @@ func _menu_length() -> int:
 			return ACTION_LABELS.size()
 		Ui.MOVES:
 			return _state.move_options().size()
+		Ui.ITEMS:
+			return maxi(1, _state.item_options().size())  # 1 for the "nothing to use" row
 		Ui.PARTY:
 			return _state.party.size()
 		_:
@@ -177,8 +182,10 @@ func _confirm() -> void:
 				1:
 					_submit({"kind": BattleState.ACTION_STILL})
 				2:
-					_open(Ui.PARTY)
+					_open(Ui.ITEMS)
 				3:
+					_open(Ui.PARTY)
+				4:
 					_submit({"kind": BattleState.ACTION_FLEE})
 		Ui.MOVES:
 			var options := _state.move_options()
@@ -189,6 +196,11 @@ func _confirm() -> void:
 				_notice("There is nothing left of that one.")
 				return
 			_submit({"kind": BattleState.ACTION_MOVE, "move": str(option["id"])})
+		Ui.ITEMS:
+			var items := _state.item_options()
+			if _cursor >= items.size():
+				return
+			_submit({"kind": BattleState.ACTION_ITEM, "item": str(items[_cursor]["id"])})
 		Ui.PARTY:
 			_confirm_party()
 
@@ -229,6 +241,8 @@ func _render_menu() -> void:
 			_render_actions()
 		Ui.MOVES:
 			_render_moves()
+		Ui.ITEMS:
+			_render_items()
 		Ui.PARTY:
 			_render_party()
 
@@ -258,6 +272,23 @@ func _render_moves() -> void:
 			_message.text = "[color=#%s]%s[/color]\n[color=#%s]%s[/color]" % [
 				COLOR_SELECTED, move.type, COLOR_DIM, move.description,
 			]
+
+
+func _render_items() -> void:
+	var items := _state.item_options()
+	if items.is_empty():
+		_menu.text = _row("nothing to use", false)
+		_message.text = "[color=#%s]Your pack is empty. X to go back.[/color]" % COLOR_DIM
+		return
+
+	var rows := PackedStringArray()
+	for i in items.size():
+		var entry: Dictionary = items[i]
+		rows.append(_row("%s  x%d" % [entry["name"], int(entry["count"])], i == _cursor))
+	_menu.text = "\n".join(rows)
+
+	if _cursor < items.size():
+		_message.text = "[color=#%s]%s[/color]" % [COLOR_DIM, items[_cursor]["description"]]
 
 
 func _render_party() -> void:
@@ -295,6 +326,7 @@ func _refresh_bars() -> void:
 	_set_bar(_foe_fill, _state.foe.hp_ratio())
 	var mine := _state.active().creature
 	_player_hp.text = "%d/%d" % [mine.current_hp, mine.max_hp()]
+	_bond_fill.size.x = maxf(0.0, BOND_BAR_WIDTH * (_state.foe.resonance / 100.0))
 
 
 func _set_bar(bar: ColorRect, ratio: float) -> void:
@@ -317,6 +349,10 @@ func _outcome_text() -> String:
 			return "Nothing of yours is still standing."
 		BattleState.Phase.FLED:
 			return "You put ground between you and it."
+		BattleState.Phase.ATTUNED:
+			return "%s is yours now." % _state.foe.creature.display_name()
+		BattleState.Phase.FOE_FLED:
+			return "%s slips away, out of reach." % _state.foe.creature.display_name()
 		_:
 			return ""
 

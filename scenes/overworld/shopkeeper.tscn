@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/overworld/shopkeeper.gd" id="1_shopkeeper"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_shopkeeper"]
+size = Vector2(10, 14)
+
+[node name="Shopkeeper" type="StaticBody2D" groups=["interactable"]]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_shopkeeper")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -7)
+shape = SubResource("RectangleShape2D_shopkeeper")

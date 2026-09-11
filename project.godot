@@ -19,6 +19,7 @@ Content="*res://src/data/content.gd"
 
 ; Must come after Content: seeding the starting party needs species data.
 Party="*res://src/data/party.gd"
+Inventory="*res://src/data/inventory.gd"
 
 [display]
 

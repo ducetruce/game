@@ -18,8 +18,8 @@ No third-party assets, code, or creature designs.
 |---|---|
 | `WASD` / arrows | Move (free 8-directional) |
 | `Shift` | Run |
-| `Z` / `Space` / `Enter` | Interact, advance text |
-| `X` / `Esc` | Cancel |
+| `Z` / `Space` / `Enter` | Interact, advance text, confirm menus |
+| `X` / `Esc` | Cancel, back out of a menu |
 
 ## Project layout
 
@@ -56,11 +56,12 @@ python3 tools/validate_data.py
 
 Validates `data/*.json` against the rules in `docs/DESIGN.md` — schema, stat
 ranges, and cross-references (every learnset move exists, every creature type
-is in the chart), plus the structural property that each of the seven types has
-exactly two strengths and two weaknesses. It also checks every map: tile
-symbols, that the player start and every object sit on walkable ground, and
-that encounter tables name real species with sane level ranges. Exits non-zero
-on error.
+is in the chart, every creature's temperament has rules in
+`temperaments.json`), plus the structural property that each of the seven
+types has exactly two strengths and two weaknesses. It also checks every map:
+tile symbols, that the player start and every object sit on walkable ground,
+that encounter tables name real species with sane level ranges, and that shop
+catalogs name real items. Exits non-zero on error.
 
 To inspect the same data in-engine, open `scenes/debug/codex.tscn` and press
 **F6** (Run Current Scene). `W`/`S` cycles the creature, `A`/`D` the opponent.
@@ -69,10 +70,34 @@ and live damage numbers from the real `Damage` code.
 
 ## Playing it
 
-Press **F5**. You start on the path with a party of two at level 5. Walk into
-the dark, busy **bracken** — there are two fields, one southwest and one
-northeast — and you will be pulled into battles. The **spring** east of the
-path restores your party when you interact with it.
+Press **F5**. You start on the path with a party of two at level 5, 60 coin,
+and one free Tempering Draught. Walk into the dark, busy **bracken** — two
+fields, one southwest and one northeast — and you will be pulled into
+battles. The **spring** east of the path restores your party. The
+**shopkeeper** north on the path sells more Draughts.
+
+### Taming a wild creature
+
+Battle it. Every wild creature has a hidden Temperament that tells you how to
+read it — the battle log hints at it as you go:
+
+- **Skittish** — pick `Still` instead of attacking. Any hit you land resets
+  your progress to zero.
+- **Proud** — attack it with moves that are *not* super effective, while
+  it is still above half HP. `Still` insults it; a super-effective hit
+  while it's healthy insults it more.
+- **Feral** — wear its HP down low and hold it there. Healing it undoes
+  your progress.
+
+Every encounter also has patience: six turns in a row with no progress and
+the creature breaks off. Watch the thin gold bar under its HP bar — that is
+your progress toward taming it.
+
+If you are much stronger than what you are fighting, a single hit can kill
+it before you ever get a chance to read it. Open **Item** in battle and use
+a **Tempering Draught** — for the rest of that fight, no single hit of yours
+can end it outright. It does not make the fight safe, only survivable: keep
+attacking after it is already fragile and you can still finish it off.
 
 ## Running a battle
 
@@ -80,7 +105,8 @@ Encounters run in the overworld, but the battle scene also runs standalone:
 open `scenes/battle/battle.tscn` and press **F6** for a demo fight with a party
 of three against a wild Sloughback. Arrows or `W`/`S` move the cursor,
 `Z` confirms, `X` backs out. The lead is at a type disadvantage on purpose, so
-the opening move worth making is a switch.
+the opening move worth making is a switch. The action menu is Fight / Still /
+Item / Party / Run.
 
 To check the turn loop in bulk, open `scenes/debug/battle_sim.tscn` and press
 **F6**: it runs 400 complete battles headlessly and reports average length,
@@ -97,11 +123,20 @@ The symbol table is in `src/overworld/tile_legend.gd`:
 Edit it in a text editor and re-run the game. This is temporary — see
 `docs/DESIGN.md` § 8 for when maps move into Godot's TileMapLayer editor.
 
+## Tuning Attunement
+
+`data/temperaments.json` holds every numeric constant for taming (Resonance
+gains and penalties, the stall-flee threshold) and the flavour lines the
+battle log picks from — no GDScript changes needed to retune or add a
+temperament. `data/items.json` holds the Tempering Draught's price and its
+per-hit damage cap. Re-run `tools/validate_data.py` after editing either; it
+checks every temperament has the flavour lines the code actually looks up.
+
 ## Build order
 
 1. ✅ Project setup — scaffolding, folder structure, git
 2. ✅ Overworld movement & map
 3. ✅ Creature data model
 4. ✅ Turn-based battle system
-5. ⬜ Attunement (capture) mechanic
+5. ✅ Attunement (capture) mechanic
 6. ⬜ Save/load

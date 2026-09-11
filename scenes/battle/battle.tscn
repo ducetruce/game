@@ -50,7 +50,7 @@ layout_mode = 0
 offset_left = 8.0
 offset_top = 10.0
 offset_right = 140.0
-offset_bottom = 38.0
+offset_bottom = 46.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="CreatureName" type="Label" parent="FoePanel"]
@@ -77,6 +77,22 @@ offset_top = 18.0
 offset_right = 124.0
 offset_bottom = 23.0
 color = Color(0.435294, 0.682353, 0.454902, 1)
+
+[node name="BondBack" type="ColorRect" parent="FoePanel"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 26.0
+offset_right = 124.0
+offset_bottom = 29.0
+color = Color(0.192157, 0.211765, 0.25, 1)
+
+[node name="BondFill" type="ColorRect" parent="FoePanel"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 26.0
+offset_right = 6.0
+offset_bottom = 29.0
+color = Color(0.85098, 0.658824, 0.360784, 1)
 
 [node name="PlayerPanel" type="Panel" parent="."]
 layout_mode = 0

@@ -1,0 +1,74 @@
+{
+  "_comment": "Attunement rules per temperament. Resonance is 0-100; a creature joins the party at capture_threshold. Each species picks one temperament and an attunement_rate (data/creatures.json) that scales its *gains* only -- mistakes cost the same regardless of rate. stall_flee_turns is universal: any turn Resonance does not increase counts toward it, and it resets on a gain. See docs/DESIGN.md section 13.",
+  "capture_threshold": 100,
+  "stall_flee_turns": 6,
+  "temperaments": {
+    "skittish": {
+      "still_gain": 24,
+      "flavor": {
+        "gain": [
+          "It stops pulling away quite so hard.",
+          "Something in it settles, just a little.",
+          "It lets you hold its gaze a moment longer."
+        ],
+        "reset": [
+          "It flinches back to where it started.",
+          "Whatever ground you had is gone.",
+          "It remembers, suddenly, that you are dangerous."
+        ],
+        "stalled": [
+          "It watches you, unconvinced either way.",
+          "Nothing changes. It is waiting to see what you do."
+        ]
+      }
+    },
+    "proud": {
+      "hit_gain": 20,
+      "still_penalty": 16,
+      "disrespect_penalty": 24,
+      "healthy_ratio": 0.5,
+      "flavor": {
+        "gain": [
+          "It takes the blow without complaint. That was earned.",
+          "Something like respect crosses its face.",
+          "It squares back up to you, unbothered."
+        ],
+        "penalty_still": [
+          "It reads your hesitation as weakness.",
+          "Standing down insults it more than a blow would.",
+          "It will not be courted. It wants a fight."
+        ],
+        "penalty_disrespect": [
+          "That was not a fair strike, and it knows it.",
+          "It bristles at being outmatched so easily.",
+          "You have made this personal."
+        ],
+        "stalled": [
+          "It is too hurt now for a blow to mean anything.",
+          "It holds its ground, waiting for something worth answering."
+        ]
+      }
+    },
+    "feral": {
+      "low_ratio": 0.3,
+      "low_gain": 14,
+      "healed_penalty": 28,
+      "flavor": {
+        "gain": [
+          "It stops fighting the exhaustion and just breathes.",
+          "Too tired to run, it stays where it is.",
+          "Something in it goes quiet."
+        ],
+        "healed": [
+          "Its strength comes rushing back.",
+          "It shakes off the damage like it was nothing.",
+          "The moment is gone -- it is dangerous again."
+        ],
+        "stalled": [
+          "It is still strong enough to fight this off.",
+          "It has not tired enough to stop resisting."
+        ]
+      }
+    }
+  }
+}

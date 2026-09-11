@@ -30,7 +30,19 @@ EFFECT_KINDS = ("stat_stage", "heal")
 # this check is to catch the two drifting apart.
 WALKABLE_TILES = set("GgPpb")
 SOLID_TILES = set("WRTF")
-OBJECT_TYPES = ("sign", "spring")
+OBJECT_TYPES = ("sign", "spring", "shop")
+
+ITEM_EFFECT_KINDS = ("restrain_hit",)
+TEMPERAMENT_NAMES = ("skittish", "proud", "feral")
+# Mirrors the flavor_state values BattleState._tick_reactive_resonance /
+# _tick_feral_resonance actually look up -- a state missing here fails
+# silently in-game (no flavor line), so it is checked explicitly rather
+# than just requiring the "flavor" dict to be non-empty.
+REQUIRED_FLAVOR_STATES = {
+    "skittish": ("gain", "reset", "stalled"),
+    "proud": ("gain", "penalty_still", "penalty_disrespect", "stalled"),
+    "feral": ("gain", "healed", "stalled"),
+}
 
 errors: list[str] = []
 warnings: list[str] = []
@@ -42,6 +54,89 @@ def err(where: str, msg: str) -> None:
 
 def warn(where: str, msg: str) -> None:
     warnings.append("%s: %s" % (where, msg))
+
+
+def check_items(types_unused=None) -> dict:
+    doc = load("items.json")
+    if doc is None:
+        return {}
+    entries = require(doc, "items", list, "items.json")
+    if entries is None:
+        return {}
+
+    by_id = {}
+    for i, item in enumerate(entries):
+        where = "items.json[%d]" % i
+        if not isinstance(item, dict):
+            err(where, "entry must be an object")
+            continue
+        item_id = item.get("id")
+        if not item_id:
+            err(where, "missing 'id'")
+            continue
+        where = "items.json '%s'" % item_id
+        if item_id in by_id:
+            err(where, "duplicate item id")
+        by_id[item_id] = item
+
+        for key in ("name", "price", "effect"):
+            if key not in item:
+                err(where, "missing required key '%s'" % key)
+        price = item.get("price")
+        if not isinstance(price, int) or price <= 0:
+            err(where, "price must be a positive integer, got %r" % price)
+
+        effect = item.get("effect")
+        if not isinstance(effect, dict):
+            err(where, "'effect' must be an object")
+        elif effect.get("kind") not in ITEM_EFFECT_KINDS:
+            err(where, "effect kind '%s' is not one of %s"
+                % (effect.get("kind"), ", ".join(ITEM_EFFECT_KINDS)))
+        elif effect["kind"] == "restrain_hit":
+            ratio = effect.get("cap_ratio")
+            if not isinstance(ratio, (int, float)) or not (0.0 < ratio <= 1.0):
+                err(where, "cap_ratio must be a number in (0, 1], got %r" % ratio)
+    return by_id
+
+
+def check_temperaments(creatures: dict) -> dict:
+    doc = load("temperaments.json")
+    if doc is None:
+        return {}
+    threshold = doc.get("capture_threshold")
+    if not isinstance(threshold, int) or not (1 <= threshold <= 1000):
+        err("temperaments.json", "capture_threshold must be a positive integer, got %r" % threshold)
+    stall = doc.get("stall_flee_turns")
+    if not isinstance(stall, int) or stall <= 0:
+        err("temperaments.json", "stall_flee_turns must be a positive integer, got %r" % stall)
+
+    rules = require(doc, "temperaments", dict, "temperaments.json")
+    if rules is None:
+        return {}
+    for name in TEMPERAMENT_NAMES:
+        if name not in rules:
+            err("temperaments.json", "missing rules for temperament '%s'" % name)
+            continue
+        where = "temperaments.json '%s'" % name
+        entry = rules[name]
+        flavor = entry.get("flavor", {})
+        if not isinstance(flavor, dict) or not flavor:
+            err(where, "missing 'flavor' lines")
+        else:
+            for state in REQUIRED_FLAVOR_STATES.get(name, ()):
+                lines = flavor.get(state)
+                if not isinstance(lines, list) or not lines:
+                    err(where, "flavor state '%s' is required and must be a non-empty list" % state)
+    for name in rules:
+        if name not in TEMPERAMENT_NAMES:
+            warn("temperaments.json", "'%s' is not a known temperament" % name)
+
+    for species_id, species in creatures.items():
+        t = species.get("temperament")
+        if t and t not in rules:
+            err("creatures.json '%s'" % species_id,
+                "temperament '%s' has no rules in temperaments.json" % t)
+    return rules
 
 
 def load(name: str):
@@ -294,7 +389,7 @@ def check_creatures(doc, types: list[str], moves: dict) -> dict:
     return by_id
 
 
-def check_maps(types: list[str], creatures: dict) -> int:
+def check_maps(types: list[str], creatures: dict, items: dict) -> int:
     """Validates every map in data/maps/. Returns how many were checked."""
     maps_dir = os.path.join(DATA, "maps")
     if not os.path.isdir(maps_dir):
@@ -352,6 +447,14 @@ def check_maps(types: list[str], creatures: dict) -> int:
             if spec.get("type") not in OBJECT_TYPES:
                 err(where, "%s has unknown type '%s'" % (label, spec.get("type")))
             walkable_at(spec.get("tile"), label + ".tile")
+            if spec.get("type") == "shop":
+                catalog = spec.get("catalog")
+                if not isinstance(catalog, list) or not catalog:
+                    err(where, "%s needs a non-empty 'catalog'" % label)
+                else:
+                    for item_id in catalog:
+                        if item_id not in items:
+                            err(where, "%s catalog names unknown item '%s'" % (label, item_id))
 
         encounters = doc.get("encounters", {})
         if not isinstance(encounters, dict):
@@ -405,6 +508,8 @@ def main() -> int:
     types = check_type_chart(load("type_chart.json"))
     moves = check_moves(load("moves.json"), types)
     creatures = check_creatures(load("creatures.json"), types, moves)
+    items = check_items()
+    check_temperaments(creatures)
 
     # Content coverage: not wrong, but worth knowing about.
     for t in types:
@@ -413,15 +518,15 @@ def main() -> int:
         if not any(m.get("type") == t for m in moves.values()):
             warn("moves.json", "no move has type '%s'" % t)
 
-    map_count = check_maps(types, creatures)
+    map_count = check_maps(types, creatures, items)
 
     for line in warnings:
         print("warning  %s" % line)
     for line in errors:
         print("ERROR    %s" % line)
 
-    print("\n%d types, %d moves, %d creatures, %d map(s) -- %d error(s), %d warning(s)"
-          % (len(types), len(moves), len(creatures), map_count, len(errors), len(warnings)))
+    print("\n%d types, %d moves, %d creatures, %d item(s), %d map(s) -- %d error(s), %d warning(s)"
+          % (len(types), len(moves), len(creatures), len(items), map_count, len(errors), len(warnings)))
     return 1 if errors else 0
 
 

@@ -13,10 +13,12 @@ const MAX_STAGE := 6
 var creature: Creature = null
 var is_wild := false
 
-## Attunement's meter. Nothing drives it yet -- the Temperament rules arrive in
-## step 5 -- but it lives on the combatant rather than the battle so that it
-## belongs to a specific creature from the start.
+## Attunement's meter, 0-100. Only meaningful for a wild Combatant.
 var resonance := 0.0
+
+## Turns since Resonance last increased. A universal safety valve: whatever
+## the temperament, pushing the wrong action long enough ends the attempt.
+var stall_turns := 0
 
 var level: int:
 	get:
@@ -80,3 +82,9 @@ func log_name() -> String:
 	if is_wild:
 		return "The wild %s" % creature.display_name()
 	return creature.display_name()
+
+
+## Species' temperament, or "" if this combatant is not wild / has no species.
+func temperament() -> String:
+	var data := creature.species() if creature != null else null
+	return data.temperament if data != null else ""

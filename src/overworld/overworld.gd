@@ -13,6 +13,7 @@ const FADE_SECONDS := 0.28
 @onready var _map: GameMap = $Map
 @onready var _player: Player = $Player
 @onready var _dialogue: DialogueBox = $DialogueBox
+@onready var _shop: Node = $ShopMenu
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _fade: ColorRect = $FadeLayer/Fade
@@ -32,8 +33,11 @@ var _busy := false
 func _ready() -> void:
 	_rng.randomize()
 	_map.dialogue_requested.connect(_dialogue.show_pages)
-	_dialogue.opened.connect(_on_dialogue_opened)
-	_dialogue.closed.connect(_on_dialogue_closed)
+	_dialogue.opened.connect(_on_ui_opened)
+	_dialogue.closed.connect(_on_ui_closed)
+	_map.shop_requested.connect(_shop.open_with)
+	_shop.opened.connect(_on_ui_opened)
+	_shop.closed.connect(_on_ui_closed)
 
 	_player.global_position = _map.player_spawn_position()
 	_last_position = _player.global_position
@@ -124,12 +128,12 @@ func _fade_to(alpha: float) -> void:
 	await tween.finished
 
 
-func _on_dialogue_opened() -> void:
+func _on_ui_opened() -> void:
 	_player.input_enabled = false
 
 
-func _on_dialogue_closed() -> void:
-	# The dialogue box only ever opens while the overworld owns input, so it is
-	# safe to hand it straight back.
+func _on_ui_closed() -> void:
+	# Dialogue and the shop menu only ever open while the overworld owns
+	# input, so it is safe to hand it straight back.
 	_player.input_enabled = true
 	_last_position = _player.global_position

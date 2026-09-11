@@ -29,6 +29,16 @@
         "A seep of cold water, ringed with flat stones someone set there on purpose.",
         "Your creatures drink, and something in them settles."
       ]
+    },
+    {
+      "type": "shop",
+      "tile": [
+        22,
+        13
+      ],
+      "catalog": [
+        "tempering_draught"
+      ]
     }
   ],
   "tiles": [

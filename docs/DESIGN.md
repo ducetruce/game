@@ -45,6 +45,14 @@ state and one rules table in `data/`. Adding, removing or retuning a
 Temperament is a data edit. Replacing Attunement wholesale would mean
 rewriting the wild-encounter turn loop but nothing below it.
 
+**Update, step 5.** "No capture item" held for the core mechanic and still
+does — nothing here is decided or gated by an item. Building it surfaced a
+real problem (an over-levelled hit can faint a wild creature before Proud or
+Feral's conditions are even reachable) that needed a narrow, optional fix: a
+purchasable item that prevents a single hit from being lethal, nothing more.
+See § 13 for what it does, the design that was tried and rejected first, and
+why it does not reopen this decision.
+
 ---
 
 ## 2. Types: seven, sparse
@@ -472,17 +480,138 @@ than waiting.
 
 ---
 
+## 13. Attunement, implemented: Resonance, the stall clock, and the Tempering Draught
+
+Section 1 locked the shape of Attunement before any code existed. This is what
+building it actually required, including a real design problem simulation
+uncovered and the fix that survived a second round of scrutiny.
+
+**Resonance** is a float 0–100 on the wild `Combatant` (not the battle, not the
+species — it belongs to this specific encounter and resets to zero if the
+creature is met again later). Each temperament reads the fight differently:
+
+- **Skittish** gains Resonance only from `Still`. Any landed, damaging hit
+  resets it to zero outright.
+- **Proud** gains Resonance from a landed hit that is *not* super effective,
+  landed while the creature is still above 50% HP. `Still` reads as weakness
+  and costs Resonance. A super-effective hit while healthy reads as disrespect
+  and costs more.
+- **Feral** is passive: it gains Resonance on any turn its HP is at or below
+  30%, regardless of what the player did that turn, and loses a chunk if it
+  heals itself back above that line (tracked precisely — a real self-heal
+  effect, not just "took less damage than usual" — so a wild creature that
+  happens to know Mend can genuinely undo your progress).
+
+A single universal **stall clock** backs all three: any turn Resonance does
+not increase adds to a counter; six such turns and the creature breaks off
+(`Phase.FOE_FLED`). It resets the instant Resonance rises. This is what turns
+"push the wrong verb" from prose into a real fail state, and it is temperament-
+agnostic on purpose — one rule, everywhere, rather than three bespoke timers.
+
+Rules and flavour text live in `data/temperaments.json`, not code — the same
+choice made for the type chart and it holds for the same reason: the numbers
+above are precisely tunable without touching GDScript, and `tools/
+validate_data.py` checks every temperament has the exact flavour states the
+code actually looks up (a missing state fails loudly at validation time, not
+as a silently blank line mid-fight).
+
+### The one-shot problem, and the design that didn't survive contact
+
+Step 4 flagged a blocker: a sufficiently over-levelled hit can faint a wild
+creature outright, and both Proud (needs a landed hit) and Feral (needs low,
+not zero, HP) become mathematically impossible once that happens. The first
+fix proposed was a universal rule — **wild creatures simply cannot be reduced
+below 1 HP by the player, ever.** It was rejected in review, correctly: it
+quietly removed "fight a wild creature to defeat it" as a playstyle for every
+encounter, not just the mismatched ones, which is a far bigger change than the
+bug required.
+
+The shape that replaced it, at the user's suggestion: a **purchasable,
+consumable item** rather than a rule baked into all combat. This solves the
+scope problem (the fix is opt-in, default combat is untouched) but raises a
+sharper question — does an item that prevents death also just trivialize the
+fight? Simulating the first version of the item (again "cannot go below 1 HP,"
+now scoped to only-while-used-this-battle) confirmed exactly that: **Feral
+captures hit 100% success with zero attentiveness required**, because the
+first hit — however overkill — simultaneously satisfied "low HP" and "cannot
+die," leaving nothing left to manage.
+
+**The Tempering Draught, as shipped, caps a single hit's damage at 25% of the
+wild creature's max HP — for the rest of that battle. It does not prevent a
+death, it prevents a one-hit death.** Simulated head to head:
+
+| Scenario (L50 attacker vs. L10 wild) | Careless (always attacks) | Attentive (holds once fragile) |
+|---|---|---|
+| With Draught | 0% — still faints it | Skittish 100%, Feral 100%, **Proud 0%** |
+| No Draught | 0% (the original blocker) | Same, 0% either way |
+
+Two results matter. **Careless play still fails**, item or not — the Draught
+only stops an *instant* end, it does nothing to stop a creature being finished
+off over several hits if the player keeps swinging after it's already fragile.
+Buying the item does not remove the attention the fight requires. And **a
+badly over-levelled Proud creature is never capturable, Draught or not** — it
+always breaks off rather than being tamed. That falls out of the same 25% cap:
+a capped hit still crosses the "must stay above half HP" line in about two
+turns, which is not enough qualifying hits to fill the meter, whatever move is
+chosen. This was kept deliberately rather than patched further: overwhelming
+force should not be able to buy something whose whole temperament is about
+respect. The item buys freedom from *accidents*, never freedom from being
+outmatched.
+
+**The 25%-cap / 50%-healthy-line relationship is load-bearing and not
+self-enforcing.** Because the cap is exactly half of Proud's healthy threshold,
+a capped hit landed while healthy can never itself be lethal — the invariant
+that keeps "gained Resonance" and "fainted" from ever being decided by the same
+hit under Restrained play. Retuning either constant independently would break
+this silently; there is no code assertion for it, only this note and the
+simulation that depends on it.
+
+**A genuine race condition surfaced in review and was fixed before shipping,
+not after:** a single hit can, on paper, simultaneously be the hit that crosses
+the capture threshold *and* the hit that faints the target (resonance already
+near 100, no Draught in play, a hot damage roll). The resonance tick runs
+before the faint check every turn, so without a guard the faint check would
+silently overwrite a just-earned `ATTUNED` with `WON`. The fix makes capture
+win that race — a capture is never overwritten by a faint from the same blow —
+while a *stall-triggered flee* explicitly cannot fire on a hit that also
+fainted the target, so a creature that was actually defeated is never narrated
+as having fled and never silently loses its experience payout. Both directions
+of this race were reasoned through and fixed; neither showed up in the bulk
+simulation, because it requires resonance already near-maximum on the exact
+turn a kill lands — worth recording precisely because it is rare enough to
+hide.
+
+### The shop
+
+`data/items.json` holds one item today: the Tempering Draught, 20 coin, usable
+in battle. A `Shopkeeper` object type (`data/maps/*.json` → `"type": "shop"`,
+a `catalog` of item ids) opens a buy menu; `Inventory` (a new autoload,
+alongside `Content` and `Party`) tracks coin and owned items.
+
+**There is currently no way to earn coin.** Battles pay creature experience,
+not currency. The player is seeded with 60 coin and one free Draught (so the
+very first bracken encounter is attunable without a shop trip first — the shop
+is for restocking, not gatekeeping), and that is the entire economy for now.
+Building out income (a coin reward on defeating a wild creature outright, sold
+items, quest rewards) is explicitly future work, not solved here — adding it
+later does not touch anything built in this section, since `Inventory` already
+owns the coin balance as its own concern.
+
+---
+
 ## Open questions
 
 - Party size beyond the current cap of six, and whether there is storage.
 - A prompt for choosing which move to forget at level up.
 - Whether losing should cost anything at all.
-- How a pulled punch works, so an over-levelled party can still tame
-  (see § 11). Blocks Attunement.
 - What ends a battle in which both sides have exhausted every move.
 - Whether critical hits exist at all, given how much the design leans on
   readable, near-deterministic combat.
 - Whether Attunement is available against tamer-owned creatures, or wild only.
+- How the player earns coin (see § 13) -- the economy is currently one
+  starting purse and nothing else.
+- Whether the item catalog grows (healing items, held items) or the shop
+  stays this narrow.
 - Levelling: experience curve, or milestone-based growth.
 - Whether moves are learned by level, by taught item, or by Temperament.
 - Whether interactables should be solid by default, or whether some

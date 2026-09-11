@@ -45,6 +45,8 @@ func _run() -> void:
 
 	var wins := 0
 	var losses := 0
+	var attuned := 0
+	var foe_fled := 0
 	var stalled := 0
 	var turns := PackedInt32Array()
 	var shortest := TURN_CAP
@@ -75,6 +77,10 @@ func _run() -> void:
 			wins += 1
 		elif state.phase == BattleState.Phase.LOST:
 			losses += 1
+		elif state.phase == BattleState.Phase.ATTUNED:
+			attuned += 1
+		elif state.phase == BattleState.Phase.FOE_FLED:
+			foe_fled += 1
 		turns.append(guard)
 		shortest = mini(shortest, guard)
 		longest = maxi(longest, guard)
@@ -93,6 +99,8 @@ func _run() -> void:
 	lines.append("turns   [b]avg %.1f[/b]   min %d   max %d" % [average, shortest, longest])
 	lines.append("player  won %d  (%.0f%%)   lost %d" % [
 		wins, 100.0 * float(wins) / float(BATTLE_COUNT), losses])
+	lines.append("[color=#5d6878]this policy never Stills or uses items, so these are mostly accidental:[/color]")
+	lines.append("attuned %d   foe fled %d" % [attuned, foe_fled])
 
 	if stalled > 0:
 		lines.append("")

@@ -10,10 +10,12 @@ extends Node2D
 ## Raised when something in this map wants a line of text shown. The Overworld
 ## wires this to the dialogue box; the map itself owns no UI.
 signal dialogue_requested(pages: PackedStringArray)
+signal shop_requested(catalog: PackedStringArray)
 
 const TILE_SIZE := 16
 const SIGN_SCENE := preload("res://scenes/overworld/sign_post.tscn")
 const SPRING_SCENE := preload("res://scenes/overworld/rest_spring.tscn")
+const SHOPKEEPER_SCENE := preload("res://scenes/overworld/shopkeeper.tscn")
 
 @export_file("*.json") var map_data_path: String = ""
 
@@ -125,6 +127,8 @@ func _spawn_objects(objects: Array) -> void:
 				_spawn_sign(spec)
 			"spring":
 				_spawn_spring(spec)
+			"shop":
+				_spawn_shop(spec)
 			_:
 				push_warning("%s: unknown object type '%s'." % [map_data_path, kind])
 
@@ -143,6 +147,21 @@ func _spawn_spring(spec: Dictionary) -> void:
 	spring.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
 	spring.used.connect(_on_read_requested)
 	_objects.add_child(spring)
+
+
+func _spawn_shop(spec: Dictionary) -> void:
+	var keeper: Shopkeeper = SHOPKEEPER_SCENE.instantiate()
+	var catalog := PackedStringArray()
+	for item_id in spec.get("catalog", []):
+		catalog.append(str(item_id))
+	keeper.catalog = catalog
+	keeper.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
+	keeper.shop_requested.connect(_on_shop_requested)
+	_objects.add_child(keeper)
+
+
+func _on_shop_requested(catalog: PackedStringArray) -> void:
+	shop_requested.emit(catalog)
 
 
 func _on_read_requested(pages: PackedStringArray) -> void:

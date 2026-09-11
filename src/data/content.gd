@@ -8,8 +8,15 @@ extends Node
 const TYPE_CHART_PATH := "res://data/type_chart.json"
 const MOVES_PATH := "res://data/moves.json"
 const CREATURES_PATH := "res://data/creatures.json"
+const ITEMS_PATH := "res://data/items.json"
+const TEMPERAMENTS_PATH := "res://data/temperaments.json"
 
 var type_chart: TypeChart = null
+
+## Parsed straight from JSON rather than into a class -- it is one small
+## nested table (rules + flavor lines per temperament) with no behaviour of
+## its own, so a dedicated class would just be a pass-through.
+var temperaments: Dictionary = {}
 
 ## False if anything failed to parse. Callers that can degrade gracefully
 ## should check it; everything else can rely on the pushed errors.
@@ -18,6 +25,7 @@ var loaded := false
 var _moves := {}
 var _species := {}
 var _species_order := PackedStringArray()
+var _items := {}
 
 
 func _ready() -> void:
@@ -27,9 +35,11 @@ func _ready() -> void:
 func reload() -> void:
 	loaded = false
 	type_chart = null
+	temperaments.clear()
 	_moves.clear()
 	_species.clear()
 	_species_order = PackedStringArray()
+	_items.clear()
 
 	var chart_doc := _read_json(TYPE_CHART_PATH)
 	if chart_doc.is_empty():
@@ -65,6 +75,25 @@ func reload() -> void:
 		_species[species.id] = species
 		_species_order.append(species.id)
 
+	var items_doc := _read_json(ITEMS_PATH)
+	if not (items_doc.get("items", null) is Array):
+		push_error("%s: missing 'items' array." % ITEMS_PATH)
+		return
+	for entry in items_doc["items"]:
+		var item := ItemData.from_dict(entry, ITEMS_PATH)
+		if item == null:
+			return
+		if _items.has(item.id):
+			push_error("%s: duplicate item id '%s'." % [ITEMS_PATH, item.id])
+			return
+		_items[item.id] = item
+
+	var temperament_doc := _read_json(TEMPERAMENTS_PATH)
+	if not (temperament_doc.get("temperaments", null) is Dictionary):
+		push_error("%s: missing 'temperaments' object." % TEMPERAMENTS_PATH)
+		return
+	temperaments = temperament_doc
+
 	loaded = _cross_check()
 
 
@@ -93,6 +122,14 @@ func _cross_check() -> bool:
 		if move.type != TypeChart.NO_TYPE and not type_chart.has_type(move.type):
 			push_error("%s: '%s' has unknown type '%s'." % [MOVES_PATH, move_id, move.type])
 			ok = false
+	var rules: Dictionary = temperaments.get("temperaments", {})
+	for species_id in _species:
+		var species: SpeciesData = _species[species_id]
+		if not rules.has(species.temperament):
+			push_error("%s: '%s' has temperament '%s', which is not in %s." % [
+				CREATURES_PATH, species_id, species.temperament, TEMPERAMENTS_PATH,
+			])
+			ok = false
 	return ok
 
 
@@ -108,6 +145,30 @@ func get_species(species_id: String) -> SpeciesData:
 		push_error("No creature with id '%s'." % species_id)
 		return null
 	return _species[species_id]
+
+
+func get_item(item_id: String) -> ItemData:
+	if not _items.has(item_id):
+		push_error("No item with id '%s'." % item_id)
+		return null
+	return _items[item_id]
+
+
+func has_item(item_id: String) -> bool:
+	return _items.has(item_id)
+
+
+func item_ids() -> PackedStringArray:
+	var ids := PackedStringArray()
+	for item_id in _items:
+		ids.append(item_id)
+	return ids
+
+
+## Rules dictionary for one temperament from data/temperaments.json, or an
+## empty dictionary if it is unknown.
+func temperament_rules(temperament: String) -> Dictionary:
+	return temperaments.get("temperaments", {}).get(temperament, {})
 
 
 func has_species(species_id: String) -> bool:
