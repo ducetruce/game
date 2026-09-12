@@ -71,7 +71,7 @@ func _autosave() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUESTED:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_autosave()
 		get_tree().quit()
 

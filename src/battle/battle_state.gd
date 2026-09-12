@@ -185,7 +185,7 @@ func replace_active(index: int) -> PackedStringArray:
 
 func _perform(side: Side, action: Dictionary) -> void:
 	var me := _combatant(side)
-	var them := _combatant(Side.FOE if side == Side.PLAYER else Side.PLAYER)
+	var them := active() if side == Side.FOE else foe
 	var kind := str(action.get("kind", ACTION_MOVE))
 	var move_result := {}
 
