@@ -166,6 +166,9 @@ func _on_ui_opened() -> void:
 
 func _on_ui_closed() -> void:
 	# Dialogue and the shop menu only ever open while the overworld owns
-	# input, so it is safe to hand it straight back.
+	# input, so it is safe to hand it straight back. Locked briefly so the
+	# closing press -- or a mashed one right behind it -- cannot immediately
+	# reopen whatever the player is still standing in front of.
 	_player.input_enabled = true
+	_player.lock_interact()
 	_last_position = _player.global_position

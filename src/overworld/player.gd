@@ -26,10 +26,20 @@ const FRICTION := 900.0
 const PROBE_REACH := 10.0
 const PROBE_HEIGHT := -8.0
 
+## How long a fresh interact press is ignored right after a dialogue or menu
+## closes. Without this, closing a signpost's last page while still standing
+## in its interaction box is itself a fresh interact press -- reopening it
+## immediately, every time, for as long as the player keeps pressing the
+## button. Comfortably longer than one physics frame: real button-mashing is
+## fast enough to land a new press before the very next tick.
+const INTERACT_LOCK_SECONDS := 0.3
+
 ## Cleared while a dialogue box or menu owns input.
 var input_enabled := true
 
 var facing: Facing = Facing.DOWN
+
+var _interact_lock := 0.0
 
 @onready var _sprite: Sprite2D = $Sprite
 @onready var _probe: Area2D = $InteractionProbe
@@ -48,7 +58,8 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_probe.position = facing_vector() * PROBE_REACH + Vector2(0.0, PROBE_HEIGHT)
 
-	if input_enabled and Input.is_action_just_pressed("interact"):
+	_interact_lock = maxf(0.0, _interact_lock - delta)
+	if input_enabled and _interact_lock <= 0.0 and Input.is_action_just_pressed("interact"):
 		_try_interact()
 
 
@@ -86,3 +97,9 @@ func _try_interact() -> void:
 		if body.is_in_group("interactable") and body.has_method("interact"):
 			body.interact(self)
 			return
+
+
+## Suppresses the next interact press for a moment. Call this when handing
+## input back after a dialogue or menu closes.
+func lock_interact() -> void:
+	_interact_lock = INTERACT_LOCK_SECONDS
