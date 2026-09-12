@@ -38,11 +38,42 @@ func _ready() -> void:
 	_map.shop_requested.connect(_shop.open_with)
 	_shop.opened.connect(_on_ui_opened)
 	_shop.closed.connect(_on_ui_closed)
+	_map.checkpoint_reached.connect(_autosave)
 
-	_player.global_position = _map.player_spawn_position()
+	_player.global_position = _resolve_start_position()
 	_last_position = _player.global_position
 	_apply_camera_limits()
 	_fade.color.a = 0.0
+
+
+## Loads Party and Inventory from a save, if one exists, and returns where the
+## player should stand. Falls back to the map's own spawn point if there is no
+## save, the load failed, the save names a different map (no multi-map loading
+## exists yet to honour that), or the saved position no longer lands on
+## walkable ground -- the map may have changed shape since the save was
+## written, and standing a returning player inside a wall is worse than
+## ignoring a stale position.
+func _resolve_start_position() -> Vector2:
+	if not SaveGame.has_save:
+		return _map.player_spawn_position()
+
+	var world := SaveGame.load_and_apply()
+	var position: Variant = world.get("position", null)
+	var map_id := str(world.get("map_id", ""))
+
+	if map_id == _map.id and position is Vector2 and _map.is_walkable(position):
+		return position
+	return _map.player_spawn_position()
+
+
+func _autosave() -> void:
+	SaveGame.save(_map.id, _player.global_position)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUESTED:
+		_autosave()
+		get_tree().quit()
 
 
 func _physics_process(_delta: float) -> void:
@@ -110,6 +141,7 @@ func _on_battle_finished(outcome: int) -> void:
 
 	_last_position = _player.global_position
 	_tracker.start_grace()
+	_autosave()
 
 	await _fade_to(0.0)
 	_player.input_enabled = true

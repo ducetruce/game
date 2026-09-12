@@ -174,6 +174,11 @@ old saves must keep loading.
 **Reversal cost.** Low, and the version field exists precisely so this stays
 low.
 
+**Update, step 6.** Shipped as designed — see § 14 for the exact shape, the
+three autosave points that stand in for a save menu that does not exist yet,
+and the position/map_id fallback that protects against a save pointing at
+ground that no longer exists.
+
 ---
 
 ## 6. Art pipeline
@@ -599,6 +604,78 @@ owns the coin balance as its own concern.
 
 ---
 
+## 14. Save/load, implemented
+
+Section 5 locked the format before any code existed: versioned JSON in
+`user://`, hand-editable, with a migration boundary. This is what shipped.
+
+**File:** `user://savegame.json` — one save slot, no multiple files or save
+selection. A single Godot project's `user://` resolves to a real,
+platform-specific folder named after `config/name` (`Hollowmere`); the file
+can be opened in a text editor like any other JSON in this project.
+
+**Shape:**
+
+```json
+{
+  "save_version": 1,
+  "party": { "members": [ /* Creature.to_dict() rows */ ] },
+  "inventory": { "coin": 60, "items": { "tempering_draught": 1 } },
+  "world": { "map_id": "hollow_clearing", "position": [120.5, 84.0] }
+}
+```
+
+`Party` and `Inventory` serialise themselves — `SaveGame` calls into them
+rather than reaching into their internals, the same separation of concerns
+as everywhere else in the data layer. `SaveGame` owns only the file, the
+version number, and world placement, since no other system has a natural
+claim to "where is the player standing."
+
+**Position is stored exactly, not snapped to a tile** — free movement means
+the player's true position is already fractional, and rounding it on save
+would be a small, pointless lie. The cost is that a save can point at a
+position that is no longer valid if the map changes shape later (a wall gets
+added where a save was standing). Rather than trust the save blindly, the
+overworld checks `GameMap.is_walkable()` on the stored position before using
+it, and falls back to the map's normal spawn point if the check fails, or if
+the save names a different map than the one currently loaded (multi-map
+loading does not exist yet — `map_id` is recorded now specifically so this
+already works once it does, rather than being a field added later).
+
+**No save/load menu exists.** Given no title screen or pause menu exists yet
+either, building one just for this would be scope creep on top of scope
+creep. Instead, saving is automatic, at three points:
+
+1. **Using a rest spring** — thematically a natural checkpoint, and already
+   an existing interaction.
+2. **After every battle resolves** — win, loss, capture, or either side
+   fleeing. This is where the most state actually changes (HP, experience,
+   levels, captured creatures, consumed items), so it is the point most
+   worth not losing.
+3. **On the window being closed** (`NOTIFICATION_WM_CLOSE_REQUESTED`) — quit
+   always saves first.
+
+Loading is equally automatic: if `user://savegame.json` exists when the
+overworld starts, it is loaded in place of the seeded starting party.
+`Party` and `Inventory` each already seed sensible defaults when empty (the
+starting pair of creatures, the starting purse) — a save simply overwrites
+that default via the normal `from_dict` path, rather than needing an
+explicit "is this a new game" branch.
+
+**Migration.** `_migrate()` exists and is called on every load, but there is
+nothing to migrate yet at version 1 — it is scaffolding, not aspiration.
+Per the rule in § 5, `save_version` bumps only when a field is removed or
+its meaning changes; the first real bump gets one `if version < N:` block
+added to this function, and old saves keep loading through it.
+
+**What this does not cover.** There is one save slot, no manual save, and no
+way to start a fresh game without deleting the file by hand (`SaveGame.
+erase()` exists for this but nothing calls it yet — no menu exists to call
+it from). All three are UI gaps, not data-format gaps; the save file itself
+does not need to change shape to support any of them later.
+
+---
+
 ## Open questions
 
 - Party size beyond the current cap of six, and whether there is storage.
@@ -616,3 +693,6 @@ owns the coin balance as its own concern.
 - Whether moves are learned by level, by taught item, or by Temperament.
 - Whether interactables should be solid by default, or whether some
   (ground items, plaques) should be walkable and probed anyway.
+- A title screen and pause menu -- there is currently no UI shell at all,
+  which is also what stands between the save system and a manual save, a
+  "new game" option, or multiple save slots (see § 14).

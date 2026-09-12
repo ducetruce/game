@@ -11,6 +11,8 @@ extends Node2D
 ## wires this to the dialogue box; the map itself owns no UI.
 signal dialogue_requested(pages: PackedStringArray)
 signal shop_requested(catalog: PackedStringArray)
+## A rest spring was used. The overworld treats this as a save point.
+signal checkpoint_reached
 
 const TILE_SIZE := 16
 const SIGN_SCENE := preload("res://scenes/overworld/sign_post.tscn")
@@ -19,6 +21,10 @@ const SHOPKEEPER_SCENE := preload("res://scenes/overworld/shopkeeper.tscn")
 
 @export_file("*.json") var map_data_path: String = ""
 
+## Stable identifier saved alongside the player's position. Distinct from the
+## node/scene name so a map can be renamed or moved without invalidating
+## existing saves.
+var id := ""
 var display_name := ""
 var grid_size := Vector2i.ZERO
 
@@ -35,6 +41,7 @@ func _ready() -> void:
 	var data := _read_map_file()
 	if data.is_empty():
 		return
+	id = str(data.get("id", name))
 	display_name = str(data.get("display_name", name))
 	_player_start = _tile_from(data["player_start"])
 	_encounters = data.get("encounters", {})
@@ -61,6 +68,14 @@ func world_bounds() -> Rect2:
 ## Centre of a tile, which is where anything standing on it is placed.
 func tile_to_world(tile: Vector2i) -> Vector2:
 	return Vector2(tile) * TILE_SIZE + Vector2(TILE_SIZE, TILE_SIZE) * 0.5
+
+
+## False for solid terrain and for anything off the map. Used to sanity-check
+## a saved position before trusting it -- the map may have changed shape since
+## the save was written.
+func is_walkable(world_position: Vector2) -> bool:
+	var symbol := terrain_at(world_position)
+	return not symbol.is_empty() and not TileLegend.is_solid(symbol)
 
 
 # --- loading ---------------------------------------------------------------
@@ -145,8 +160,13 @@ func _spawn_spring(spec: Dictionary) -> void:
 	var spring: RestSpring = SPRING_SCENE.instantiate()
 	spring.pages = _to_string_array(spec.get("text", []))
 	spring.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
-	spring.used.connect(_on_read_requested)
+	spring.used.connect(_on_spring_used)
 	_objects.add_child(spring)
+
+
+func _on_spring_used(pages: PackedStringArray) -> void:
+	dialogue_requested.emit(pages)
+	checkpoint_reached.emit()
 
 
 func _spawn_shop(spec: Dictionary) -> void:

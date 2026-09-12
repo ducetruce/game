@@ -132,6 +132,20 @@ temperament. `data/items.json` holds the Tempering Draught's price and its
 per-hit damage cap. Re-run `tools/validate_data.py` after editing either; it
 checks every temperament has the flavour lines the code actually looks up.
 
+## Saving and loading
+
+There is no save menu yet — saving is automatic, at a rest spring, right
+after every battle resolves, and when you close the window. Loading is
+automatic too: if a save exists, it is used instead of the default starting
+party when the game boots.
+
+The save lives at `user://savegame.json`, which Godot resolves to a real
+folder on disk named after the project (`Hollowmere`) — on Linux that's
+typically `~/.local/share/godot/app_userdata/Hollowmere/`, on macOS
+`~/Library/Application Support/Godot/app_userdata/Hollowmere/`, on Windows
+`%APPDATA%\Godot\app_userdata\Hollowmere\`. It's plain JSON — open it in a
+text editor to see exactly what got saved, or delete it to start over.
+
 ## Build order
 
 1. ✅ Project setup — scaffolding, folder structure, git
@@ -139,4 +153,4 @@ checks every temperament has the flavour lines the code actually looks up.
 3. ✅ Creature data model
 4. ✅ Turn-based battle system
 5. ✅ Attunement (capture) mechanic
-6. ⬜ Save/load
+6. ✅ Save/load
