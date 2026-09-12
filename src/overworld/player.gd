@@ -10,8 +10,11 @@ extends CharacterBody2D
 ## Frame order in the sprite sheet matches these values exactly.
 enum Facing { DOWN, UP, LEFT, RIGHT }
 
-const WALK_SPEED := 58.0
-const RUN_SPEED := 104.0
+## First tuned blind, before the game had ever been played; bumped ~45%
+## after actual playtesting reported walking as sluggish. Crossing the base
+## 320px-wide viewport now takes about 3.8s walking, 2.1s running.
+const WALK_SPEED := 84.0
+const RUN_SPEED := 150.0
 ## High enough that input feels instant, low enough to take the edge off
 ## direction changes. Pure snap movement reads as slippery at this tile size.
 const ACCELERATION := 720.0
