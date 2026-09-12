@@ -28,9 +28,9 @@ EFFECT_KINDS = ("stat_stage", "heal")
 
 # Mirrors src/overworld/tile_legend.gd. Duplicated on purpose: the point of
 # this check is to catch the two drifting apart.
-WALKABLE_TILES = set("GgPpb")
-SOLID_TILES = set("WRTF")
-OBJECT_TYPES = ("sign", "spring", "shop")
+WALKABLE_TILES = set("GgPpbc")
+SOLID_TILES = set("WRTFHV")
+OBJECT_TYPES = ("sign", "spring", "shop", "npc", "warp")
 
 ITEM_EFFECT_KINDS = ("restrain_hit",)
 TEMPERAMENT_NAMES = ("skittish", "proud", "feral")
@@ -395,6 +395,12 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
     if not os.path.isdir(maps_dir):
         return 0
 
+    # Warps name other maps, which may not have been parsed yet if the
+    # target sorts later than the source (e.g. hollow_clearing -> village_
+    # square). So parsing and cross-map warp validation are separate passes:
+    # this dict is filled in the first and read in the second.
+    parsed: dict[str, dict] = {}
+
     checked = 0
     for filename in sorted(os.listdir(maps_dir)):
         if not filename.endswith(".json"):
@@ -412,6 +418,9 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
         if not isinstance(rows, list) or not rows:
             err(where, "'tiles' must be a non-empty array of row strings")
             continue
+
+        map_id = str(doc.get("id") or filename[: -len(".json")])
+        parsed[map_id] = {"where": where, "doc": doc, "rows": rows}
 
         width = len(rows[0])
         known = WALKABLE_TILES | SOLID_TILES
@@ -446,8 +455,12 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
                 continue
             if spec.get("type") not in OBJECT_TYPES:
                 err(where, "%s has unknown type '%s'" % (label, spec.get("type")))
+            obj_type = spec.get("type")
+            # A warp fires just by the player standing on its tile (unlike
+            # every other object type, which spawns a solid body there), so
+            # its tile must be walkable ground or the warp can never fire.
             walkable_at(spec.get("tile"), label + ".tile")
-            if spec.get("type") == "shop":
+            if obj_type == "shop":
                 catalog = spec.get("catalog")
                 if not isinstance(catalog, list) or not catalog:
                     err(where, "%s needs a non-empty 'catalog'" % label)
@@ -455,6 +468,19 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
                     for item_id in catalog:
                         if item_id not in items:
                             err(where, "%s catalog names unknown item '%s'" % (label, item_id))
+            elif obj_type == "npc":
+                tint = spec.get("tint")
+                if tint is not None and (
+                    not isinstance(tint, list) or len(tint) != 3
+                    or not all(isinstance(v, (int, float)) for v in tint)
+                ):
+                    err(where, "%s tint must be a [r, g, b] array of numbers" % label)
+            elif obj_type == "warp":
+                if not spec.get("target_map"):
+                    err(where, "%s needs a 'target_map'" % label)
+                if (not isinstance(spec.get("target_tile"), list)
+                        or len(spec.get("target_tile", [])) < 2):
+                    err(where, "%s target_tile must be an [x, y] pair" % label)
 
         encounters = doc.get("encounters", {})
         if not isinstance(encounters, dict):
@@ -500,6 +526,34 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
         walkable_seen = seen & WALKABLE_TILES
         if walkable_seen and walkable_seen <= set(encounters.keys()):
             warn(where, "every walkable tile on this map triggers encounters")
+
+    # Second pass: warps name another map by id and a tile within it. Both
+    # can only be checked now that every map file has been parsed.
+    for map_id, info in parsed.items():
+        where = info["where"]
+        for i, spec in enumerate(info["doc"].get("objects", [])):
+            if not isinstance(spec, dict) or spec.get("type") != "warp":
+                continue
+            label = "objects[%d]" % i
+            target_id = spec.get("target_map")
+            if not target_id:
+                continue  # already reported above
+            target = parsed.get(str(target_id))
+            if target is None:
+                err(where, "%s target_map '%s' does not exist" % (label, target_id))
+                continue
+            tile = spec.get("target_tile")
+            if not isinstance(tile, list) or len(tile) < 2:
+                continue  # already reported above
+            x, y = tile[0], tile[1]
+            target_rows = target["rows"]
+            if not (isinstance(x, int) and isinstance(y, int)
+                    and 0 <= y < len(target_rows) and 0 <= x < len(target_rows[y])):
+                err(where, "%s target_tile (%r, %r) is outside map '%s'"
+                    % (label, x, y, target_id))
+            elif target_rows[y][x] not in WALKABLE_TILES:
+                err(where, "%s target_tile (%d, %d) sits on solid tile '%s' in map '%s'"
+                    % (label, x, y, target_rows[y][x], target_id))
 
     return checked
 

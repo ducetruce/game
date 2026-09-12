@@ -1,7 +1,6 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/overworld/overworld.gd" id="1_overworld"]
-[ext_resource type="PackedScene" path="res://scenes/overworld/maps/hollow_clearing.tscn" id="2_map"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/player.tscn" id="3_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dialogue_box.tscn" id="4_dialogue"]
 [ext_resource type="PackedScene" path="res://scenes/ui/shop_menu.tscn" id="5_shop"]
@@ -10,7 +9,7 @@
 [node name="Overworld" type="Node2D"]
 script = ExtResource("1_overworld")
 
-[node name="Map" parent="." instance=ExtResource("2_map")]
+[node name="MapContainer" type="Node2D" parent="."]
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 

@@ -61,8 +61,10 @@ is in the chart, every creature's temperament has rules in
 `temperaments.json`), plus the structural property that each of the seven
 types has exactly two strengths and two weaknesses. It also checks every map:
 tile symbols, that the player start and every object sit on walkable ground,
-that encounter tables name real species with sane level ranges, and that shop
-catalogs name real items. Exits non-zero on error.
+that encounter tables name real species with sane level ranges, that shop
+catalogs name real items, and — checked across map files, since a warp names
+another one — that every warp's `target_map` exists and its `target_tile`
+lands on walkable ground there. Exits non-zero on error.
 
 To inspect the same data in-engine, open `scenes/debug/codex.tscn` and press
 **F6** (Run Current Scene). `W`/`S` cycles the creature, `A`/`D` the opponent.
@@ -76,6 +78,11 @@ and one free Tempering Draught. Walk into the dark, busy **bracken** — two
 fields, one southwest and one northeast — and you will be pulled into
 battles. The **spring** east of the path restores your party. The
 **shopkeeper** north on the path sells more Draughts.
+
+Follow the path north, through the gap in the tree line, to reach
+**Aldenmere**, a village with no encounters of its own — a safe stop with its
+own well (also a rest spring) and a few villagers to talk to. Walk back south
+through the same gap to return.
 
 ### Taming a wild creature
 
@@ -115,11 +122,24 @@ win rate, and whether any failed to terminate. `Z` re-runs with a new seed.
 
 ## Editing the map
 
-`data/maps/hollow_clearing.json` holds the tile grid as one string per row.
-The symbol table is in `src/overworld/tile_legend.gd`:
+Each area under `data/maps/*.json` holds a tile grid as one string per row,
+plus the objects placed on it. The symbol table is in
+`src/overworld/tile_legend.gd`:
 
-- Walkable: `G` grass, `g` tufted grass, `P` path, `p` worn path, `b` bracken
-- Solid: `W` water, `R` rock, `T` tree, `F` fence
+- Walkable: `G` grass, `g` tufted grass, `P` path, `p` worn path, `b` bracken,
+  `c` plaza
+- Solid: `W` water, `R` rock, `T` tree, `F` fence, `H` wall, `V` roof (put a
+  `V` row directly above a matching `H` row to get a two-tile building facade)
+
+The `objects` array places props on the grid: `sign` and `npc` show text,
+`spring` restores the party and doubles as a save point, `shop` opens a buy
+menu, and `warp` — invisible, no art — sends the player to a tile on another
+map when they walk onto it. Every map scene lives at
+`res://scenes/overworld/maps/<id>.tscn` and is loaded by that id; add a map
+by creating both the JSON and the matching scene (copy an existing one — the
+scene is just a `GameMap` root with `Ground`/`Obstacles` TileMapLayers and an
+`Objects` container, pointed at the new JSON via `map_data_path`), then link
+it in with a `warp` object on each side.
 
 Edit it in a text editor and re-run the game. This is temporary — see
 `docs/DESIGN.md` § 8 for when maps move into Godot's TileMapLayer editor.
@@ -155,3 +175,5 @@ text editor to see exactly what got saved, or delete it to start over.
 4. ✅ Turn-based battle system
 5. ✅ Attunement (capture) mechanic
 6. ✅ Save/load
+7. 🚧 Toward a workable alpha — a party screen, and a second map (Aldenmere)
+   connected by warps, so the world reads as a place rather than one field

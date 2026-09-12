@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/overworld/villager.gd" id="1_villager"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_villager"]
+size = Vector2(8, 12)
+
+[node name="Villager" type="StaticBody2D" groups=["interactable"]]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_villager")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -6)
+shape = SubResource("RectangleShape2D_villager")

@@ -16,7 +16,12 @@ const FADE_SECONDS := 0.28
 ## the very next press, every time. See Player.lock_interact().
 const MENU_LOCK_SECONDS := 0.3
 
-@onready var _map: GameMap = $Map
+## Map loaded when there is no save to say otherwise, and the fallback if a
+## save or a warp names a map id with no matching scene.
+const DEFAULT_MAP_ID := "hollow_clearing"
+const MAP_SCENE_PATH_FORMAT := "res://scenes/overworld/maps/%s.tscn"
+
+@onready var _map_container: Node2D = $MapContainer
 @onready var _player: Player = $Player
 @onready var _dialogue: DialogueBox = $DialogueBox
 @onready var _shop: Node = $ShopMenu
@@ -24,6 +29,12 @@ const MENU_LOCK_SECONDS := 0.3
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _fade: ColorRect = $FadeLayer/Fade
+
+## The map currently hosted under _map_container. Never a fixed scene-tree
+## child -- travelling between maps frees this and instantiates another, so
+## nothing outside _load_map may assume it stays the same node across a
+## warp.
+var _map: GameMap = null
 
 var _tracker := EncounterTracker.new()
 var _rng := RandomNumberGenerator.new()
@@ -41,40 +52,65 @@ var _menu_lock := 0.0
 
 func _ready() -> void:
 	_rng.randomize()
-	_map.dialogue_requested.connect(_dialogue.show_pages)
 	_dialogue.opened.connect(_on_ui_opened)
 	_dialogue.closed.connect(_on_ui_closed)
-	_map.shop_requested.connect(_shop.open_with)
 	_shop.opened.connect(_on_ui_opened)
 	_shop.closed.connect(_on_ui_closed)
 	_party_menu.opened.connect(_on_ui_opened)
 	_party_menu.closed.connect(_on_ui_closed)
-	_map.checkpoint_reached.connect(_autosave)
-
-	_player.global_position = _resolve_start_position()
-	_last_position = _player.global_position
-	_apply_camera_limits()
 	_fade.color.a = 0.0
 
+	var map_id := DEFAULT_MAP_ID
+	var start_position: Variant = null
+	if SaveGame.has_save:
+		var world := SaveGame.load_and_apply()
+		map_id = str(world.get("map_id", DEFAULT_MAP_ID))
+		start_position = world.get("position", null)
 
-## Loads Party and Inventory from a save, if one exists, and returns where the
-## player should stand. Falls back to the map's own spawn point if there is no
-## save, the load failed, the save names a different map (no multi-map loading
-## exists yet to honour that), or the saved position no longer lands on
-## walkable ground -- the map may have changed shape since the save was
-## written, and standing a returning player inside a wall is worse than
-## ignoring a stale position.
-func _resolve_start_position() -> Vector2:
-	if not SaveGame.has_save:
-		return _map.player_spawn_position()
+	_load_map(map_id, start_position)
 
-	var world := SaveGame.load_and_apply()
-	var position: Variant = world.get("position", null)
-	var map_id := str(world.get("map_id", ""))
 
-	if map_id == _map.id and position is Vector2 and _map.is_walkable(position):
-		return position
-	return _map.player_spawn_position()
+## Frees whatever map is currently loaded (if any) and instantiates `map_id`
+## in its place, positioning the player and re-fitting the camera. `target`
+## says where the player should end up: a Vector2i tile (as a warp gives),
+## a Vector2 world position (as a restored save gives), or null -- any of
+## these falls back to the new map's own spawn point if it does not land on
+## walkable ground, since a map can change shape after a save was written,
+## and a warp's target tile is only ever as trustworthy as the map data that
+## named it.
+func _load_map(map_id: String, target: Variant) -> void:
+	if _map != null:
+		# Godot disconnects a freed node's signals on its own, so there is
+		# nothing to unhook here first.
+		_map.queue_free()
+		_map = null
+
+	var scene_path := MAP_SCENE_PATH_FORMAT % map_id
+	if not ResourceLoader.exists(scene_path):
+		push_error("Overworld: no map scene for id '%s', falling back to '%s'." % [
+			map_id, DEFAULT_MAP_ID,
+		])
+		scene_path = MAP_SCENE_PATH_FORMAT % DEFAULT_MAP_ID
+
+	var map_scene: PackedScene = load(scene_path)
+	_map = map_scene.instantiate()
+	_map_container.add_child(_map)
+
+	_map.dialogue_requested.connect(_dialogue.show_pages)
+	_map.shop_requested.connect(_shop.open_with)
+	_map.checkpoint_reached.connect(_autosave)
+
+	var position := _map.player_spawn_position()
+	if target is Vector2i:
+		var candidate := _map.tile_to_world(target)
+		if _map.is_walkable(candidate):
+			position = candidate
+	elif target is Vector2 and _map.is_walkable(target):
+		position = target
+
+	_player.global_position = position
+	_last_position = position
+	_apply_camera_limits()
 
 
 func _autosave() -> void:
@@ -104,6 +140,11 @@ func _physics_process(delta: float) -> void:
 	if moved <= 0.0:
 		return
 
+	var warp := _map.warp_at(_player.global_position)
+	if not warp.is_empty():
+		_begin_warp(warp)
+		return
+
 	var symbol := _map.terrain_at(_player.global_position)
 	if _tracker.advance(moved, _map.encounter_chance(symbol), _rng):
 		_begin_encounter(symbol)
@@ -117,6 +158,25 @@ func _apply_camera_limits() -> void:
 	_camera.limit_bottom = int(bounds.end.y)
 	# Without this the camera lerps in from the origin on the first frame.
 	_camera.reset_smoothing()
+
+
+# --- travel ------------------------------------------------------------
+
+func _begin_warp(warp: Dictionary) -> void:
+	_busy = true
+	_player.input_enabled = false
+	await _fade_to(1.0)
+
+	_load_map(str(warp.get("target_map", "")), warp.get("target_tile", Vector2i.ZERO))
+	# A fresh map means a fresh grace period, same as stepping out of a
+	# battle -- otherwise the tracker can roll an encounter on the very tile
+	# the player just arrived on.
+	_tracker.start_grace()
+	_autosave()
+
+	await _fade_to(0.0)
+	_player.input_enabled = true
+	_busy = false
 
 
 # --- encounters ------------------------------------------------------------

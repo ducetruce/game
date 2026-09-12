@@ -18,6 +18,7 @@ const TILE_SIZE := 16
 const SIGN_SCENE := preload("res://scenes/overworld/sign_post.tscn")
 const SPRING_SCENE := preload("res://scenes/overworld/rest_spring.tscn")
 const SHOPKEEPER_SCENE := preload("res://scenes/overworld/shopkeeper.tscn")
+const VILLAGER_SCENE := preload("res://scenes/overworld/villager.tscn")
 
 @export_file("*.json") var map_data_path: String = ""
 
@@ -31,6 +32,10 @@ var grid_size := Vector2i.ZERO
 var _player_start := Vector2i.ZERO
 var _rows := PackedStringArray()
 var _encounters := {}
+## Vector2i tile -> {target_map: String, target_tile: Vector2i}. Walking onto
+## one of these tiles is what actually leaves the map, checked by the
+## overworld the same way it checks encounter terrain.
+var _warps := {}
 
 @onready var _ground: TileMapLayer = $Ground
 @onready var _obstacles: TileMapLayer = $Obstacles
@@ -144,6 +149,10 @@ func _spawn_objects(objects: Array) -> void:
 				_spawn_spring(spec)
 			"shop":
 				_spawn_shop(spec)
+			"npc":
+				_spawn_npc(spec)
+			"warp":
+				_register_warp(spec)
 			_:
 				push_warning("%s: unknown object type '%s'." % [map_data_path, kind])
 
@@ -184,23 +193,53 @@ func _on_shop_requested(catalog: PackedStringArray) -> void:
 	shop_requested.emit(catalog)
 
 
+func _spawn_npc(spec: Dictionary) -> void:
+	var villager: Villager = VILLAGER_SCENE.instantiate()
+	villager.pages = _to_string_array(spec.get("text", []))
+	villager.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
+	if spec.has("tint"):
+		var rgb: Array = spec["tint"]
+		if rgb.size() >= 3:
+			villager.tint = Color(float(rgb[0]), float(rgb[1]), float(rgb[2]))
+	villager.read_requested.connect(_on_read_requested)
+	_objects.add_child(villager)
+
+
+func _register_warp(spec: Dictionary) -> void:
+	var tile := _tile_from(spec.get("tile", [0, 0]))
+	_warps[tile] = {
+		"target_map": str(spec.get("target_map", "")),
+		"target_tile": _tile_from(spec.get("target_tile", [0, 0])),
+	}
+
+
 func _on_read_requested(pages: PackedStringArray) -> void:
 	dialogue_requested.emit(pages)
 
 
 # --- encounters ------------------------------------------------------------
 
-## Tile symbol under a world position, or "" if it is off the map.
-func terrain_at(world_position: Vector2) -> String:
-	var tile := Vector2i(
+func _tile_at(world_position: Vector2) -> Vector2i:
+	return Vector2i(
 		int(floorf(world_position.x / float(TILE_SIZE))),
 		int(floorf(world_position.y / float(TILE_SIZE))))
+
+
+## Tile symbol under a world position, or "" if it is off the map.
+func terrain_at(world_position: Vector2) -> String:
+	var tile := _tile_at(world_position)
 	if tile.y < 0 or tile.y >= _rows.size():
 		return ""
 	var row := _rows[tile.y]
 	if tile.x < 0 or tile.x >= row.length():
 		return ""
 	return row[tile.x]
+
+
+## {target_map, target_tile} if a warp sits under this world position, or {}
+## if there is none.
+func warp_at(world_position: Vector2) -> Dictionary:
+	return _warps.get(_tile_at(world_position), {})
 
 
 ## Per-check probability for this terrain. Zero means no encounters here.

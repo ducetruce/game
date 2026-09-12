@@ -1,7 +1,7 @@
 {
   "id": "hollow_clearing",
   "display_name": "The Hollow Clearing",
-  "_comment": "Tile grid, one string per row. See src/overworld/tile_legend.gd for the symbol table. Walkable: G g P p. Solid: W R T F.",
+  "_comment": "Tile grid, one string per row. See src/overworld/tile_legend.gd for the symbol table.",
   "player_start": [
     20,
     20
@@ -39,21 +39,45 @@
       "catalog": [
         "tempering_draught"
       ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        20,
+        0
+      ],
+      "target_map": "village_square",
+      "target_tile": [
+        20,
+        21
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        21,
+        0
+      ],
+      "target_map": "village_square",
+      "target_tile": [
+        21,
+        21
+      ]
     }
   ],
   "tiles": [
-    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-    "TTGGGggGGGGGGGgGggGGGGGGGGGGGGGGGGGGgGTT",
-    "TTGgWWWWgGGGGGGGGgGGGGGGbGbbgbGbbGgGGgTT",
-    "TTGWWWWWWGGgGGGGGGGGGGGGGbbbbbbbbbbbGGTT",
-    "TTGWWWWWWGgGgGGggGGGGGGgbbbbbbbbbbbGGGTT",
-    "TTGGWWWWGgGGGgGggGggGgGGbbbbbbbbbbbGGGTT",
-    "TTGgGGGGGGGggGGGggGGGGGGGbbbbbbbbbbbGGTT",
-    "TTGGGGGGGgGGGgRRRgGGGGggGbbbbbbbbbbbGGTT",
-    "TTGGGgGgGGGGGRRgGGGGGGGGbbgbGGbGGbGbGGTT",
-    "TTGGGGGGGgGGggGGgGGGGGGGggGGGgGGgGGGGgTT",
-    "TTGGGGGGgGGgGGGGGGGgGGGGgGGGGgGGGGGGgGTT",
+    "TTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTTTTTTTT",
+    "TTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTTTTTTTT",
+    "TTGGGggGGGGGGGgGggGGPpGGGGGGGGGGGGGGgGTT",
+    "TTGgWWWWgGGGGGGGGgGGpPGGbGbbgbGbbGgGGgTT",
+    "TTGWWWWWWGGgGGGGGGGGpPGGGbbbbbbbbbbbGGTT",
+    "TTGWWWWWWGgGgGGggGGGPPGgbbbbbbbbbbbGGGTT",
+    "TTGGWWWWGgGGGgGggGggPPGGbbbbbbbbbbbGGGTT",
+    "TTGgGGGGGGGggGGGggGGPpGGGbbbbbbbbbbbGGTT",
+    "TTGGGGGGGgGGGgRRRgGGppggGbbbbbbbbbbbGGTT",
+    "TTGGGgGgGGGGGRRgGGGGppGGbbgbGGbGGbGbGGTT",
+    "TTGGGGGGGgGGggGGgGGGPPGGggGGGgGGgGGGGgTT",
+    "TTGGGGGGgGGgGGGGGGGgpPGGgGGGGgGGGGGGgGTT",
     "TTGGggGgGGGGGGgGgGGgPPPPPpPPPPPppPGGGGTT",
     "TTGggGGGGGGGGGggGGGGPpPpPPpPPpPppPGGGGTT",
     "TTGGbbGbGggGbbGGbGGGPPgGGGFFFFFFFFGGGGTT",

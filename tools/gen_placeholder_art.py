@@ -129,16 +129,29 @@ def speckle(c: Canvas, ox: int, oy: int, base, hi, lo, seed: int, density: int =
 
 
 # --- tile atlas ------------------------------------------------------------
-# Layout is 5 columns x 2 rows. Row 0 is walkable, row 1 is solid. The tileset
+# Layout is 7 columns x 2 rows. Row 0 is walkable, row 1 is solid. The tileset
 # resource and src/overworld/tile_legend.gd both depend on these coordinates.
 
 BRACKEN = (52, 84, 54, A)
 BRACKEN_HI = (74, 112, 70, A)
 BRACKEN_LO = (36, 62, 42, A)
 
+PLAZA = (150, 140, 122, A)
+PLAZA_HI = (172, 162, 142, A)
+PLAZA_LO = (124, 114, 98, A)
+
+WALL = (168, 150, 122, A)
+WALL_HI = (188, 172, 144, A)
+WALL_LO = (138, 120, 96, A)
+TIMBER = (86, 62, 44, A)
+
+ROOF = (142, 76, 58, A)
+ROOF_HI = (168, 100, 78, A)
+ROOF_LO = (108, 54, 40, A)
+
 
 def build_atlas() -> Canvas:
-    c = Canvas(TILE * 5, TILE * 2)
+    c = Canvas(TILE * 7, TILE * 2)
 
     # (0,0) grass
     speckle(c, 0, 0, GRASS, GRASS_HI, GRASS_LO, 11)
@@ -189,6 +202,26 @@ def build_atlas() -> Canvas:
         c.rect(TILE * 4 + bx, by, 1, 4, BRACKEN_LO)
         c.set(TILE * 4 + bx - 1, by + 1, BRACKEN_HI)
         c.set(TILE * 4 + bx + 1, by + 1, BRACKEN_HI)
+
+    # (5,0) plaza -- walkable, flagstone village ground.
+    speckle(c, TILE * 5, 0, PLAZA, PLAZA_HI, PLAZA_LO, 71, density=70)
+    for gy in (0, 5, 10, 15):
+        c.rect(TILE * 5, gy, TILE, 1, PLAZA_LO)
+    for gx in (0, 5, 10, 15):
+        c.rect(TILE * 5 + gx, 0, 1, TILE, PLAZA_LO)
+
+    # (5,1) wall -- solid, a building's ground floor. Meant to sit directly
+    # below a (6,1) roof tile so a two-tile-tall facade reads as one building.
+    speckle(c, TILE * 5, TILE, WALL, WALL_HI, WALL_LO, 79, density=50)
+    c.rect(TILE * 5, TILE, TILE, 3, WALL_LO)  # foundation shadow
+    c.rect(TILE * 5 + 6, TILE + 5, 4, 11, TIMBER)  # door
+    c.rect(TILE * 5 + 2, TILE + 4, 2, 3, TIMBER)  # shutter, left
+    c.rect(TILE * 5 + 12, TILE + 4, 2, 3, TIMBER)  # shutter, right
+
+    # (6,1) roof -- solid, the upper half of the same building.
+    speckle(c, TILE * 6, TILE, ROOF, ROOF_HI, ROOF_LO, 83, density=90)
+    c.rect(TILE * 6, TILE, TILE, 2, ROOF_HI)  # ridge line
+    c.rect(TILE * 6, TILE + 14, TILE, 2, ROOF_LO)  # eave shadow
 
     return c
 

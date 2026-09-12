@@ -27,3 +27,7 @@ desktop.ini
 .idea/
 *.swp
 *~
+
+# Python bytecode from tools/ scripts ---------------------------------------
+__pycache__/
+*.pyc

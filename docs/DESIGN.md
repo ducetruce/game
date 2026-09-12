@@ -710,6 +710,109 @@ are armed there unconditionally rather than tracked per menu.
 
 ---
 
+## 16. World: connected region, implemented
+
+§ 3 committed to one continuous world, scene-per-map, joined by warp nodes at
+the edges. This is that seam actually built, plus the second map: a village
+north of the Hollow Clearing, reached through a gap carved in its tree
+border.
+
+**Warps are data, not nodes.** A map's JSON gains a `warp` object type --
+`{"type": "warp", "tile": [x, y], "target_map": "...", "target_tile": [x, y]}`
+-- registered by `GameMap` into a plain `Vector2i -> {target_map, target_tile}`
+dictionary (`_warps`) rather than spawning a scene node. Every other object
+type (`sign`, `spring`, `shop`, and the new `npc`) exists in the world as a
+body the player can bump into and read; a warp is not a thing to look at, it
+is a location that fires when walked onto, so `GameMap.warp_at(world_position)`
+is a lookup alongside `terrain_at()`, sharing the same tile-quantising helper
+(`_tile_at`). `Overworld._physics_process` checks it right after updating
+`_last_position`, the same place it already checks encounter terrain.
+
+**The map a player is standing on is no longer fixed at scene-tree
+authoring time.** `Overworld` used to hold `@onready var _map: GameMap =
+$Map`, a direct child instanced once in `overworld.tscn`. That cannot survive
+a second map, so `overworld.tscn` now holds an empty `MapContainer` node
+instead, and `Overworld._load_map(map_id, target)` frees whatever is
+currently loaded, instantiates `res://scenes/overworld/maps/<map_id>.tscn`
+under it, reconnects the three signals every map exposes
+(`dialogue_requested`, `shop_requested`, `checkpoint_reached` -- Godot
+disconnects a freed node's own signals automatically, so there is nothing to
+unhook first), and places the player. `target` is deliberately loose --
+`null`, a `Vector2i` tile (what a warp gives), or a `Vector2` world position
+(what a restored save gives) -- and falls back to the new map's own
+`player_spawn_position()` whenever the given target does not land on
+walkable ground, exactly as `is_walkable` already guarded a restored save
+against a map that changed shape (§ 14). `_ready()` now resolves `map_id`
+from the save (or the `hollow_clearing` default) *before* the first
+`_load_map` call, rather than validating a save's `map_id` against an
+already-fixed single map -- the thing that made a "which map has multiple
+maps" restructure necessary in the first place.
+
+**A warp transition reuses the battle transition's shape**, not just its
+`_fade_to` helper: set `_busy`, disable input, fade to black, do the actual
+work, fade back in, re-enable input -- and like a battle finishing, it calls
+`_tracker.start_grace()` (so the very first tile on the new map cannot roll
+an encounter before the player has taken a step) and `_autosave()` (so a
+crash right after arriving does not roll the player back to the map they
+just left). The two warp tiles for the Hollow Clearing <-> village gap are
+registered as a pair (`[20, y]` and `[21, y]` on each side) rather than one,
+because the gap carved in the tree border is two tiles wide and a player
+walking through the untested column would otherwise just stand in the
+opening -- caught by extending `tools/validate_data.py` (below), not by
+playtesting.
+
+**Two new tile symbols, `H` (wall) and `V` (roof), compose vertically into
+one building.** They are two ordinary solid tiles in the tileset -- nothing
+enforces the pairing at the data level -- but by convention a `V` row sits
+directly above the matching `H` row, so a two-tile-tall facade reads as one
+structure despite being two independent grid cells. There is no interior;
+these are props, the same as a `T` or `F`, until there is a reason to open a
+door. A third symbol, `c` (plaza), is ordinary walkable ground with its own
+flagstone art -- it exists because "a village has grass right up to the
+building walls" reads wrong, not because it behaves differently from `G`.
+
+**A fourth object type, `npc`, is conversation with no other behaviour.**
+`Villager` (`src/overworld/villager.gd`) is `SignPost` in every structural
+way that matters -- a `StaticBody2D` in the `interactable` group, placeholder
+art drawn in `_draw()`, a `read_requested` signal wired to the same
+`dialogue_requested` path -- but is kept as its own scene/script rather than
+reusing `SignPost` directly, because a sign reads as a prop and a villager
+reads as a person, and that distinction is likely to matter once NPCs need
+anything a signpost never will (schedules, quest state, a name in a text
+box). The one thing `Villager` has that `SignPost` does not is `tint`, a
+`Color` multiplied into its cloak so several villagers on one map do not all
+look identical without needing separate sprites yet.
+
+**`tools/validate_data.py` now validates warps across map files, not just
+within one.** Every other object type is checked against data that lives in
+the same file (a shop's catalog against `items.json`, a tile position against
+that map's own grid); a warp's `target_map` and `target_tile` name a
+*different* file, one that may not have been parsed yet if it sorts later
+alphabetically than the map naming it (`hollow_clearing.json` is checked
+before `village_square.json` exists to check against). `check_maps` is now
+two passes: the first parses every map file and validates everything
+self-contained, keeping each parsed document around; the second walks every
+warp and checks its `target_map` exists and its `target_tile` lands on
+walkable ground in *that* map's grid, only possible once every file has been
+read.
+
+**Verification.** Real-engine only, as established after the black-screen
+incident earlier in this project -- none of this was trusted from reading
+the code. A scripted `SceneTree` walkthrough drove a
+`Player` node onto the Hollow Clearing warp tile, confirmed `Overworld`
+switched to `village_square` and landed at the exact expected tile, then
+drove it onto the village's return warp and confirmed the trip back landed
+at the exact tile the Hollow Clearing warp's `target_tile` names -- both
+positions matched to the pixel once given enough real time for the two fade
+tweens to finish (the first version of this check read the position mid-fade
+and flagged a false failure, which is the tell for "increase the settle
+window," not "the warp landed in the wrong place"). The village map itself
+was screenshotted through a real `Camera2D` under Xvfb + llvmpipe: grass
+border, both building facades, the flagstone plaza, the three villagers, and
+the well all render as designed.
+
+---
+
 ## Open questions
 
 - Party size beyond the current cap of six, and whether there is storage.

@@ -16,15 +16,19 @@ const GROUND := {
 	"P": Vector2i(2, 0),  # packed dirt path
 	"p": Vector2i(3, 0),  # worn path
 	"b": Vector2i(4, 0),  # bracken -- walkable, and where encounters happen
+	"c": Vector2i(5, 0),  # plaza -- walkable, flagstone village ground
 }
 
 ## Painted into the Obstacles layer, which carries the tileset's physics layer.
-## Every solid tile still gets grass underneath so edges never show the void.
+## Every solid tile still gets grass underneath so edges never show the void,
+## though the two are fully opaque themselves and never actually let it show.
 const SOLID := {
 	"W": Vector2i(0, 1),  # water
 	"R": Vector2i(1, 1),  # rock
 	"T": Vector2i(2, 1),  # tree
 	"F": Vector2i(3, 1),  # fence
+	"H": Vector2i(5, 1),  # wall -- a building's ground floor
+	"V": Vector2i(6, 1),  # roof -- goes directly above an H tile
 }
 
 
