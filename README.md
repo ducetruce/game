@@ -20,6 +20,7 @@ No third-party assets, code, or creature designs.
 | `Shift` | Run |
 | `Z` / `Space` / `Enter` | Interact, advance text, confirm menus |
 | `X` / `Esc` | Cancel, back out of a menu |
+| `M` / `Tab` | Open/close the party screen |
 
 ## Project layout
 

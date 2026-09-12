@@ -676,6 +676,40 @@ does not need to change shape to support any of them later.
 
 ---
 
+## 15. The party screen, and a recurring bug class worth naming
+
+The first real playtest (§ 13–14 were both verified by proxy before this;
+this was the first time a human actually played) found the overworld had
+zero visibility into the party outside of battle — no nicknames, HP, levels,
+or moves. `PartyMenu` (`M` / `Tab` to open) is a **read-only viewer**, on
+purpose: no reordering, no releasing, no forgetting moves. Those all need
+their own confirmation flows and a reason to exist first; building them
+speculatively now would be guessing at UI nobody has asked for yet.
+
+**The same debounce bug showed up twice in one playtest, in two different
+places, and is worth naming as a class rather than two unrelated fixes.**
+Closing the signpost's dialogue is itself an "interact" press; with nothing
+to distinguish "the press that just closed this" from "a fresh press that
+should open something new," standing in the interaction zone made every
+subsequent interact — including ones mashed to skip text — immediately
+reopen it. Building `PartyMenu` reproduced the identical shape: closing it
+via the same `menu` key that opens it, with nothing to suppress the next
+press, meant mashing `menu` never actually closed it.
+
+**The rule, now applied in both places and worth keeping in mind for any
+future menu:** whenever a menu can be opened and closed by the *same
+action*, or opening one action can be triggered by standing somewhere the
+closing action of another leaves you, closing it must arm a brief lock
+(`Player.lock_interact()`, `Overworld._menu_lock`) before that action is
+live again. A single-frame guard is not enough — real button-mashing is
+fast enough to land a new press before the very next physics tick; both
+locks hold for 0.3s, long enough to swallow mashing, short enough that a
+deliberate press right after still works normally. `Overworld._on_ui_closed()`
+is the one place every menu's closing already flows through, so both locks
+are armed there unconditionally rather than tracked per menu.
+
+---
+
 ## Open questions
 
 - Party size beyond the current cap of six, and whether there is storage.
@@ -693,6 +727,7 @@ does not need to change shape to support any of them later.
 - Whether moves are learned by level, by taught item, or by Temperament.
 - Whether interactables should be solid by default, or whether some
   (ground items, plaques) should be walkable and probed anyway.
-- A title screen and pause menu -- there is currently no UI shell at all,
+- A title screen -- there is still no UI shell before the overworld itself,
   which is also what stands between the save system and a manual save, a
-  "new game" option, or multiple save slots (see § 14).
+  "new game" option, or multiple save slots (see § 14). The party screen
+  (§ 15) covers viewing the party; there is still no pause menu proper.

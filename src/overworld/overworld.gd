@@ -10,10 +10,17 @@ extends Node2D
 const BATTLE_SCENE := preload("res://scenes/battle/battle.tscn")
 const FADE_SECONDS := 0.28
 
+## Same debounce problem as Player's interact lock, same fix: closing the
+## party menu via the "menu" key is itself a "menu" press, and with nothing
+## to suppress it, mashing the key never lets the menu close -- it reopens on
+## the very next press, every time. See Player.lock_interact().
+const MENU_LOCK_SECONDS := 0.3
+
 @onready var _map: GameMap = $Map
 @onready var _player: Player = $Player
 @onready var _dialogue: DialogueBox = $DialogueBox
 @onready var _shop: Node = $ShopMenu
+@onready var _party_menu: Node = $PartyMenu
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _fade: ColorRect = $FadeLayer/Fade
@@ -29,6 +36,8 @@ var _last_position := Vector2.ZERO
 ## of the one already fading in.
 var _busy := false
 
+var _menu_lock := 0.0
+
 
 func _ready() -> void:
 	_rng.randomize()
@@ -38,6 +47,8 @@ func _ready() -> void:
 	_map.shop_requested.connect(_shop.open_with)
 	_shop.opened.connect(_on_ui_opened)
 	_shop.closed.connect(_on_ui_closed)
+	_party_menu.opened.connect(_on_ui_opened)
+	_party_menu.closed.connect(_on_ui_closed)
 	_map.checkpoint_reached.connect(_autosave)
 
 	_player.global_position = _resolve_start_position()
@@ -76,10 +87,16 @@ func _notification(what: int) -> void:
 		get_tree().quit()
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	_menu_lock = maxf(0.0, _menu_lock - delta)
+
 	if _busy or _battle != null or not _player.input_enabled:
 		# Keep the anchor current so pausing does not bank distance.
 		_last_position = _player.global_position
+		return
+
+	if _menu_lock <= 0.0 and Input.is_action_just_pressed("menu"):
+		_party_menu.open_menu()
 		return
 
 	var moved := _player.global_position.distance_to(_last_position)
@@ -165,10 +182,12 @@ func _on_ui_opened() -> void:
 
 
 func _on_ui_closed() -> void:
-	# Dialogue and the shop menu only ever open while the overworld owns
-	# input, so it is safe to hand it straight back. Locked briefly so the
-	# closing press -- or a mashed one right behind it -- cannot immediately
-	# reopen whatever the player is still standing in front of.
+	# Dialogue, the shop, and the party menu only ever open while the
+	# overworld owns input, so it is safe to hand it straight back. Both
+	# locks are armed regardless of which action actually closed things --
+	# cheap, and it covers every case uniformly rather than tracking which
+	# key triggered which close.
 	_player.input_enabled = true
 	_player.lock_interact()
+	_menu_lock = MENU_LOCK_SECONDS
 	_last_position = _player.global_position
