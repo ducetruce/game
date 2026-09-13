@@ -9,6 +9,7 @@ extends CanvasLayer
 signal opened
 signal closed
 signal party_requested
+signal bag_requested
 signal save_requested
 signal quit_to_title_requested
 
@@ -19,9 +20,9 @@ const COLOR_GOOD := "6fae74"
 const COLOR_BAD := "c4614f"
 const COLOR_COIN := "c8a94e"
 
-enum Entry { RESUME, PARTY, SAVE, QUIT }
+enum Entry { RESUME, PARTY, BAG, SAVE, QUIT }
 
-const ENTRIES := [Entry.RESUME, Entry.PARTY, Entry.SAVE, Entry.QUIT]
+const ENTRIES := [Entry.RESUME, Entry.PARTY, Entry.BAG, Entry.SAVE, Entry.QUIT]
 
 var _cursor := 0
 
@@ -98,6 +99,9 @@ func _choose() -> void:
 			# over, so input must not go back to the player in between.
 			_hide_panel()
 			party_requested.emit()
+		Entry.BAG:
+			_hide_panel()
+			bag_requested.emit()
 		Entry.SAVE:
 			save_requested.emit()
 		Entry.QUIT:
@@ -127,6 +131,8 @@ func _label_for(entry: int) -> String:
 			return "Resume"
 		Entry.PARTY:
 			return "Party"
+		Entry.BAG:
+			return "Bag"
 		Entry.SAVE:
 			return "Save"
 		_:

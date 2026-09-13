@@ -1146,6 +1146,42 @@ listed below rather than solved here.
 
 ---
 
+## 23. The bag, and why the revive is not a battle item
+
+§ 20 said the catalog grows and unblocked the revive. Building it turned up a
+hole underneath: **every item in the game was unreachable outside a fight**.
+There was no bag. That was survivable while both items were battle items, and
+it is not survivable for a revive, because a fainted creature is never the
+active one -- there was nowhere for the effect to point.
+
+**The revive is deliberately `usable_in_battle: false`,** and the validator
+now rejects one that is not. I had written in § 20 that losing having a cost
+spent the objection to revives; working it through, that was too quick. A
+revive used mid-fight does not soften the defeat penalty, it *prevents the
+defeat*, so the 5-10% is never charged at all. Out of battle it is what it
+should be: a convenience that saves a walk back to a spring, bought with coin
+the player earned, after the loss has already been paid for.
+
+**So the bag exists**, opened from the pause menu: pick an item, then pick who
+it goes on. It offers only what can do something out here -- a Tempering
+Draught is real and owned and simply not listed, because its effect is a
+statement about an ongoing battle. The party list is shown whole with
+inapplicable rows greyed rather than filtered out, since a list that changes
+shape depending on the item is harder to read than one that is always the
+same list.
+
+**Refusals come before the charge is spent**, the same rule as § 19's: using
+a revive on someone standing, or a salve on someone fainted or unhurt, says
+so and costs nothing. That rule has now been worth applying three times, and
+is the sort of thing worth doing by default rather than per item.
+
+**The pause menu grew a row and needed a taller panel** -- five entries in a
+box sized for four, which is the second time in two sections that a menu
+outgrew its panel. Worth checking the geometry whenever a row is added; the
+symptom is invisible in code and obvious in a screenshot.
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
@@ -1157,8 +1193,10 @@ decisions to make, plus what has not been reached yet.
   and all want a session of actual play to judge.
 - Relearning a move that was declined at level-up (§ 22). Declining is
   permanent today, and there is no tutor to undo it.
-- Which items the catalog grows by, beyond the revive that § 20 unblocked.
-  Held items in particular imply an equip step that does not exist.
+- Which items the catalog grows by beyond the Waking Root (§ 23). Held items
+  in particular imply an equip step that does not exist.
+- Whether the bag should be reachable from the battle's Item menu too, sharing
+  one list rather than two rules about what is usable where.
 - What a second area's coin bracket should be, once there is one with
   encounters in it -- Aldenmere has none.
 - Where storage is accessed from, and whether a full party sends a newly

@@ -19,7 +19,7 @@ No third-party assets, code, or creature designs.
 | `WASD` / arrows | Move (free 8-directional) |
 | `Shift` | Run |
 | `Z` / `Space` / `Enter` | Interact, advance text, confirm menus |
-| `X` / `Esc` | Back out of a menu — or, in the overworld, pause (resume / party / save / quit to title) |
+| `X` / `Esc` | Back out of a menu — or, in the overworld, pause (resume / party / bag / save / quit to title) |
 | `M` / `Tab` | Open/close the party screen |
 
 ## Project layout
@@ -178,6 +178,11 @@ percentage. Re-run `tools/validate_data.py` after editing either; it
 checks every temperament has the flavour lines the code actually looks up.
 
 ## Saving and loading
+
+The pause menu also holds your **Bag** — items you can use outside a fight.
+The **Waking Root**, sold nowhere yet but carryable, brings a fainted
+creature back at half health; the Knitbone Salve works out here too. A
+Tempering Draught is not offered, since it only means something mid-battle.
 
 Saving is automatic at a rest spring, right after every battle resolves,
 and when you close the window. You can also save on demand from the pause

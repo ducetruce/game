@@ -4,10 +4,12 @@ extends RefCounted
 
 const EFFECT_RESTRAIN_HIT := "restrain_hit"
 const EFFECT_HEAL := "heal"
+const EFFECT_REVIVE := "revive"
 
-## Every effect kind BattleState._do_item knows how to apply. An item naming
-## anything else is rejected at load rather than failing silently mid-battle.
-const EFFECT_KINDS := [EFFECT_RESTRAIN_HIT, EFFECT_HEAL]
+## Every effect kind something knows how to apply -- restrain_hit only in a
+## battle, heal in either, revive only outside one. An item naming anything
+## else is rejected at load rather than failing silently when it is used.
+const EFFECT_KINDS := [EFFECT_RESTRAIN_HIT, EFFECT_HEAL, EFFECT_REVIVE]
 
 var id := ""
 var display_name := ""

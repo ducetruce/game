@@ -28,6 +28,7 @@ const TITLE_SCENE := "res://scenes/ui/title_screen.tscn"
 @onready var _shop: Node = $ShopMenu
 @onready var _party_menu: Node = $PartyMenu
 @onready var _pause_menu: Node = $PauseMenu
+@onready var _bag_menu: Node = $BagMenu
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _fade: ColorRect = $FadeLayer/Fade
@@ -51,9 +52,9 @@ var _busy := false
 
 var _menu_lock := 0.0
 
-## Set while the party screen was opened from the pause menu, so closing it
-## goes back there instead of dropping the player into the world.
-var _party_from_pause := false
+## Set while a screen was opened *from* the pause menu, so closing it goes
+## back there instead of dropping the player into the world.
+var _returns_to_pause := false
 
 
 func _ready() -> void:
@@ -63,10 +64,13 @@ func _ready() -> void:
 	_shop.opened.connect(_on_ui_opened)
 	_shop.closed.connect(_on_ui_closed)
 	_party_menu.opened.connect(_on_ui_opened)
-	_party_menu.closed.connect(_on_party_closed)
+	_party_menu.closed.connect(_on_sub_screen_closed)
+	_bag_menu.opened.connect(_on_ui_opened)
+	_bag_menu.closed.connect(_on_sub_screen_closed)
 	_pause_menu.opened.connect(_on_ui_opened)
 	_pause_menu.closed.connect(_on_ui_closed)
 	_pause_menu.party_requested.connect(_on_pause_party_requested)
+	_pause_menu.bag_requested.connect(_on_pause_bag_requested)
 	_pause_menu.save_requested.connect(_on_pause_save_requested)
 	_pause_menu.quit_to_title_requested.connect(_on_pause_quit_requested)
 	_fade.color.a = 0.0
@@ -144,13 +148,21 @@ func _on_pause_party_requested() -> void:
 	if not Party.has_any():
 		_pause_menu.open_menu()
 		return
-	_party_from_pause = true
+	_returns_to_pause = true
 	_party_menu.open_menu()
 
 
-func _on_party_closed() -> void:
-	if _party_from_pause:
-		_party_from_pause = false
+func _on_pause_bag_requested() -> void:
+	_returns_to_pause = true
+	_bag_menu.open_menu()
+
+
+## Shared by the party and bag screens: either can be reached straight from
+## the world (the party screen has its own key) or from the pause menu, and
+## closing has to go back wherever it came from.
+func _on_sub_screen_closed() -> void:
+	if _returns_to_pause:
+		_returns_to_pause = false
 		_pause_menu.open_menu()
 		return
 	_on_ui_closed()
