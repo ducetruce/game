@@ -29,6 +29,7 @@ const TITLE_SCENE := "res://scenes/ui/title_screen.tscn"
 @onready var _party_menu: Node = $PartyMenu
 @onready var _pause_menu: Node = $PauseMenu
 @onready var _bag_menu: Node = $BagMenu
+@onready var _storage_menu: Node = $StorageMenu
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _fade: ColorRect = $FadeLayer/Fade
@@ -67,6 +68,8 @@ func _ready() -> void:
 	_party_menu.closed.connect(_on_sub_screen_closed)
 	_bag_menu.opened.connect(_on_ui_opened)
 	_bag_menu.closed.connect(_on_sub_screen_closed)
+	_storage_menu.opened.connect(_on_ui_opened)
+	_storage_menu.closed.connect(_on_ui_closed)
 	_pause_menu.opened.connect(_on_ui_opened)
 	_pause_menu.closed.connect(_on_ui_closed)
 	_pause_menu.party_requested.connect(_on_pause_party_requested)
@@ -120,6 +123,7 @@ func _load_map(map_id: String, target: Variant) -> void:
 
 	_map.dialogue_requested.connect(_dialogue.show_pages)
 	_map.shop_requested.connect(_shop.open_with)
+	_map.storage_requested.connect(_storage_menu.open_menu)
 	_map.checkpoint_reached.connect(_autosave)
 
 	var position := _map.player_spawn_position()

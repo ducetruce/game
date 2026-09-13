@@ -30,7 +30,7 @@ EFFECT_KINDS = ("stat_stage", "heal")
 # this check is to catch the two drifting apart.
 WALKABLE_TILES = set("GgPpbc")
 SOLID_TILES = set("WRTFHV")
-OBJECT_TYPES = ("sign", "spring", "shop", "npc", "warp")
+OBJECT_TYPES = ("sign", "spring", "shop", "npc", "shrine", "warp")
 
 # Mirrors ItemData.EFFECT_KINDS, which is what BattleState._do_item can
 # actually apply. Duplicated on purpose, same as the tile legend: the point is

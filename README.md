@@ -96,6 +96,11 @@ selling the **Knitbone Salve**, which heals mid-battle and is the one thing
 the clearing's shopkeeper does not stock. Walk back south through the same
 gap to return.
 
+The **shrine** on the east side of the plaza is where creatures you are not
+carrying wait. You can hold six; the rest are kept there, and the shrine is
+the only place to swap them, so choose before you set out. Tame something
+with a full party and it goes to the shrine rather than slipping away.
+
 ### Taming a wild creature
 
 Battle it. Every wild creature has a hidden Temperament that tells you how to
@@ -156,8 +161,8 @@ plus the objects placed on it. The symbol table is in
 rolled uniformly; leave it out for an area with no encounters. The `objects`
 array places props on the grid: `sign` and `npc` show text,
 `spring` restores the party and doubles as a save point, `shop` opens a buy
-menu, and `warp` — invisible, no art — sends the player to a tile on another
-map when they walk onto it. Every map scene lives at
+menu, `shrine` opens creature storage, and `warp` — invisible, no art — sends
+the player to a tile on another map when they walk onto it. Every map scene lives at
 `res://scenes/overworld/maps/<id>.tscn` and is loaded by that id; add a map
 by creating both the JSON and the matching scene (copy an existing one — the
 scene is just a `GameMap` root with `Ground`/`Obstacles` TileMapLayers and an

@@ -1,0 +1,91 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/storage_menu.gd" id="1_storage"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_box"]
+bg_color = Color(0.0705882, 0.0823529, 0.105882, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.427451, 0.470588, 0.541176, 1)
+
+[node name="StorageMenu" type="CanvasLayer"]
+layer = 3
+script = ExtResource("1_storage")
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 6.0
+offset_top = 8.0
+offset_right = 314.0
+offset_bottom = 172.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Title" type="Label" parent="Panel"]
+offset_left = 6.0
+offset_top = 4.0
+offset_right = 296.0
+offset_bottom = 16.0
+theme_override_colors/font_color = Color(0.85098, 0.658824, 0.360784, 1)
+theme_override_font_sizes/font_size = 8
+text = "The Shrine"
+horizontal_alignment = 1
+
+[node name="Separator" type="ColorRect" parent="Panel"]
+offset_left = 6.0
+offset_top = 19.0
+offset_right = 296.0
+offset_bottom = 20.0
+color = Color(0.427451, 0.470588, 0.541176, 0.6)
+
+[node name="PartyHeading" type="Label" parent="Panel"]
+offset_left = 6.0
+offset_top = 24.0
+offset_right = 146.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.364706, 0.407843, 0.470588, 1)
+theme_override_font_sizes/font_size = 8
+text = "Carried"
+
+[node name="PartyList" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 38.0
+offset_right = 150.0
+offset_bottom = 128.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="Divider" type="ColorRect" parent="Panel"]
+offset_left = 152.0
+offset_top = 24.0
+offset_right = 153.0
+offset_bottom = 128.0
+color = Color(0.427451, 0.470588, 0.541176, 0.4)
+
+[node name="StoredHeading" type="Label" parent="Panel"]
+offset_left = 158.0
+offset_top = 24.0
+offset_right = 296.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.364706, 0.407843, 0.470588, 1)
+theme_override_font_sizes/font_size = 8
+text = "Kept"
+
+[node name="StoredList" type="RichTextLabel" parent="Panel"]
+offset_left = 158.0
+offset_top = 38.0
+offset_right = 302.0
+offset_bottom = 140.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="Footer" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 144.0
+offset_right = 302.0
+offset_bottom = 158.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8

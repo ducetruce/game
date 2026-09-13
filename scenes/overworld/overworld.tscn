@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://src/overworld/overworld.gd" id="1_overworld"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/player.tscn" id="3_player"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/party_menu.tscn" id="6_party"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="7_pause"]
 [ext_resource type="PackedScene" path="res://scenes/ui/bag_menu.tscn" id="8_bag"]
+[ext_resource type="PackedScene" path="res://scenes/ui/storage_menu.tscn" id="9_storage"]
 
 [node name="Overworld" type="Node2D"]
 script = ExtResource("1_overworld")
@@ -24,6 +25,8 @@ script = ExtResource("1_overworld")
 [node name="PauseMenu" parent="." instance=ExtResource("7_pause")]
 
 [node name="BagMenu" parent="." instance=ExtResource("8_bag")]
+
+[node name="StorageMenu" parent="." instance=ExtResource("9_storage")]
 
 [node name="BattleLayer" type="CanvasLayer" parent="."]
 layer = 2

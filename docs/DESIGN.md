@@ -1182,6 +1182,51 @@ symptom is invisible in code and obvious in a screenshot.
 
 ---
 
+## 24. Storage, and the shrine that holds it
+
+§ 20 said storage exists on the Pokemon model. It is reached at a **standing
+stone in Aldenmere** and nowhere else -- not the pause menu.
+
+**Somewhere, not anywhere.** Having to walk back is the whole point: it makes
+the six you are carrying a commitment rather than a loadout re-picked before
+every fight, and it gives the village a second reason to exist beyond the
+salve stall (§ 19). It also makes a full party a real decision out in the
+field rather than a menu away from being undone.
+
+**A flat list, not numbered boxes.** Boxes are Pokemon's answer to a thousand
+species and a 1996 memory budget. The function they serve -- somewhere to put
+what the party cannot hold -- is a list, and the shrine's window scrolls
+rather than paging by hand. Partitioning can be added later without changing
+what is stored or how it is saved.
+
+**The one rule worth enforcing is that you cannot leave with nothing.**
+Depositing your last creature is refused; everything else is allowed,
+including walking out with a party that is entirely fainted, which the
+overworld already handles by refusing to start an encounter. Rules that guard
+against states the game already handles are just places for the two to
+disagree later.
+
+**Storage fixed a creature being destroyed.** Attuning with a full party used
+to say "there is no room to carry it yet, and it slips away regardless" --
+the player did everything right and lost the creature. It now goes to the
+shrine. That was listed as an open question and is answered by the feature
+that made it answerable.
+
+**The save gained a `storage` block with no version bump**, per § 5's rule:
+an added field with a safe default does not need one. A save written before
+the shrine existed simply has no block, which reads as empty storage, which
+is exactly right.
+
+**Two things bit, both familiar.** The enum quirk from § 21 returned in a new
+costume: an enum named `Side` in the storage menu collided with
+`BattleState.Side`, and GDScript then refused to assign the script's own enum
+to a variable annotated with it. Renamed to `Pane` and left inferred. And the
+refusal messages all rendered in the success colour, because one `_notice`
+string carried both -- a footer that looks like confirmation whatever it says
+is worse than no footer.
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
@@ -1199,8 +1244,7 @@ decisions to make, plus what has not been reached yet.
   one list rather than two rules about what is usable where.
 - What a second area's coin bracket should be, once there is one with
   encounters in it -- Aldenmere has none.
-- Where storage is accessed from, and whether a full party sends a newly
-  attuned creature to a box rather than letting it slip away (it currently
-  slips away).
 - Multiple save slots, deferred in § 20 rather than rejected.
+- Whether storage should ever be partitioned into boxes, which only matters
+  once anyone fills 60 slots (§ 24).
 - Tamer battles, which Attunement is now explicitly not part of.

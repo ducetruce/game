@@ -11,6 +11,8 @@ extends Node2D
 ## wires this to the dialogue box; the map itself owns no UI.
 signal dialogue_requested(pages: PackedStringArray)
 signal shop_requested(catalog: PackedStringArray)
+## A shrine was used. The overworld opens storage; the map knows nothing of it.
+signal storage_requested
 ## A rest spring was used. The overworld treats this as a save point.
 signal checkpoint_reached
 
@@ -19,6 +21,7 @@ const SIGN_SCENE := preload("res://scenes/overworld/sign_post.tscn")
 const SPRING_SCENE := preload("res://scenes/overworld/rest_spring.tscn")
 const SHOPKEEPER_SCENE := preload("res://scenes/overworld/shopkeeper.tscn")
 const VILLAGER_SCENE := preload("res://scenes/overworld/villager.tscn")
+const SHRINE_SCENE := preload("res://scenes/overworld/shrine.tscn")
 
 @export_file("*.json") var map_data_path: String = ""
 
@@ -156,6 +159,8 @@ func _spawn_objects(objects: Array) -> void:
 				_spawn_shop(spec)
 			"npc":
 				_spawn_npc(spec)
+			"shrine":
+				_spawn_shrine(spec)
 			"warp":
 				_register_warp(spec)
 			_:
@@ -208,6 +213,17 @@ func _spawn_npc(spec: Dictionary) -> void:
 			villager.tint = Color(float(rgb[0]), float(rgb[1]), float(rgb[2]))
 	villager.read_requested.connect(_on_read_requested)
 	_objects.add_child(villager)
+
+
+func _spawn_shrine(spec: Dictionary) -> void:
+	var shrine: Shrine = SHRINE_SCENE.instantiate()
+	shrine.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
+	shrine.storage_requested.connect(_on_storage_requested)
+	_objects.add_child(shrine)
+
+
+func _on_storage_requested() -> void:
+	storage_requested.emit()
 
 
 func _register_warp(spec: Dictionary) -> void:

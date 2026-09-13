@@ -512,7 +512,11 @@ func _attune() -> void:
 	log_lines.append("Something in %s gives way, and settles toward you." % foe.creature.display_name())
 	phase = Phase.ATTUNED
 	if not Party.add(foe.creature):
-		log_lines.append("There is no room to carry it yet, and it slips away regardless.")
+		# Before the shrine existed this is where a creature was lost outright.
+		if Storage.deposit(foe.creature):
+			log_lines.append("There is no room to carry it. It will be waiting at the shrine.")
+		else:
+			log_lines.append("There is no room anywhere for it, and it slips away regardless.")
 	# Paid even when there was no room: the encounter still resolved, and the
 	# player has no way to make space mid-battle to avoid the loss.
 	_grant_coin()

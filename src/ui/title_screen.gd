@@ -127,6 +127,7 @@ func _leave_confirm() -> void:
 func _begin_new_game() -> void:
 	SaveGame.erase()
 	Party.reset_for_new_game()
+	Storage.reset_for_new_game()
 	Inventory.reset_for_new_game()
 	_enter_overworld()
 

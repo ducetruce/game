@@ -85,6 +85,13 @@
       ]
     },
     {
+      "type": "shrine",
+      "tile": [
+        26,
+        13
+      ]
+    },
+    {
       "type": "warp",
       "tile": [
         20,

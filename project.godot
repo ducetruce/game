@@ -20,6 +20,9 @@ Content="*res://src/data/content.gd"
 ; Must come after Content: seeding the starting party needs species data.
 Party="*res://src/data/party.gd"
 Inventory="*res://src/data/inventory.gd"
+
+; Must come after Content too: rebuilding a stored creature needs species data.
+Storage="*res://src/data/storage.gd"
 SaveGame="*res://src/data/save_game.gd"
 
 [display]

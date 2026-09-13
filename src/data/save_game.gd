@@ -31,6 +31,7 @@ func save(map_id: String, position: Vector2) -> bool:
 	var data := {
 		"save_version": CURRENT_VERSION,
 		"party": Party.to_dict(),
+		"storage": Storage.to_dict(),
 		"inventory": Inventory.to_dict(),
 		"world": {
 			"map_id": map_id,
@@ -68,6 +69,10 @@ func load_and_apply() -> Dictionary:
 		return {}
 
 	Party.from_dict(_dict_field(data, "party"))
+	# Optional: saves written before the shrine existed have no storage block,
+	# and an absent one correctly reads as empty. No version bump needed for
+	# an added field with a safe default -- see section 5.
+	Storage.from_dict(_dict_field(data, "storage"))
 	Inventory.from_dict(_dict_field(data, "inventory"))
 
 	var world := _dict_field(data, "world")
