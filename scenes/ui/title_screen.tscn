@@ -1,0 +1,53 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/title_screen.gd" id="1_title"]
+
+[node name="TitleScreen" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_title")
+
+[node name="Title" type="Label" parent="."]
+anchor_right = 1.0
+offset_top = 24.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(0.909804, 0.764706, 0.478431, 1)
+theme_override_font_sizes/font_size = 26
+text = "HOLLOWMERE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tagline" type="Label" parent="."]
+anchor_right = 1.0
+offset_top = 62.0
+offset_bottom = 74.0
+theme_override_colors/font_color = Color(0.364706, 0.407843, 0.470588, 1)
+theme_override_font_sizes/font_size = 8
+text = "They do not hunt you. They are only curious."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Prompt" type="RichTextLabel" parent="."]
+anchor_right = 1.0
+offset_top = 88.0
+offset_bottom = 110.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="Menu" type="RichTextLabel" parent="."]
+anchor_right = 1.0
+offset_top = 116.0
+offset_bottom = 156.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="Footer" type="RichTextLabel" parent="."]
+anchor_right = 1.0
+offset_top = 164.0
+offset_bottom = 176.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8

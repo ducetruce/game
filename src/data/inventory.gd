@@ -15,10 +15,19 @@ var _counts := {}
 
 func _ready() -> void:
 	if coin <= 0 and _counts.is_empty():
-		coin = STARTING_COIN
-		# One free Draught so the very first encounter can be attuned without
-		# a shop trip first -- the shop is for restocking, not gatekeeping.
-		add("tempering_draught")
+		reset_for_new_game()
+
+
+## What a brand new game starts with. Called by the title screen's New Game,
+## and at startup so the overworld scene is playable on its own. Clears rather
+## than tops up: Inventory is an autoload and outlives the scene change, so a
+## New Game started after playing would otherwise keep the old purse.
+func reset_for_new_game() -> void:
+	coin = STARTING_COIN
+	_counts.clear()
+	# One free Draught so the very first encounter can be attuned without a
+	# shop trip first -- the shop is for restocking, not gatekeeping.
+	add("tempering_draught")
 
 
 func count(item_id: String) -> int:

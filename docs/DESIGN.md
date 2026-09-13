@@ -840,6 +840,58 @@ the three villagers, and the well all render as designed.
 
 ---
 
+## 17. The title screen, and what "new game" has to undo
+
+The game booted straight into the overworld and silently resumed whatever
+save it found. That made starting over a matter of deleting
+`user://savegame.json` by hand, which is not something a player should ever
+be asked to do -- and it also meant the fresh-start experience could not be
+tested without leaving the game.
+
+`scenes/ui/title_screen.tscn` is now the project's main scene, and the
+overworld is entered from it with `change_scene_to_file`. The shell is
+deliberately three lines long: **Continue** (offered only when a save
+actually exists), **New Game**, **Quit**.
+
+**A new game has to undo more than the save file.** `SaveGame.erase()`
+deletes the file, but `Party` and `Inventory` are autoloads -- they outlive
+the scene change into the overworld, and they seed their defaults in
+`_ready()`, which runs once per process and never again. So a New Game
+started *after playing* would have kept the previous run's creatures and
+coin while claiming to be new: the file would be gone, the state would not.
+Both now expose `reset_for_new_game()`, which the title screen calls
+alongside the erase. Their `_ready()` calls the same function rather than
+duplicating the starting loadout, so "what a new game starts with" has one
+definition, and running `overworld.tscn` directly from the editor still
+lands in a playable game.
+
+**Confirmation, but only when there is something to lose.** Choosing New
+Game with a save present asks first, and the cursor starts on *Keep my
+game* -- the answer that changes nothing. A destructive action should never
+be one keypress away from someone mashing through a menu, which is the same
+concern as the interact/menu debounce locks in § 15, arrived at from the
+other direction. With no save present there is nothing to destroy and the
+prompt is skipped entirely.
+
+**One bug worth recording, because it generalises to any menu that changes
+scenes.** The first version marked the input handled *after* acting on it,
+the way every other menu in the project does. On the option that enters the
+overworld that pushed an error every time: `change_scene_to_file` takes this
+node out of the tree, so by the time the handler got to
+`get_viewport().set_input_as_handled()` the viewport was null. The fix is to
+decide whether the event belongs to this screen, consume it, and only then
+act -- `_handles()` then `_act_on()`. Any menu whose actions can tear down
+its own scene needs that ordering.
+
+**Deliberately not built yet.** There is no quit-to-title from inside the
+overworld (that belongs to a pause menu, which still does not exist), and
+Continue does not describe the save it would resume -- no map name, party, or
+playtime. Showing that needs `SaveGame` to be able to read a save *without*
+applying it, which is a real API addition and not worth making until there
+is more than one slot to tell apart.
+
+---
+
 ## Open questions
 
 - Party size beyond the current cap of six, and whether there is storage.
@@ -857,7 +909,8 @@ the three villagers, and the well all render as designed.
 - Whether moves are learned by level, by taught item, or by Temperament.
 - Whether interactables should be solid by default, or whether some
   (ground items, plaques) should be walkable and probed anyway.
-- A title screen -- there is still no UI shell before the overworld itself,
-  which is also what stands between the save system and a manual save, a
-  "new game" option, or multiple save slots (see § 14). The party screen
-  (§ 15) covers viewing the party; there is still no pause menu proper.
+- A pause menu, and with it quit-to-title from inside the overworld. The
+  title screen (§ 17) covers new game and continue; the party screen (§ 15)
+  covers viewing the party. Manual saving and multiple save slots are still
+  open, and slots in particular need a way to read a save without applying
+  it (see § 17).

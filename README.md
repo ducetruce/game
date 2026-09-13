@@ -73,11 +73,15 @@ and live damage numbers from the real `Damage` code.
 
 ## Playing it
 
-Press **F5**. You start on the path with a party of two at level 5, 60 coin,
-and one free Tempering Draught. Walk into the dark, busy **bracken** — two
-fields, one southwest and one northeast — and you will be pulled into
-battles. The **spring** east of the path restores your party. The
-**shopkeeper** north on the path sells more Draughts.
+Press **F5** for the title screen: **Continue** (only shown once you have a
+save), **New Game**, **Quit**. Starting a new game when a save exists asks
+first — there is only one save, and erasing it cannot be undone.
+
+You start on the path with a party of two at level 5, 60 coin, and one free
+Tempering Draught. Walk into the dark, busy **bracken** — two fields, one
+southwest and one northeast — and you will be pulled into battles. The
+**spring** east of the path restores your party. The **shopkeeper** north on
+the path sells more Draughts.
 
 Follow the path north, through the gap in the tree line, to reach
 **Aldenmere**, a village with no encounters of its own — a safe stop with its
@@ -155,10 +159,10 @@ checks every temperament has the flavour lines the code actually looks up.
 
 ## Saving and loading
 
-There is no save menu yet — saving is automatic, at a rest spring, right
-after every battle resolves, and when you close the window. Loading is
-automatic too: if a save exists, it is used instead of the default starting
-party when the game boots.
+There is no manual save yet — saving is automatic, at a rest spring, right
+after every battle resolves, and when you close the window. To load, pick
+**Continue** on the title screen; **New Game** erases the save and starts
+over, asking first if there is one to erase.
 
 The save lives at `user://savegame.json`, which Godot resolves to a real
 folder on disk named after the project (`Hollowmere`) — on Linux that's
@@ -175,5 +179,6 @@ text editor to see exactly what got saved, or delete it to start over.
 4. ✅ Turn-based battle system
 5. ✅ Attunement (capture) mechanic
 6. ✅ Save/load
-7. 🚧 Toward a workable alpha — a party screen, and a second map (Aldenmere)
-   connected by warps, so the world reads as a place rather than one field
+7. 🚧 Toward a workable alpha — a party screen; a second map (Aldenmere)
+   connected by warps, so the world reads as a place rather than one field;
+   and a title screen, so starting over does not mean deleting a file

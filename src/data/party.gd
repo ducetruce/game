@@ -12,12 +12,19 @@ var members: Array[Creature] = []
 
 func _ready() -> void:
 	if members.is_empty():
-		_seed_starting_party()
+		reset_for_new_game()
 
 
-## Until there is a title screen and a starter choice, the party is seeded here
-## so the overworld is playable. Step 6 replaces this with a loaded save.
-func _seed_starting_party() -> void:
+## The party a brand new game starts with. Called by the title screen's New
+## Game, and at startup so that running the overworld scene directly from the
+## editor still has something playable in it. There is no starter choice yet;
+## when there is, it replaces the body of this and nothing else.
+##
+## This clears rather than appends: Party is an autoload, so it outlives the
+## scene change into the overworld, and a New Game started after playing would
+## otherwise keep the previous run's creatures.
+func reset_for_new_game() -> void:
+	members.clear()
 	add(Creature.create("thistlecalf", 5))
 	add(Creature.create("emberwick", 5))
 
