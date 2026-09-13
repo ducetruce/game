@@ -28,7 +28,7 @@ EFFECT_KINDS = ("stat_stage", "heal")
 
 # Mirrors src/overworld/tile_legend.gd. Duplicated on purpose: the point of
 # this check is to catch the two drifting apart.
-WALKABLE_TILES = set("GgPpbc")
+WALKABLE_TILES = set("GgPpbcr")
 SOLID_TILES = set("WRTFHV")
 OBJECT_TYPES = ("sign", "spring", "shop", "npc", "shrine", "warp")
 
@@ -405,6 +405,31 @@ def check_creatures(doc, types: list[str], moves: dict) -> dict:
     return by_id
 
 
+def reachable_from(rows: list, start_x: int, start_y: int) -> set:
+    """Every walkable tile the player can actually get to, four-directionally.
+
+    Props are ignored: they are single tiles and a solid one never seals a
+    route the terrain left open.
+    """
+    if not (0 <= start_y < len(rows) and 0 <= start_x < len(rows[start_y])):
+        return set()
+    seen = {(start_x, start_y)}
+    queue = [(start_x, start_y)]
+    while queue:
+        x, y = queue.pop()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = x + dx, y + dy
+            if (nx, ny) in seen:
+                continue
+            if not (0 <= ny < len(rows) and 0 <= nx < len(rows[ny])):
+                continue
+            if rows[ny][nx] not in WALKABLE_TILES:
+                continue
+            seen.add((nx, ny))
+            queue.append((nx, ny))
+    return seen
+
+
 def encounters_declared(doc: dict) -> bool:
     table = doc.get("encounters")
     return isinstance(table, dict) and bool(table)
@@ -560,6 +585,18 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
                 elif not (1 <= levels[0] <= levels[1] <= MAX_LEVEL):
                     err(where, "%s levels %r must satisfy 1 <= low <= high <= %d"
                         % (row_label, levels, MAX_LEVEL))
+
+        # Encounter terrain you cannot walk to is an area with nothing in it.
+        # Cheap to get wrong when a map is authored as text, and invisible
+        # until someone walks the whole shore looking for a fight.
+        start = doc.get("player_start")
+        if encounters and isinstance(start, list) and len(start) >= 2:
+            reached = reachable_from(rows, start[0], start[1])
+            for symbol in encounters:
+                if symbol in seen and not any(
+                        rows[y][x] == symbol for x, y in reached):
+                    err(where, "encounters['%s'] is on tiles the player cannot"
+                        " reach from player_start" % symbol)
 
         # A map whose walkable tiles are all encounter terrain has nowhere safe
         # to stand, which is almost always a mistake rather than a design.

@@ -1,0 +1,136 @@
+{
+  "id": "mere_shore",
+  "display_name": "The Hollowmere",
+  "_comment": "Tile grid, one string per row. See src/overworld/tile_legend.gd for the symbol table. Reached north from Aldenmere; 'r' reeds are the encounter terrain.",
+  "player_start": [
+    27,
+    20
+  ],
+  "_coin_comment": "Further from home than the clearing, and it pays better. See docs/DESIGN.md section 20.",
+  "coin_reward": [
+    18,
+    30
+  ],
+  "objects": [
+    {
+      "type": "sign",
+      "tile": [
+        26,
+        19
+      ],
+      "text": [
+        "A post driven into the shingle, its grain raised by weather.",
+        "THE HOLLOWMERE. The water is deeper than it looks, and older than it is.",
+        "Beneath, in a steadier hand: do not go in after them."
+      ]
+    },
+    {
+      "type": "spring",
+      "tile": [
+        30,
+        13
+      ],
+      "text": [
+        "A freshwater seep, running clear where it meets the mere.",
+        "Your creatures drink, and something in them settles."
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        27,
+        23
+      ],
+      "target_map": "village_square",
+      "target_tile": [
+        27,
+        1
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        28,
+        23
+      ],
+      "target_map": "village_square",
+      "target_tile": [
+        28,
+        1
+      ]
+    }
+  ],
+  "encounters": {
+    "r": {
+      "chance": 0.12,
+      "table": [
+        {
+          "species": "sloughback",
+          "weight": 35,
+          "levels": [
+            8,
+            12
+          ]
+        },
+        {
+          "species": "skirling",
+          "weight": 25,
+          "levels": [
+            8,
+            12
+          ]
+        },
+        {
+          "species": "cairnling",
+          "weight": 20,
+          "levels": [
+            9,
+            13
+          ]
+        },
+        {
+          "species": "gloamkin",
+          "weight": 15,
+          "levels": [
+            10,
+            14
+          ]
+        },
+        {
+          "species": "emberwick",
+          "weight": 5,
+          "levels": [
+            11,
+            14
+          ]
+        }
+      ]
+    }
+  },
+  "tiles": [
+    "TTWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWTT",
+    "TTWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWTT",
+    "TTWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWTT",
+    "TTWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWTT",
+    "TTWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWTT",
+    "TTWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWTT",
+    "TTWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWTT",
+    "TTWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWTT",
+    "TTrWrrrWWWrrWWWWWrrWWrrWWWWrrWWWrrrWWrrTT",
+    "TTrrrrrrWrrrrWWWrrrrrrrrWWrrrrWrrrrrrrrTT",
+    "TTrrrrrrrrrrrrWrrrrrrrrrrrrrrrrrrrrrrrrTT",
+    "TTGrGGGrrrGGrrrrRRGrrGGrrrrPprrrGGGrrGGTT",
+    "TTGGGGRRrGGGGrrrGRGGGGRRrrGPPGrGGGGGGGGTT",
+    "TTGGGGGGGGGGGGrGGGGGGGGGGGGPpGGGrrrrrGGTT",
+    "TTGGrrrrrrrrrrrGGGGGGGGGGGGPpGGGrrrrrGGTT",
+    "TTGGrrrrrrrrrrrGGGGGGGGGGGGPPGGGrrrrrGGTT",
+    "TTGGrrrrrrrrrrrGGGGGGGGGGGGPpGGGrrrrrGGTT",
+    "TTGGrrrrrrrrrrrGGGGGGGGGGGGPpGGGGGGGGGGTT",
+    "TTGGGGGGGGGGGGGPpPpPpPpPpPpPPGGGGGRRGGGTT",
+    "TTGGGGGGGGGGGGGGGGGGGGGGGGGPpGGGGGGRGGGTT",
+    "TTGGGGGGGGGGGGGGGGGGGGGGGGGPpGGGGGGGGGGTT",
+    "TTGGGGGGGGGGGGGGGGGGGGGGGGGPPGGGGGGGGGGTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTT"
+  ]
+}

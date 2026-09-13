@@ -17,6 +17,7 @@ const GROUND := {
 	"p": Vector2i(3, 0),  # worn path
 	"b": Vector2i(4, 0),  # bracken -- walkable, and where encounters happen
 	"c": Vector2i(5, 0),  # plaza -- walkable, flagstone village ground
+	"r": Vector2i(7, 0),  # reeds -- walkable, encounter terrain at the water
 }
 
 ## Painted into the Obstacles layer, which carries the tileset's physics layer.

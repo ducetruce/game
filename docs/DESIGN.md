@@ -1266,13 +1266,49 @@ cannot fail proves nothing, and headless iteration count is not time.
 
 ---
 
+## 26. The Hollowmere, and a second coin bracket
+
+The world is three areas now, which is the shape § 3 planned from the start:
+a wooded hollow, a village, and the water the game is named after. The mere
+lies **north of Aldenmere**, so the village keeps its role as the safe middle
+of the map -- encounters on either side of it, none in it.
+
+**It exists to give the economy something to compare against.** § 19's coin
+brackets are a property of the area, and with one encounter area there was
+only one bracket, so the idea was untestable by construction. The mere pays
+**18-30** against the clearing's **10-18**, on creatures four to seven levels
+higher. Whether that gradient is right is exactly the sort of thing that
+needs playing rather than reasoning, and now it can be.
+
+**A new terrain, `r` reeds**, rather than reusing bracken. A second area that
+looks like the first is a worse test of anything, and encounter terrain has
+to be readable at a glance without a legend (§ 6's argument for bracken being
+darker and busier than grass). The reeds are bluer and taller, with standing
+water showing between the stems.
+
+**Cairnling was unobtainable.** It is one of seven creatures and appeared in
+no encounter table anywhere -- not a design decision, just a gap nobody had
+looked for. The mere's rocky shore is now where it lives.
+
+**The validator gained a reachability check**, which is the durable part of
+this section. Encounter terrain the player cannot walk to is an area with
+nothing in it, and authoring maps as text makes that easy to get wrong and
+invisible until somebody walks the whole shore looking for a fight. It flood-
+fills the walkable tiles from `player_start` and fails if a declared
+encounter symbol has no reachable tile. Confirmed by walling the mere's path
+off and watching it fail -- a check nobody has seen fail is a check nobody
+knows works.
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
 decisions to make, plus what has not been reached yet.
 
 - The crit rate and multiplier (1-in-16, 1.5x), the Struggle recoil fraction
-  (a quarter of max HP), and the Hollow Clearing's 10-18 coin bracket. All
+  (a quarter of max HP), and the two coin brackets -- the clearing's 10-18
+  and the mere's 18-30, and whether the gradient between them is right. All
   picked by reasoning and all now built (§ 19, § 21); all single constants,
   and all want a session of actual play to judge.
 - Relearning a move that was declined at level-up (§ 22). Declining is
@@ -1281,8 +1317,6 @@ decisions to make, plus what has not been reached yet.
   in particular imply an equip step that does not exist.
 - Whether the bag should be reachable from the battle's Item menu too, sharing
   one list rather than two rules about what is usable where.
-- What a second area's coin bracket should be, once there is one with
-  encounters in it -- Aldenmere has none.
 - Multiple save slots, deferred in § 20 rather than rejected. The reading
   half of the API now exists (§ 25).
 - Whether storage should ever be partitioned into boxes, which only matters

@@ -136,6 +136,11 @@ BRACKEN = (52, 84, 54, A)
 BRACKEN_HI = (74, 112, 70, A)
 BRACKEN_LO = (36, 62, 42, A)
 
+REEDS = (58, 88, 78, A)
+REEDS_HI = (86, 122, 104, A)
+REEDS_LO = (38, 62, 58, A)
+REED_STALK = (108, 132, 96, A)
+
 PLAZA = (150, 140, 122, A)
 PLAZA_HI = (172, 162, 142, A)
 PLAZA_LO = (124, 114, 98, A)
@@ -151,7 +156,7 @@ ROOF_LO = (108, 54, 40, A)
 
 
 def build_atlas() -> Canvas:
-    c = Canvas(TILE * 7, TILE * 2)
+    c = Canvas(TILE * 8, TILE * 2)
 
     # (0,0) grass
     speckle(c, 0, 0, GRASS, GRASS_HI, GRASS_LO, 11)
@@ -202,6 +207,19 @@ def build_atlas() -> Canvas:
         c.rect(TILE * 4 + bx, by, 1, 4, BRACKEN_LO)
         c.set(TILE * 4 + bx - 1, by + 1, BRACKEN_HI)
         c.set(TILE * 4 + bx + 1, by + 1, BRACKEN_HI)
+
+    # (7,0) reeds -- walkable encounter terrain at the water's edge. Bluer and
+    # taller than bracken so the two read as different places to be, not just
+    # two shades of undergrowth.
+    speckle(c, TILE * 7, 0, REEDS, REEDS_HI, REEDS_LO, 89, density=140)
+    for rx, base in ((2, 15), (4, 13), (6, 16), (9, 14), (11, 16), (13, 13), (7, 11)):
+        height = 7 + (rx % 3) * 2
+        c.rect(TILE * 7 + rx, base - height, 1, height, REED_STALK)
+        # A seed head, leaning one way or the other.
+        c.set(TILE * 7 + rx + (1 if rx % 2 else -1), base - height, REEDS_HI)
+    # Standing water showing between the stems.
+    for wy in (12, 15):
+        c.rect(TILE * 7, wy, TILE, 1, REEDS_LO)
 
     # (5,0) plaza -- walkable, flagstone village ground.
     speckle(c, TILE * 5, 0, PLAZA, PLAZA_HI, PLAZA_LO, 71, density=70)

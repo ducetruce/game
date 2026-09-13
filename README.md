@@ -64,7 +64,8 @@ tile symbols, that the player start and every object sit on walkable ground,
 that encounter tables name real species with sane level ranges, that shop
 catalogs name real items, and — checked across map files, since a warp names
 another one — that every warp's `target_map` exists and its `target_tile`
-lands on walkable ground there. Exits non-zero on error.
+lands on walkable ground there, and that every encounter terrain is actually
+reachable on foot from the map's own starting tile. Exits non-zero on error.
 
 To inspect the same data in-engine, open `scenes/debug/codex.tscn` and press
 **F6** (Run Current Scene). `W`/`S` cycles the creature, `A`/`D` the opponent.
@@ -96,6 +97,13 @@ own well (also a rest spring), a few villagers to talk to, and a stall
 selling the **Knitbone Salve**, which heals mid-battle and is the one thing
 the clearing's shopkeeper does not stock. Walk back south through the same
 gap to return.
+
+North again, through the gap in Aldenmere's far tree line, is **the
+Hollowmere** itself — open water, a shingle shore, and reed beds that are the
+area's encounter terrain. What lives there is four to seven levels above the
+clearing and pays better for it (18–30 coin a fight against the clearing's
+10–18), and the rocks along the shore are the only place a **Cairnling** can
+be found.
 
 The **shrine** on the east side of the plaza is where creatures you are not
 carrying wait. You can hold six; the rest are kept there, and the shrine is
@@ -154,7 +162,7 @@ plus the objects placed on it. The symbol table is in
 `src/overworld/tile_legend.gd`:
 
 - Walkable: `G` grass, `g` tufted grass, `P` path, `p` worn path, `b` bracken,
-  `c` plaza
+  `c` plaza, `r` reeds (`b` and `r` are the encounter terrains)
 - Solid: `W` water, `R` rock, `T` tree, `F` fence, `H` wall, `V` roof (put a
   `V` row directly above a matching `H` row to get a two-tile building facade)
 
