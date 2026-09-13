@@ -46,8 +46,17 @@ offset_right = 296.0
 offset_bottom = 53.0
 color = Color(0.560784, 0.705882, 0.85098, 0.4)
 
-[node name="Menu" type="RichTextLabel" parent="Panel"]
+[node name="MenuLeft" type="RichTextLabel" parent="Panel"]
 offset_left = 6.0
+offset_top = 55.0
+offset_right = 150.0
+offset_bottom = 163.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="MenuRight" type="RichTextLabel" parent="Panel"]
+offset_left = 152.0
 offset_top = 55.0
 offset_right = 296.0
 offset_bottom = 163.0

@@ -57,6 +57,7 @@ const KEY_Z := 90
 const KEY_X := 88
 const KEY_M := 77
 const KEY_SHIFT := 4194325
+const KEY_F1 := 4194332
 
 const WEIGHTED_KEYS := [
 	KEY_W, KEY_W, KEY_W, KEY_W, KEY_W, KEY_W,
@@ -67,6 +68,7 @@ const WEIGHTED_KEYS := [
 	KEY_Z, KEY_Z, KEY_Z,
 	KEY_X,
 	KEY_M,
+	KEY_F1,
 ]
 
 ## How long the soak waits for its own shuffle to throw up a back-out key
@@ -85,7 +87,7 @@ const NUDGE_CANCEL_EVERY := 4
 ## soak moves itself on periodically, through the same debug command the F1
 ## menu uses. The map list is read off disk rather than named here, so a map
 ## added later is soaked without anyone remembering to add it.
-const TRAVEL_EVERY_FRAMES := 2500
+const TRAVEL_EVERY_FRAMES := 1500
 const MAPS_DIR := "res://scenes/overworld/maps"
 
 ## A burst is one key held for a few frames, then released. Short bursts mash;
@@ -399,6 +401,13 @@ func _report() -> void:
 	maps.sort()
 	print("soak: walked %.0fpx across %d map(s) (%s), %d deliberate trip(s)"
 		% [_distance, maps.size(), ", ".join(maps), _travels])
+	# Only a fair demand if the run was long enough to have had a trip due for
+	# each map. Asserted unconditionally, a short soak fails for being short;
+	# skipped silently, a short soak claims a coverage it never attempted.
+	if _total_frames < TRAVEL_EVERY_FRAMES * _map_ids.size():
+		print("soak: too short to expect every map (needs %d frames); coverage not checked"
+			% (TRAVEL_EVERY_FRAMES * _map_ids.size()))
+		return
 	for map_id in _map_ids:
 		if not _maps_seen.has(map_id):
 			_fail("never set foot in '%s'" % map_id)

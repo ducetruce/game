@@ -20,7 +20,8 @@ const COLOR_DIM := "5d6878"
 const COLOR_SELECTED := "e8c37a"
 const COLOR_HEAD := "8fb4d9"
 
-## id, label. Order is the order they appear.
+## id, label. Order is the order they appear, down the left column and then
+## down the right.
 const COMMANDS := [
 	["goto_hollow_clearing", "Go to the Hollow Clearing"],
 	["goto_village_square", "Go to Aldenmere"],
@@ -39,7 +40,8 @@ var _state := {}
 
 @onready var _panel: Panel = $Panel
 @onready var _readout: RichTextLabel = $Panel/Readout
-@onready var _menu: RichTextLabel = $Panel/Menu
+@onready var _menu_left: RichTextLabel = $Panel/MenuLeft
+@onready var _menu_right: RichTextLabel = $Panel/MenuRight
 @onready var _footer: RichTextLabel = $Panel/Footer
 
 
@@ -97,14 +99,25 @@ func _handles(event: InputEvent) -> bool:
 
 
 func _render() -> void:
-	var rows := PackedStringArray()
+	# Two columns -- two labels, not one label with padding, because the
+	# placeholder font is not monospaced and a column built out of spaces is
+	# a ragged column. Filled down the left one first, so W/S still walks the
+	# list in order.
+	#
+	# One column was fine at nine commands and clipped the tenth off the
+	# bottom of a panel that is already nearly the height of the screen: the
+	# fifth time a menu has outgrown its box (§ 29), and the first time the
+	# check caught it before anyone shipped it.
+	var half := int(ceil(COMMANDS.size() / 2.0))
+	var left := PackedStringArray()
+	var right := PackedStringArray()
 	for i in COMMANDS.size():
-		var selected := i == _cursor
-		rows.append("[color=#%s]%s %s[/color]" % [
-			COLOR_SELECTED if selected else COLOR_TEXT,
-			">" if selected else " ", COMMANDS[i][1],
-		])
-	_menu.text = "\n".join(rows)
+		if i < half:
+			left.append(_entry(i))
+		else:
+			right.append(_entry(i))
+	_menu_left.text = "\n".join(left)
+	_menu_right.text = "\n".join(right)
 
 	_readout.text = "\n".join(PackedStringArray([
 		"[color=#%s]%s[/color]  [color=#%s]tile %s   under foot '%s'[/color]" % [
@@ -118,6 +131,15 @@ func _render() -> void:
 		"[color=#%s]party %s[/color]" % [COLOR_DIM, _state.get("party", "?")],
 	]))
 	_footer.text = "[color=#%s]W/S choose   Z run   X or F1 close[/color]" % COLOR_DIM
+
+
+## One command as it appears in its column, cursor marker included.
+func _entry(index: int) -> String:
+	var selected := index == _cursor
+	return "[color=#%s]%s %s[/color]" % [
+		COLOR_SELECTED if selected else COLOR_TEXT,
+		">" if selected else " ", COMMANDS[index][1],
+	]
 
 
 ## Hides without emitting `closed`, for commands that take input over

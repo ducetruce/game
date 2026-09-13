@@ -1472,11 +1472,23 @@ of a run was spent sitting in a menu waiting for X to come up in the shuffle,
 which bought no coverage and forced the lockout budget to be so slack that a
 real lockout fitted comfortably inside it.
 
-It also travels on purpose every 2500 frames, through the same debug command
+It also travels on purpose every 1500 frames, through the same debug command
 the F1 menu uses, because random walking found a warp about as often as it
-found anything else -- three seeds in a row never left the first map. The map
-list is read off `scenes/overworld/maps/` rather than named in the script, so
-a map added later is soaked without anyone remembering to add it.
+found anything else -- three seeds in a row never left the first map. It goes
+somewhere it has not been yet where it can: picking uniformly at random made
+"every map was visited" a coin flip rather than an assertion. The map list is
+read off `scenes/overworld/maps/` rather than named in the script, so a map
+added later is soaked without anyone remembering to add it, and a run too
+short to have had a trip due for every map says so instead of either failing
+for being short or quietly claiming a coverage it never attempted.
+
+F1 is in the key mix, so the debug menu gets scanned like everything else.
+That is how the tenth command got caught clipping off the bottom of a panel
+already nearly the height of the screen -- the fifth instance of the box
+problem and the first one found before it shipped. The panel could not get
+taller, so the list got wider: two labels side by side rather than one, since
+the placeholder font is not monospaced and a column built out of space
+padding is a ragged column.
 
 
 ---
