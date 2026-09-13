@@ -26,24 +26,24 @@ color = Color(0.121569, 0.145098, 0.180392, 1)
 
 [node name="Ground" type="ColorRect" parent="."]
 layout_mode = 0
-offset_top = 84.0
+offset_top = 70.0
 offset_right = 320.0
-offset_bottom = 122.0
+offset_bottom = 104.0
 color = Color(0.164706, 0.203922, 0.184314, 1)
 
 [node name="FoeSprite" type="TextureRect" parent="."]
 layout_mode = 0
 offset_left = 212.0
-offset_top = 50.0
+offset_top = 36.0
 offset_right = 244.0
-offset_bottom = 82.0
+offset_bottom = 68.0
 
 [node name="PlayerSprite" type="TextureRect" parent="."]
 layout_mode = 0
 offset_left = 62.0
-offset_top = 76.0
+offset_top = 62.0
 offset_right = 94.0
-offset_bottom = 108.0
+offset_bottom = 94.0
 
 [node name="FoePanel" type="Panel" parent="."]
 layout_mode = 0
@@ -97,9 +97,9 @@ color = Color(0.85098, 0.658824, 0.360784, 1)
 [node name="PlayerPanel" type="Panel" parent="."]
 layout_mode = 0
 offset_left = 180.0
-offset_top = 84.0
+offset_top = 70.0
 offset_right = 312.0
-offset_bottom = 118.0
+offset_bottom = 104.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="CreatureName" type="Label" parent="PlayerPanel"]
@@ -139,7 +139,7 @@ theme_override_font_sizes/font_size = 8
 [node name="BottomPanel" type="Panel" parent="."]
 layout_mode = 0
 offset_left = 6.0
-offset_top = 122.0
+offset_top = 104.0
 offset_right = 314.0
 offset_bottom = 176.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
@@ -149,7 +149,7 @@ layout_mode = 0
 offset_left = 6.0
 offset_top = 4.0
 offset_right = 182.0
-offset_bottom = 50.0
+offset_bottom = 66.0
 bbcode_enabled = true
 scroll_active = false
 theme_override_font_sizes/normal_font_size = 8
@@ -160,7 +160,7 @@ layout_mode = 0
 offset_left = 186.0
 offset_top = 4.0
 offset_right = 302.0
-offset_bottom = 50.0
+offset_bottom = 66.0
 bbcode_enabled = true
 scroll_active = false
 theme_override_font_sizes/normal_font_size = 8

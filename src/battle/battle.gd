@@ -32,7 +32,16 @@ const BOND_BAR_WIDTH := 118.0
 const BOND_COLOR := Color("d9a85c")
 
 var _state: BattleState = null
+## The battle's menu box holds this many rows at once. Everything that draws
+## into it goes through _set_menu, which scrolls rather than overflowing: the
+## party list is six rows on a full party and the item list grows with every
+## item added to the game, so a box sized to today's longest menu is a box
+## that breaks on the next piece of content. See docs/DESIGN.md § 29.
+const VISIBLE_ROWS := 5
+
 var _ui := Ui.MESSAGE
+## First row of the menu window, when the list is longer than it.
+var _scroll := 0
 var _cursor := 0
 var _pending := PackedStringArray()
 
@@ -183,6 +192,7 @@ func _menu_input(event: InputEvent) -> bool:
 
 func _open(ui: Ui) -> void:
 	_ui = ui
+	_scroll = 0
 	if ui == Ui.PARTY:
 		_cursor = _state.active_index
 	elif ui == Ui.LEARN_ASK:
@@ -314,7 +324,7 @@ func _render_actions() -> void:
 	var rows := PackedStringArray()
 	for i in ACTION_LABELS.size():
 		rows.append(_row(ACTION_LABELS[i], i == _cursor))
-	_menu.text = "\n".join(rows)
+	_set_menu(rows)
 	_message.text = "[color=#%s]What will you do?[/color]" % COLOR_DIM
 
 
@@ -327,7 +337,7 @@ func _render_moves() -> void:
 		rows.append(_row("%s  %d/%d" % [
 			option["name"], int(option["uses"]), int(option["max_uses"]),
 		], i == _cursor, spent))
-	_menu.text = "\n".join(rows)
+	_set_menu(rows)
 
 	if _cursor < options.size():
 		var move := Content.get_move(str(options[_cursor]["id"]))
@@ -340,7 +350,7 @@ func _render_moves() -> void:
 func _render_items() -> void:
 	var items := _state.item_options()
 	if items.is_empty():
-		_menu.text = _row("nothing to use", false)
+		_set_menu(PackedStringArray([_row("nothing to use", false)]))
 		_message.text = "[color=#%s]Your pack is empty. X to go back.[/color]" % COLOR_DIM
 		return
 
@@ -348,7 +358,7 @@ func _render_items() -> void:
 	for i in items.size():
 		var entry: Dictionary = items[i]
 		rows.append(_row("%s  x%d" % [entry["name"], int(entry["count"])], i == _cursor))
-	_menu.text = "\n".join(rows)
+	_set_menu(rows)
 
 	if _cursor < items.size():
 		_message.text = "[color=#%s]%s[/color]" % [COLOR_DIM, items[_cursor]["description"]]
@@ -362,7 +372,7 @@ func _render_party() -> void:
 		rows.append(_row("%s%s %d/%d" % [
 			marker, creature.display_name(), creature.current_hp, creature.max_hp(),
 		], i == _cursor, creature.is_fainted()))
-	_menu.text = "\n".join(rows)
+	_set_menu(rows)
 	_message.text = "[color=#%s]%s[/color]" % [
 		COLOR_DIM,
 		"Who stands in its place?" if _forced_switch else "Send out whom? (X to go back)",
@@ -380,7 +390,7 @@ func _render_learn_ask() -> void:
 	var rows := PackedStringArray()
 	for i in LEARN_ASK_LABELS.size():
 		rows.append(_row(LEARN_ASK_LABELS[i], i == _cursor))
-	_menu.text = "\n".join(rows)
+	_set_menu(rows)
 
 	_message.text = "[color=#%s]%s can learn %s, but already knows four.[/color]\n[color=#%s]%s[/color]" % [
 		COLOR_TEXT, creature.display_name(), learning_name, COLOR_DIM,
@@ -402,11 +412,40 @@ func _render_learn_pick() -> void:
 		var known_name := known.display_name if known != null else creature.moves[i]
 		var known_type := known.type if known != null else "?"
 		rows.append(_row("%-13s %s" % [known_name, known_type], i == _cursor))
-	_menu.text = "\n".join(rows)
+	_set_menu(rows)
 
 	_message.text = "[color=#%s]Give up which one for %s?[/color]\n[color=#%s]%s[/color]" % [
 		COLOR_TEXT, learning_name, COLOR_DIM, "X to go back.",
 	]
+
+
+## Draws `rows` into the menu box: all of them if they fit, otherwise a
+## window of VISIBLE_ROWS that follows the cursor, with the rows nearest the
+## hidden part marked so the list does not simply appear to end.
+func _set_menu(rows: PackedStringArray) -> void:
+	if rows.size() <= VISIBLE_ROWS:
+		_scroll = 0
+		_menu.text = "\n".join(rows)
+		return
+
+	if _cursor < _scroll:
+		_scroll = _cursor
+	elif _cursor >= _scroll + VISIBLE_ROWS:
+		_scroll = _cursor - VISIBLE_ROWS + 1
+	_scroll = clampi(_scroll, 0, rows.size() - VISIBLE_ROWS)
+
+	var shown := PackedStringArray()
+	for i in range(_scroll, _scroll + VISIBLE_ROWS):
+		shown.append(rows[i])
+	if _scroll > 0:
+		shown[0] += _more_marker("^")
+	if _scroll + VISIBLE_ROWS < rows.size():
+		shown[VISIBLE_ROWS - 1] += _more_marker("v")
+	_menu.text = "\n".join(shown)
+
+
+func _more_marker(glyph: String) -> String:
+	return " [color=#%s]%s[/color]" % [COLOR_DIM, glyph]
 
 
 func _row(text: String, selected: bool, spent: bool = false) -> String:

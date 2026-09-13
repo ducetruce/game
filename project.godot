@@ -25,6 +25,9 @@ Inventory="*res://src/data/inventory.gd"
 Storage="*res://src/data/storage.gd"
 SaveGame="*res://src/data/save_game.gd"
 
+; Debug-build only: warns when a menu is clipping its own text. See § 29.
+UiFit="*res://src/core/ui_fit.gd"
+
 [display]
 
 ; Base render resolution: 320x180.

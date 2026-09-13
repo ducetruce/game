@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
+SRC = os.path.join(ROOT, "src")
 
 MAX_LEVEL = 50
 STATS = ("hp", "attack", "defense", "spirit", "resolve", "speed")
@@ -435,8 +437,13 @@ def encounters_declared(doc: dict) -> bool:
     return isinstance(table, dict) and bool(table)
 
 
-def check_maps(types: list[str], creatures: dict, items: dict) -> int:
-    """Validates every map in data/maps/. Returns how many were checked."""
+def check_maps(types: list[str], creatures: dict, items: dict,
+               sold: set, encountered: set) -> int:
+    """Validates every map in data/maps/. Returns how many were checked.
+
+    Fills `sold` with every item id any shop stocks and `encountered` with
+    every species id any encounter table names, for check_obtainable.
+    """
     maps_dir = os.path.join(DATA, "maps")
     if not os.path.isdir(maps_dir):
         return 0
@@ -524,6 +531,7 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
                     err(where, "%s needs a non-empty 'catalog'" % label)
                 else:
                     for item_id in catalog:
+                        sold.add(item_id)
                         if item_id not in items:
                             err(where, "%s catalog names unknown item '%s'" % (label, item_id))
             solid = spec.get("solid")
@@ -571,6 +579,7 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
                 if not isinstance(entry, dict):
                     err(where, "%s must be an object" % row_label)
                     continue
+                encountered.add(entry.get("species"))
                 if entry.get("species") not in creatures:
                     err(where, "%s names unknown species '%s'"
                         % (row_label, entry.get("species")))
@@ -635,6 +644,93 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
     return checked
 
 
+# --- obtainability ---------------------------------------------------------
+#
+# Twice now a piece of content has existed, validated cleanly, and been
+# impossible to get hold of: the Cairnling had stats and a learnset but
+# appeared in no encounter table, and the Waking Root had a price and an
+# effect but was stocked by no shop. Neither is a schema error -- every field
+# was correct -- so nothing caught them until somebody went looking for the
+# thing and could not find it.
+#
+# The two ways in are a map's data (encounter tables, shop catalogs) and the
+# new-game seed, which lives in GDScript rather than JSON. Rather than restate
+# the seed here and let the copy rot, these read it out of the source. If the
+# seeding moves somewhere else the scrape returns nothing and the check
+# reports every species and item as unobtainable, which is wrong but loud --
+# the failure mode worth having.
+
+SEED_PARTY_FILE = os.path.join(SRC, "data", "party.gd")
+SEED_ITEM_FILE = os.path.join(SRC, "data", "inventory.gd")
+
+
+def _seed_function_body(path: str) -> str:
+    """The body of reset_for_new_game() in a GDScript file, or ''."""
+    try:
+        with open(path) as fh:
+            text = fh.read()
+    except OSError:
+        return ""
+    match = re.search(r"^func reset_for_new_game\(.*?$", text, re.M)
+    if match is None:
+        return ""
+    lines = text[match.end():].splitlines()
+    body = []
+    for line in lines:
+        # The body ends at the first line that starts a new top-level
+        # declaration -- anything unindented and not blank.
+        if line.strip() and not line.startswith(("\t", " ")):
+            break
+        body.append(line)
+    return "\n".join(body)
+
+
+def seed_species() -> set:
+    body = _seed_function_body(SEED_PARTY_FILE)
+    return set(re.findall(r'Creature\.create\(\s*"([^"]+)"', body))
+
+
+def seed_items() -> set:
+    body = _seed_function_body(SEED_ITEM_FILE)
+    return set(re.findall(r'\badd\(\s*"([^"]+)"', body))
+
+
+def check_obtainable(creatures: dict, items: dict, sold: set, encountered: set) -> None:
+    starters = seed_species()
+    if not starters:
+        err("src/data/party.gd", "could not read the starting party out of"
+            " reset_for_new_game(); the obtainability check below is"
+            " meaningless until this parses again")
+    granted = seed_items()
+    if not granted:
+        err("src/data/inventory.gd", "could not read the starting items out of"
+            " reset_for_new_game(); the obtainability check below is"
+            " meaningless until this parses again")
+
+    for species_id in starters:
+        if species_id not in creatures:
+            err("src/data/party.gd", "the starting party contains '%s', which"
+                " is not a species in creatures.json" % species_id)
+    for item_id in granted:
+        if item_id not in items:
+            err("src/data/inventory.gd", "a new game grants '%s', which is not"
+                " an item in items.json" % item_id)
+
+    for species_id in sorted(creatures):
+        if species_id in starters or species_id in encountered:
+            continue
+        err("creatures.json '%s'" % species_id,
+            "appears in no encounter table on any map and is not in the"
+            " starting party, so there is no way to obtain it")
+
+    for item_id in sorted(items):
+        if item_id in granted or item_id in sold:
+            continue
+        err("items.json '%s'" % item_id,
+            "is stocked by no shop on any map and is not granted at the start,"
+            " so there is no way to obtain it")
+
+
 def main() -> int:
     types = check_type_chart(load("type_chart.json"))
     moves = check_moves(load("moves.json"), types)
@@ -649,7 +745,10 @@ def main() -> int:
         if not any(m.get("type") == t for m in moves.values()):
             warn("moves.json", "no move has type '%s'" % t)
 
-    map_count = check_maps(types, creatures, items)
+    sold: set = set()
+    encountered: set = set()
+    map_count = check_maps(types, creatures, items, sold, encountered)
+    check_obtainable(creatures, items, sold, encountered)
 
     for line in warnings:
         print("warning  %s" % line)

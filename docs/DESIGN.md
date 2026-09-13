@@ -1389,6 +1389,98 @@ time), which no assertion caught and a screenshot showed immediately.
 
 ---
 
+## 29. Turning the recurring bugs into machinery
+
+Three classes of defect have now appeared three or more times each, and every
+time the fix was the same: write the rule down in this document and remember
+it next time. Four menus have shipped with their last row clipped off the
+bottom of their panel. Two pieces of content have shipped complete, correct,
+and impossible to obtain -- the Cairnling had stats, a learnset and a
+temperament but appeared in no encounter table; the Waking Root had a price
+and an effect but was stocked by no shop. And more than one test has passed
+while stepping around the exact frame the bug lived on.
+
+A rule in a document is a rule somebody has to remember. These are now three
+checks that run without being remembered.
+
+**`UiFit`, an autoload (`src/core/ui_fit.gd`).** Every twentieth frame it
+walks the active scene, finds every visible non-scrolling `RichTextLabel`,
+and compares `get_content_height()` to the box's own height. Anything showing
+less than it holds is a warning naming the node path and the shortfall. It
+needs no cooperation from the menus, which is the point: the failure was
+never in the code a menu author reads. It is gated on `OS.is_debug_build()`
+and does nothing in a release export.
+
+It found the party screen's footer clipped by 2px within seconds of existing,
+and then -- through the soak below -- the battle's own action menu, which had
+been clipping its fifth row since the day the Run option was added. That is
+the most-used menu in the game. Nobody had noticed.
+
+The battle menu's fix is not just a bigger box. Its list is five rows for
+actions, up to six for a full party, and as many as the item catalog ever
+grows to, so any fixed box is a box that breaks on the next piece of content.
+The arena moved up, the bottom panel grew from 54px to 72px, and every menu
+now renders through `_set_menu`, which shows a window of five rows following
+the cursor and marks the rows it is hiding -- the same treatment the storage
+screen already gave its stored list (§ 24).
+
+**Obtainability, in `tools/validate_data.py`.** Every species must appear in
+some map's encounter table or in the starting party; every item must be
+stocked by some shop or granted at the start. Neither of the two escapes was
+a schema error -- every field was correct -- so nothing short of this would
+have caught them.
+
+The starting party and the free Draught live in GDScript, not JSON, so the
+validator reads them out of `reset_for_new_game()` in `src/data/party.gd` and
+`src/data/inventory.gd` by regex rather than restating them and letting the
+copy rot. If that scrape ever stops matching, it reports every species and
+item as unobtainable: wrong, but loud, which is the failure mode worth
+having.
+
+**A soak (`src/debug/soak.gd`, run by `tools/soak.sh`).** It plays the game
+with real held key presses for as long as you ask, and asserts almost nothing
+about what happens -- only that the player never loses control of the game for
+longer than any screen could justify, that no engine error is printed, and
+that every map gets visited. A soak that demands specific outcomes from random
+input is a soak that gets loosened until it passes.
+
+Three things about it were wrong on the first attempt, and all three are the
+same mistake this document keeps recording -- a test that looks like it
+exercises the game and does not:
+
+- It counted its own loop iterations as frames. A `-s` script's `_process`
+  runs as fast as the machine can loop, so "3000 frames" bought about four
+  seconds of walking. It now ticks on `Engine.get_physics_frames()`, which is
+  what the game itself runs on, and fast-forwards by raising the tick rate
+  and time scale together -- four times the steps per second, each still a
+  normal 1/60s step as far as every piece of game code is concerned.
+- Its bursts were up to 40 frames, or about four tiles. A random walk in
+  four-tile steps never leaves the corner it starts in: it walked 5000px
+  without once reaching the bracken and reported a clean run for a game it
+  had never seen fight.
+- It reported only on the way out of its own loop. Random input found "quit
+  to title", the title screen's Quit ended the process, and the run died
+  without a word -- which looks exactly like a run that passed. Reporting now
+  happens in `_finalize()`, on every exit path, and a run that ends early
+  fails.
+
+It nudges: after 45 frames with no player control it starts tapping cancel
+and confirm itself, mostly confirm, because two screens that each back out
+into the other would oscillate forever on a strict alternation and the
+battle's Fight/move pair is exactly that shape. Without the nudge two thirds
+of a run was spent sitting in a menu waiting for X to come up in the shuffle,
+which bought no coverage and forced the lockout budget to be so slack that a
+real lockout fitted comfortably inside it.
+
+It also travels on purpose every 2500 frames, through the same debug command
+the F1 menu uses, because random walking found a warp about as often as it
+found anything else -- three seeds in a row never left the first map. The map
+list is read off `scenes/overworld/maps/` rather than named in the script, so
+a map added later is soaked without anyone remembering to add it.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
