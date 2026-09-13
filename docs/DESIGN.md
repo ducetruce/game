@@ -1301,6 +1301,53 @@ knows works.
 
 ---
 
+## 27. Two bugs a playtest found, and what they were hiding
+
+**Walking north bounced the player straight back.** The clearing's north warp
+lands you on Aldenmere's tile `(20, 21)` -- which is Aldenmere's *own* warp
+back to the clearing. The first frame of movement after arriving fired it,
+which fired the other one, forever. The village was unreachable in practice,
+and so was everything past it.
+
+The fix is general rather than a map edit: `Overworld` remembers the tile a
+warp put the player on and ignores warps there until they step off it. A
+two-way doorway *wants* both sides' tiles in the same place, so this will
+keep happening every time a map is linked, and pushing the arrival tile one
+square inward each time is a rule nobody will remember.
+
+**The round-trip test missed it because it let go of the key.** It walked
+north, and the moment the map id changed it released the movement key,
+waited, then deliberately pressed the other direction. A player holds the key
+down. That single frame of continued input is the entire bug, and the test
+stepped around it precisely. The route is now walked end to end -- clearing,
+village, mere, and back -- with the key held the whole way and an assertion
+that each map is still the current one several hundred frames after arrival.
+
+**A second-order lesson: the tests were polluting each other.** Warp arrival
+autosaves, so a run that reached the village left a save behind, and the next
+run booted into the village instead of the clearing. The first trace of the
+fix looked like a fresh bug until that was spotted. Every run now clears the
+save first.
+
+**Losing gave everything back.** `Party.restore_all()` on defeat handed back
+full health *and* refilled every move, so the only cost was the 5-10% coin --
+invisible unless you were watching the purse. § 20 chose that penalty on the
+understanding that creatures being restored was a mercy; in play it read as
+nothing having happened at all.
+
+Creatures now stay down. The walk back is still safe by construction: an
+encounter cannot start while the whole party is fainted, so a wiped player
+can always reach a spring, and springs are free. Losing therefore costs coin,
+the walk, and the time to patch everyone up -- none of which is a wall.
+
+**That change needed an item nobody could buy.** The Waking Root was added in
+§ 23, priced, and then sold in no shop anywhere -- the same gap cairnling had
+in § 26, found the same way, by asking what actually reaches the player.
+Aldenmere's stall sells it now. Worth a standing habit: anything added to
+`data/` wants a matching answer to "and how does a player get it?"
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than

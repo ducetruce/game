@@ -57,6 +57,14 @@ var _menu_lock := 0.0
 ## back there instead of dropping the player into the world.
 var _returns_to_pause := false
 
+## The tile a warp last put the player on, and whether warps there are still
+## being ignored. A two-way doorway naturally puts one map's arrival tile on
+## top of the other map's trigger tile, and without this the pair fires on the
+## first frame of movement and bounces the player straight back -- forever.
+## Cleared the moment they step off it, so the door still works when re-entered.
+var _warp_arrival := Vector2i.ZERO
+var _warp_locked := false
+
 
 func _ready() -> void:
 	_rng.randomize()
@@ -136,6 +144,8 @@ func _load_map(map_id: String, target: Variant) -> void:
 
 	_player.global_position = position
 	_last_position = position
+	_warp_arrival = _map.tile_at(position)
+	_warp_locked = true
 	_apply_camera_limits()
 
 
@@ -210,10 +220,13 @@ func _physics_process(delta: float) -> void:
 	if moved <= 0.0:
 		return
 
-	var warp := _map.warp_at(_player.global_position)
-	if not warp.is_empty():
-		_begin_warp(warp)
-		return
+	if _warp_locked and _map.tile_at(_player.global_position) != _warp_arrival:
+		_warp_locked = false
+	if not _warp_locked:
+		var warp := _map.warp_at(_player.global_position)
+		if not warp.is_empty():
+			_begin_warp(warp)
+			return
 
 	var symbol := _map.terrain_at(_player.global_position)
 	if _tracker.advance(moved, _map.encounter_chance(symbol), _rng):
@@ -282,7 +295,12 @@ func _on_battle_finished(outcome: int) -> void:
 
 	var lost := outcome == BattleState.Phase.LOST
 	if lost:
-		Party.restore_all()
+		# Deliberately *not* restored. Losing used to hand back full health and
+		# refilled moves, which made a defeat cost nothing you could feel --
+		# the coin penalty was invisible and everything else was undone by the
+		# time you looked. Your creatures stay down; a spring is free and an
+		# encounter cannot start while the whole party is fainted, so the walk
+		# back is always safe. See docs/DESIGN.md § 27.
 		_player.global_position = _map.player_spawn_position()
 		_camera.reset_smoothing()
 
@@ -297,7 +315,8 @@ func _on_battle_finished(outcome: int) -> void:
 	if lost:
 		_dialogue.show_pages(PackedStringArray([
 			"You come to on the path, further back than you remember walking.",
-			"Everything you carry is standing again. You are not certain by whose doing.",
+			"What you carry is still down, and lighter by whatever it cost to drag you here.",
+			"There is water not far off. There usually is.",
 		]))
 
 

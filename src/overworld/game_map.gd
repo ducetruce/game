@@ -259,7 +259,9 @@ func _on_read_requested(pages: PackedStringArray) -> void:
 
 # --- encounters ------------------------------------------------------------
 
-func _tile_at(world_position: Vector2) -> Vector2i:
+## Which tile a world position falls on. Public because the overworld needs to
+## tell "still standing where the warp put me" from "stepped off it".
+func tile_at(world_position: Vector2) -> Vector2i:
 	return Vector2i(
 		int(floorf(world_position.x / float(TILE_SIZE))),
 		int(floorf(world_position.y / float(TILE_SIZE))))
@@ -267,7 +269,7 @@ func _tile_at(world_position: Vector2) -> Vector2i:
 
 ## Tile symbol under a world position, or "" if it is off the map.
 func terrain_at(world_position: Vector2) -> String:
-	var tile := _tile_at(world_position)
+	var tile := tile_at(world_position)
 	if tile.y < 0 or tile.y >= _rows.size():
 		return ""
 	var row := _rows[tile.y]
@@ -279,7 +281,7 @@ func terrain_at(world_position: Vector2) -> String:
 ## {target_map, target_tile} if a warp sits under this world position, or {}
 ## if there is none.
 func warp_at(world_position: Vector2) -> Dictionary:
-	return _warps.get(_tile_at(world_position), {})
+	return _warps.get(tile_at(world_position), {})
 
 
 ## Per-check probability for this terrain. Zero means no encounters here.

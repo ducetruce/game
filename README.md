@@ -88,14 +88,17 @@ the path sells more Draughts.
 Every battle you finish pays coin, whether you knock the creature out or
 tame it — taming is the point of the game, so it is never the poorer option.
 How much is a property of the area, not of what you fought. Losing costs you
-5–10% of your purse and nothing else; your creatures are still restored.
-Check your purse from the pause menu.
+5–10% of your purse and leaves your creatures down — you wake further back
+along the path and have to patch them up. Nothing can ambush a fully fainted
+party, so the walk to a spring is always safe. Check your purse from the
+pause menu.
 
 Follow the path north, through the gap in the tree line, to reach
 **Aldenmere**, a village with no encounters of its own — a safe stop with its
 own well (also a rest spring), a few villagers to talk to, and a stall
-selling the **Knitbone Salve**, which heals mid-battle and is the one thing
-the clearing's shopkeeper does not stock. Walk back south through the same
+selling the **Knitbone Salve** (heals mid-battle) and the **Waking Root**
+(brings a fainted creature back, out of battle) — neither of which the
+clearing's shopkeeper stocks. Walk back south through the same
 gap to return.
 
 North again, through the gap in Aldenmere's far tree line, is **the
