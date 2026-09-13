@@ -248,7 +248,7 @@ func _begin_encounter(symbol: String) -> void:
 
 	_battle = BATTLE_SCENE.instantiate()
 	# The party is passed by reference, so damage and experience stick.
-	_battle.configure(Party.members, wild)
+	_battle.configure(Party.members, wild, _map.coin_reward)
 	_battle.finished.connect(_on_battle_finished)
 	_battle_layer.add_child(_battle)
 

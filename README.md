@@ -85,6 +85,8 @@ the path sells more Draughts.
 
 Every battle you finish pays coin, whether you knock the creature out or
 tame it — taming is the point of the game, so it is never the poorer option.
+How much is a property of the area, not of what you fought. Losing costs you
+5–10% of your purse and nothing else; your creatures are still restored.
 Check your purse from the pause menu.
 
 Follow the path north, through the gap in the tree line, to reach
@@ -141,7 +143,9 @@ plus the objects placed on it. The symbol table is in
 - Solid: `W` water, `R` rock, `T` tree, `F` fence, `H` wall, `V` roof (put a
   `V` row directly above a matching `H` row to get a two-tile building facade)
 
-The `objects` array places props on the grid: `sign` and `npc` show text,
+`coin_reward` is the `[low, high]` bracket any battle in that area pays,
+rolled uniformly; leave it out for an area with no encounters. The `objects`
+array places props on the grid: `sign` and `npc` show text,
 `spring` restores the party and doubles as a save point, `shop` opens a buy
 menu, and `warp` — invisible, no art — sends the player to a tile on another
 map when they walk onto it. Every map scene lives at

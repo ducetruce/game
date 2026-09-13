@@ -34,6 +34,7 @@ var _forced_switch := false
 
 var _party_creatures: Array = []
 var _wild_creature: Creature = null
+var _coin_reward := Vector2i.ZERO
 
 @onready var _foe_name: Label = $FoePanel/CreatureName
 @onready var _foe_fill: ColorRect = $FoePanel/HealthFill
@@ -47,16 +48,19 @@ var _wild_creature: Creature = null
 @onready var _menu: RichTextLabel = $BottomPanel/MenuText
 
 
-## Called by the overworld before this scene enters the tree.
-func configure(party: Array, wild: Creature) -> void:
+## Called by the overworld before this scene enters the tree. coin_reward is
+## the active map's bracket -- see BattleState.coin_award().
+func configure(party: Array, wild: Creature, coin_reward: Vector2i = Vector2i.ZERO) -> void:
 	_party_creatures = party
 	_wild_creature = wild
+	_coin_reward = coin_reward
 
 
 func _ready() -> void:
 	if _wild_creature == null:
 		_build_demo()
 	_state = BattleState.create(_party_creatures, _wild_creature)
+	_state.coin_reward = _coin_reward
 	_refresh_panels()
 	_queue(PackedStringArray([
 		"A wild %s comes out of the bracken." % _state.foe.creature.display_name(),
@@ -74,6 +78,9 @@ func _build_demo() -> void:
 		Creature.create("emberwick", 12),
 	]
 	_wild_creature = Creature.create("sloughback", 14)
+	# The demo has no map behind it, so it carries its own bracket rather than
+	# paying nothing and reading as if the economy were broken.
+	_coin_reward = Vector2i(10, 18)
 
 
 # --- message queue ---------------------------------------------------------

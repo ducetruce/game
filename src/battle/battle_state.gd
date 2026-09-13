@@ -33,12 +33,9 @@ const PRIORITY_NORMAL := 0
 ## one that sometimes does something else.
 const AI_BEST_MOVE_CHANCE := 0.7
 
-## Coin paid per resolved encounter -- see coin_award(). Kept here rather than
-## in data/ because nothing else in the battle's numbers is data-driven yet
-## (the flee odds and the experience divisor are both constants too), and one
-## inconsistent half-migration is worse than either whole.
-const COIN_BASE := 4
-const COIN_PER_LEVEL := 3
+## Share of the purse a defeat costs, rolled per loss. See _charge_defeat().
+const LOSS_PENALTY_LOW := 0.05
+const LOSS_PENALTY_HIGH := 0.10
 
 var party: Array[Combatant] = []
 var active_index := 0
@@ -65,6 +62,12 @@ var _restrain_cap_ratio := 1.0
 var _foe_healed_this_turn := false
 
 var _flee_attempts := 0
+
+## [low, high] coin a resolved encounter here pays, inclusive. Set by whoever
+## starts the battle, from the map's own data -- coin is a property of the
+## place, not of the creature (docs/DESIGN.md § 20). Left at zero, the battle
+## simply pays nothing, which is what the standalone demo wants.
+var coin_reward := Vector2i.ZERO
 
 
 static func create(party_creatures: Array, wild_creature: Creature, seed_value: int = 0) -> BattleState:
@@ -504,7 +507,11 @@ func _resolve_faints() -> void:
 		return
 	if active().creature.is_fainted():
 		log_lines.append("%s goes down." % active().creature.display_name())
-		phase = Phase.REPLACING if _has_healthy_reserve() else Phase.LOST
+		if _has_healthy_reserve():
+			phase = Phase.REPLACING
+		else:
+			phase = Phase.LOST
+			_charge_defeat()
 
 
 func _mark_participant(index: int) -> void:
@@ -512,21 +519,40 @@ func _mark_participant(index: int) -> void:
 		participants.append(index)
 
 
-## What an encounter pays in coin. Unlike experience_award() this is level-only
-## and ignores the species: experience already carries "that one was worth
-## more", and coin reads better when the player can weigh it against a shop
-## price without knowing a creature's stat spread. Levels 3-7 in the clearing
-## work out to 13-25 a fight, against a 16-20 coin item.
+## A uniform roll inside the area's bracket. Deliberately independent of the
+## foe: a payout that scaled with the creature would quietly tell the player
+## what they had just met, and what an hour somewhere is worth should be a
+## property of the somewhere.
 func coin_award() -> int:
-	return COIN_BASE + COIN_PER_LEVEL * foe.creature.level
+	var low := mini(coin_reward.x, coin_reward.y)
+	var high := maxi(coin_reward.x, coin_reward.y)
+	if high <= 0:
+		return 0
+	return rng.randi_range(maxi(0, low), high)
 
 
 ## Paid whether the foe went down or was attuned. Attunement is what the whole
 ## design is pointed at, so it must not quietly be the poorer option.
 func _grant_coin() -> void:
 	var award := coin_award()
+	if award <= 0:
+		return
 	Inventory.coin += award
 	log_lines.append("You collect %d coin." % award)
+
+
+## Defeat costs coin and nothing else: creatures are still restored and the
+## player is still put back on the path. Money is what the player accumulates,
+## so it is the thing worth losing -- taking creatures or progress would punish
+## exactly the play we want. A player with nothing loses nothing, on purpose:
+## the floor should not be a wall.
+func _charge_defeat() -> void:
+	var lost := int(floorf(float(Inventory.coin)
+		* rng.randf_range(LOSS_PENALTY_LOW, LOSS_PENALTY_HIGH)))
+	if lost <= 0:
+		return
+	Inventory.coin -= lost
+	log_lines.append("You come away %d coin lighter." % lost)
 
 
 ## What the defeated creature is worth. Scales with its level and with how

@@ -6,6 +6,11 @@
     20,
     20
   ],
+  "_coin_comment": "[low, high] coin any resolved encounter here pays, rolled uniformly. A property of the area, not of the creature -- see docs/DESIGN.md section 20.",
+  "coin_reward": [
+    10,
+    18
+  ],
   "objects": [
     {
       "type": "sign",

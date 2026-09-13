@@ -29,6 +29,10 @@ var id := ""
 var display_name := ""
 var grid_size := Vector2i.ZERO
 
+## [low, high] coin a resolved encounter here pays, inclusive. Zero means this
+## area pays nothing, which is right for somewhere with no encounters at all.
+var coin_reward := Vector2i.ZERO
+
 var _player_start := Vector2i.ZERO
 var _rows := PackedStringArray()
 var _encounters := {}
@@ -49,6 +53,7 @@ func _ready() -> void:
 	id = str(data.get("id", name))
 	display_name = str(data.get("display_name", name))
 	_player_start = _tile_from(data["player_start"])
+	coin_reward = _tile_from(data.get("coin_reward", [0, 0]))
 	_encounters = data.get("encounters", {})
 	_paint(data["tiles"])
 	_spawn_objects(data.get("objects", []))

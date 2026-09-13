@@ -399,6 +399,11 @@ def check_creatures(doc, types: list[str], moves: dict) -> dict:
     return by_id
 
 
+def encounters_declared(doc: dict) -> bool:
+    table = doc.get("encounters")
+    return isinstance(table, dict) and bool(table)
+
+
 def check_maps(types: list[str], creatures: dict, items: dict) -> int:
     """Validates every map in data/maps/. Returns how many were checked."""
     maps_dir = os.path.join(DATA, "maps")
@@ -457,6 +462,18 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
                     % (label, x, y, rows[y][x]))
 
         walkable_at(doc.get("player_start"), "player_start")
+
+        # Coin bracket. Absent means "this area pays nothing", which is right
+        # for somewhere with no encounters, so only a malformed one is an error.
+        bracket = doc.get("coin_reward")
+        if bracket is not None:
+            if (not isinstance(bracket, list) or len(bracket) != 2
+                    or not all(isinstance(v, int) for v in bracket)):
+                err(where, "coin_reward must be [low, high] integers, got %r" % (bracket,))
+            elif not (0 <= bracket[0] <= bracket[1]):
+                err(where, "coin_reward %r must satisfy 0 <= low <= high" % (bracket,))
+        elif encounters_declared(doc):
+            warn(where, "has encounters but no coin_reward, so its battles pay nothing")
 
         for i, spec in enumerate(doc.get("objects", [])):
             label = "objects[%d]" % i

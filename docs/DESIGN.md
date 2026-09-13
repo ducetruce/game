@@ -940,7 +940,12 @@ the player got one starting purse and that was the whole economy (§ 13 left
 this open deliberately). Aldenmere (§ 16) had the matching problem from the
 other side -- a village with nothing to do in it.
 
-**Encounters pay, and taming pays the same as killing.** `coin_award()` is
+> **Superseded in part by § 20.** The `4 + 3 × level` formula below lasted
+> one playtest and is gone: coin is now a bracket declared by the area and
+> rolled uniformly, independent of the creature. Everything else here — that
+> encounters pay at all, and that taming pays the same as killing — stands.
+
+**Encounters pay, and taming pays the same as killing.** `coin_award()` was
 `4 + 3 × the foe's level`, granted on `WON` and on `ATTUNED` alike. Paying
 only for knockouts is the traditional choice and it was rejected here: the
 entire design points at Attunement, and an economy that quietly made taming
@@ -982,26 +987,90 @@ and absurd once battles move it. The pause menu (§ 18) shows it.
 
 ---
 
+## 20. The standing questions, answered
+
+All twelve open questions were decided in one pass. They are recorded here
+before most of them are built, because several constrain each other: a
+revive only became acceptable once losing started costing something, and
+per-area coin only makes sense once coin stopped scaling off the creature.
+Where an answer needed a number that was not given, the number chosen is
+called out as mine rather than smuggled in as if it were decided.
+
+**Coin belongs to the area, not the creature.** § 19's `4 + 3 x level` is
+withdrawn. Each map declares a bracket in its own JSON and every resolved
+encounter there pays a uniform roll inside it, so what an hour in a place is
+worth is a property of the place. This also means the number stops leaking
+information about the creature you just met -- a heavy payout no longer
+quietly tells you it was a rare one. Still paid on a knockout and an
+attunement alike (§ 19). *Mine:* the Hollow Clearing pays 10-18, against
+16-20 coin items.
+
+**Losing costs 5-10% of the purse**, rolled per loss, and nothing else --
+creatures are still restored and the player is still put back on the path.
+Money is the right thing to lose because it is the only resource the player
+is accumulating; taking creatures or progress would punish the part of the
+game we want people doing. A player with nothing loses nothing, which is
+correct: the floor should not be a wall.
+
+**The item catalog grows**, revives included. The objection to a revive was
+that it softened the only consequence of losing; losing now has a
+consequence a revive cannot undo, so the objection is spent.
+
+**Critical hits exist.** *Mine:* an uncommon roll at a modest multiplier
+rather than a rare roll at a big one, because the design leans on readable
+combat and a 2x spike makes a fight unplannable. The interaction that
+matters is with the Tempering Draught: a crit must respect the restrain cap,
+or the one item whose entire job is preventing an accidental kill would have
+a hole in it exactly when it matters most.
+
+**Battles with no moves left resolve by Struggle**, adopted from Pokémon: a
+typeless attack that cannot miss and hurts the user too. It is the rule that
+makes "both sides out of moves" terminate without a draw state, and the
+recoil is what stops it being a free infinite move.
+
+**Attunement stays wild-only.** Nobody else owns creatures yet; when tamers
+exist, taking one out from under its owner is a different mechanic with
+different consent, not a reuse of this one.
+
+**Experience curve, and moves learned by level.** Both confirm what is
+already built (§ 10) -- recorded so they stop reading as undecided.
+
+**Level-up asks which move to forget.** Today a full move list announces the
+new move and skips it, which silently costs the player the thing they just
+earned.
+
+**Storage exists, on the Pokémon model:** party of six, everything else into
+boxes, accessible somewhere fixed rather than anywhere.
+
+**Save slots: one slot, plus a peek.** *Mine, asked for.* Slots exist to let
+one person keep parallel playthroughs, and nothing in the game yet gives a
+reason to branch; the cost is a slot-select step on both saving and loading
+plus per-slot files. What is worth taking now is the other half -- a
+`SaveGame` read that does not apply, so Continue can say which map and what
+party it would resume. That is the part with a use today, and it is also the
+API multiple slots would need first, so nothing is wasted if slots arrive
+later.
+
+**Interactable solidity is per-interactable**, declared by the object rather
+than assumed by the type, defaulting to solid. A ground item or a floor
+plaque should be walkable and still probeable; a person should not be.
+
+---
+
 ## Open questions
 
-- Party size beyond the current cap of six, and whether there is storage.
-- A prompt for choosing which move to forget at level up.
-- Whether losing should cost anything at all.
-- What ends a battle in which both sides have exhausted every move.
-- Whether critical hits exist at all, given how much the design leans on
-  readable, near-deterministic combat.
-- Whether Attunement is available against tamer-owned creatures, or wild only.
-- What the coin payout should actually be. Encounters pay now (§ 19), but
-  `4 + 3 x level` against 16-20 coin items was picked by reasoning, not by
-  playing -- and with only two items to buy, a long session banks coin it
-  has nothing to spend on.
-- Whether the item catalog grows further (held items, revives) or stays at
-  the two it has. A revive in particular was set aside because it softens
-  the only real consequence of losing, which is still open below.
-- Levelling: experience curve, or milestone-based growth.
-- Whether moves are learned by level, by taught item, or by Temperament.
-- Whether interactables should be solid by default, or whether some
-  (ground items, plaques) should be walkable and probed anyway.
-- Multiple save slots, which need a way to read a save without applying it
-  (see § 17). The shell itself is done: title screen (§ 17), pause menu and
-  manual save (§ 18), party screen (§ 15).
+Everything below is downstream of § 20 -- numbers to feel rather than
+decisions to make, plus what has not been reached yet.
+
+- The exact crit rate and multiplier, the Struggle recoil fraction, and the
+  Hollow Clearing's 10-18 coin bracket. All picked by reasoning; all single
+  constants, and all want a session of actual play to judge.
+- Which items the catalog grows by, beyond the revive that § 20 unblocked.
+  Held items in particular imply an equip step that does not exist.
+- What a second area's coin bracket should be, once there is one with
+  encounters in it -- Aldenmere has none.
+- Where storage is accessed from, and whether a full party sends a newly
+  attuned creature to a box rather than letting it slip away (it currently
+  slips away).
+- Multiple save slots, deferred in § 20 rather than rejected.
+- Tamer battles, which Attunement is now explicitly not part of.
