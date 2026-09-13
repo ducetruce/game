@@ -1598,6 +1598,48 @@ there is a fourth.
 
 ---
 
+## 32. Three creatures, and the first dual types
+
+The roster was one creature per type, seven single-typed, and the two new
+areas were drawing on the same seven the clearing does. Three more, and all
+three dual-typed, which the data model has always allowed and nothing had
+used:
+
+- **Rushwither** (bloom/wane, skittish) grows back along the fen road's dead
+  channel and leans away from you at exactly the speed you approach.
+- **Reedwitch** (mire/gale, feral) stands in the mere's reed beds at the
+  height of the reeds and moves when they move.
+- **Drownbell** (mire/wane, proud) hangs a hand's width under the surface and
+  does not rise. The rarest thing at the mere, and the one that reads as
+  having been there before whatever the story is about.
+
+Dual typing means a creature can be x4 weak or x0.25 resistant, which is a
+sharper edge than the chart's flat two-strengths-two-weaknesses shape (§ 5)
+produces on its own. That is the point of using it sparingly: the seven
+single-typed creatures remain the readable baseline, and a dual type is a
+thing worth noticing rather than the norm. Base stat totals stay in the
+established 320-336 band, so what differs is shape and matchup, not power.
+
+The placeholder generator draws a dual-typed creature in its first type's
+colours and grew three new silhouettes, so they do not all fall back to the
+hound shape.
+
+`UiFit` caught one more thing on the way: the codex's roster line was one row
+of every creature in the game, and the tenth wrapped it onto a second row the
+box had no height for. Growing the box would only have moved the problem to
+the eleventh, so the line now shows a window of seven around the selection
+with markers for the rest -- the fourth screen to get that treatment.
+
+While checking them on a battle screen: every fight in the game opened with
+"comes out of the bracken", including the ones on the mere's reed beds, which
+have no bracken anywhere on them. The terrain symbol already reaches the
+battle; it now carries its name with it (`TileLegend.terrain_name`), with a
+fallback that is true of any ground, since a forced encounter can start on a
+path.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than

@@ -33,6 +33,22 @@ const SOLID := {
 }
 
 
+## What a battle's opening line calls the ground a creature came out of.
+## Only the encounter terrains need one; anything else falls back to something
+## true of every map, since a forced encounter can start on a path.
+const TERRAIN_NAMES := {
+	"b": "the bracken",
+	"r": "the reeds",
+	"G": "the long grass",
+	"g": "the long grass",
+}
+const DEFAULT_TERRAIN_NAME := "cover"
+
+
+static func terrain_name(symbol: String) -> String:
+	return TERRAIN_NAMES.get(symbol, DEFAULT_TERRAIN_NAME)
+
+
 static func is_solid(symbol: String) -> bool:
 	return SOLID.has(symbol)
 

@@ -39,6 +39,9 @@ var _state: BattleState = null
 ## that breaks on the next piece of content. See docs/DESIGN.md § 29.
 const VISIBLE_ROWS := 5
 
+const DEFAULT_ORIGIN := "the bracken"
+
+var _origin := DEFAULT_ORIGIN
 var _ui := Ui.MESSAGE
 ## First row of the menu window, when the list is longer than it.
 var _scroll := 0
@@ -67,10 +70,15 @@ var _coin_reward := Vector2i.ZERO
 
 ## Called by the overworld before this scene enters the tree. coin_reward is
 ## the active map's bracket -- see BattleState.coin_award().
-func configure(party: Array, wild: Creature, coin_reward: Vector2i = Vector2i.ZERO) -> void:
+## `origin` is what the opening line calls the ground the creature came out of.
+## It was "the bracken" for every battle in the game, including the ones on the
+## mere's reed beds, which have no bracken anywhere on them.
+func configure(party: Array, wild: Creature, coin_reward: Vector2i = Vector2i.ZERO,
+		origin: String = DEFAULT_ORIGIN) -> void:
 	_party_creatures = party
 	_wild_creature = wild
 	_coin_reward = coin_reward
+	_origin = origin
 
 
 func _ready() -> void:
@@ -80,7 +88,7 @@ func _ready() -> void:
 	_state.coin_reward = _coin_reward
 	_refresh_panels()
 	_queue(PackedStringArray([
-		"A wild %s comes out of the bracken." % _state.foe.creature.display_name(),
+		"A wild %s comes out of %s." % [_state.foe.creature.display_name(), _origin],
 		"Go on, %s." % _state.active().creature.display_name(),
 	]))
 	_show_next_message()

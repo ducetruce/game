@@ -280,6 +280,141 @@
         }
       ],
       "description": "Runs the ridgeline in a straight line for hours. Will not be driven off, and will not be first to look away."
+    },
+    {
+      "id": "reedwitch",
+      "name": "Reedwitch",
+      "types": [
+        "mire",
+        "gale"
+      ],
+      "temperament": "feral",
+      "attunement_rate": 0.8,
+      "base_stats": {
+        "hp": 56,
+        "attack": 50,
+        "defense": 44,
+        "spirit": 68,
+        "resolve": 48,
+        "speed": 66
+      },
+      "learnset": [
+        {
+          "level": 1,
+          "move": "miasma"
+        },
+        {
+          "level": 1,
+          "move": "quicken"
+        },
+        {
+          "level": 6,
+          "move": "updraft"
+        },
+        {
+          "level": 13,
+          "move": "silt_drag"
+        },
+        {
+          "level": 20,
+          "move": "keening"
+        },
+        {
+          "level": 28,
+          "move": "long_dusk"
+        }
+      ],
+      "description": "Stands in the reed beds at the height of the reeds and moves when they move. What it is doing there, it has been doing for some time."
+    },
+    {
+      "id": "rushwither",
+      "name": "Rushwither",
+      "types": [
+        "bloom",
+        "wane"
+      ],
+      "temperament": "skittish",
+      "attunement_rate": 1.0,
+      "base_stats": {
+        "hp": 60,
+        "attack": 46,
+        "defense": 58,
+        "spirit": 62,
+        "resolve": 56,
+        "speed": 38
+      },
+      "learnset": [
+        {
+          "level": 1,
+          "move": "thorn_lash"
+        },
+        {
+          "level": 1,
+          "move": "bristle"
+        },
+        {
+          "level": 8,
+          "move": "witherpalm"
+        },
+        {
+          "level": 15,
+          "move": "seedburst"
+        },
+        {
+          "level": 23,
+          "move": "mend"
+        },
+        {
+          "level": 30,
+          "move": "long_dusk"
+        }
+      ],
+      "description": "Green things grow back along the dry channel, and this is what they grow into. It leans away from you at the exact speed you approach."
+    },
+    {
+      "id": "drownbell",
+      "name": "Drownbell",
+      "types": [
+        "mire",
+        "wane"
+      ],
+      "temperament": "proud",
+      "attunement_rate": 0.6,
+      "base_stats": {
+        "hp": 70,
+        "attack": 42,
+        "defense": 64,
+        "spirit": 72,
+        "resolve": 56,
+        "speed": 28
+      },
+      "learnset": [
+        {
+          "level": 1,
+          "move": "miasma"
+        },
+        {
+          "level": 1,
+          "move": "mend"
+        },
+        {
+          "level": 10,
+          "move": "witherpalm"
+        },
+        {
+          "level": 18,
+          "move": "weight_of_years"
+        },
+        {
+          "level": 26,
+          "move": "long_dusk"
+        },
+        {
+          "level": 34,
+          "move": "keening"
+        }
+      ],
+      "description": "It hangs a hand's width under the surface and does not rise for anything. Whatever the mere is holding, this was here before it."
     }
   ]
 }

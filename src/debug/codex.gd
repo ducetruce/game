@@ -66,9 +66,23 @@ func _refresh() -> void:
 	_render_matchup(species, foe)
 
 
+## A window of names centred on the selection, not the whole roster: the
+## roster line was one row of every creature in the game, and the tenth
+## creature wrapped it onto a second row that the box had no height for. A
+## line that grows with the content is a line that breaks on the next piece
+## of it. See docs/DESIGN.md § 29.
+const ROSTER_WINDOW := 7
+
+
 func _render_roster() -> void:
+	var half := ROSTER_WINDOW / 2
+	var first := clampi(_index - half, 0, maxi(0, _ids.size() - ROSTER_WINDOW))
+	var last := mini(_ids.size(), first + ROSTER_WINDOW)
+
 	var names := PackedStringArray()
-	for i in _ids.size():
+	if first > 0:
+		names.append("[color=#%s]<[/color]" % COLOR_DIM)
+	for i in range(first, last):
 		var species := Content.get_species(_ids[i])
 		var label := species.display_name if species != null else _ids[i]
 		if i == _index:
@@ -77,6 +91,8 @@ func _render_roster() -> void:
 			names.append("[color=#%s]%s[/color]" % [COLOR_HEAD, label])
 		else:
 			names.append("[color=#%s]%s[/color]" % [COLOR_DIM, label])
+	if last < _ids.size():
+		names.append("[color=#%s]>[/color]" % COLOR_DIM)
 	_roster.text = " ".join(names)
 
 

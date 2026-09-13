@@ -358,6 +358,26 @@ def draw_creature(c: Canvas, shape: str, base, hi, lo) -> None:
                 c.rect(16 - width // 2, yy, width, 1, lo)
         c.set(14, 11, lo)
         c.set(18, 11, lo)
+    elif shape == "reed":                         # reedwitch
+        for stalk_x, top in ((13, 6), (16, 3), (19, 7)):
+            c.rect(stalk_x, top, 2, 26 - top, lo)
+        c.blob(16, 12, 5, 7, base)                # the shape standing in them
+        c.blob(16, 7, 3, 3, hi)                   # head, level with the reeds
+        c.set(15, 7, lo)
+        c.set(18, 7, lo)
+    elif shape == "husk":                         # rushwither
+        c.rect(14, 14, 4, 15, lo)                 # bowed stem
+        c.blob(15, 12, 5, 6, base)
+        c.blob(14, 9, 4, 4, hi)                   # head, turned away
+        for leaf_y in (16, 20, 24):               # leaves, all on one side
+            c.rect(18, leaf_y, 5, 2, base)
+        c.rect(9, 18, 4, 2, lo)
+    elif shape == "bell":                         # drownbell
+        c.blob(16, 13, 8, 7, base)                # the bell itself
+        c.blob(16, 10, 6, 4, hi)
+        c.rect(8, 15, 16, 2, lo)                  # rim
+        for thread_x in (10, 13, 16, 19, 22):     # threads, uneven lengths
+            c.rect(thread_x, 17, 1, 6 + (thread_x % 4) * 2, lo)
     else:                                          # moorhound
         c.blob(15, 18, 10, 5, base)
         c.blob(24, 14, 5, 4, hi)                  # head
@@ -376,6 +396,9 @@ SHAPES = {
     "emberwick": "wick",
     "gloamkin": "wisp",
     "moorhound": "hound",
+    "reedwitch": "reed",
+    "rushwither": "husk",
+    "drownbell": "bell",
 }
 
 

@@ -128,6 +128,22 @@
             11,
             14
           ]
+        },
+        {
+          "species": "reedwitch",
+          "weight": 18,
+          "levels": [
+            9,
+            13
+          ]
+        },
+        {
+          "species": "drownbell",
+          "weight": 8,
+          "levels": [
+            11,
+            14
+          ]
         }
       ]
     }

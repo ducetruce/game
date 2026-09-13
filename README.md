@@ -139,7 +139,8 @@ The road itself goes the long way round: west along an old drainage cut,
 north past a **sluice gate** with a spring beside it, then east and north to
 the shore. There is a **pedlar** by the sluice who sells the **Ninebark
 Tonic** — five uses back into every move a creature knows, the only way to
-top moves up away from a spring. The whole middle of the fen is bracken. Cutting straight from gate
+top moves up away from a spring. The **Rushwither** grows only along the
+fen's dead channel. The whole middle of the fen is bracken. Cutting straight from gate
 to gate is four tiles shorter and nine tiles of fighting, which is the choice
 the area is there to offer.
 
@@ -147,8 +148,8 @@ North again from the road is **the
 Hollowmere** itself — open water, a shingle shore, and reed beds that are the
 area's encounter terrain. What lives there is four to seven levels above the
 clearing and pays better for it (18–30 coin a fight against the clearing's
-10–18), and the rocks along the shore are the only place a **Cairnling** can
-be found.
+10–18). The reed beds are the only place a **Cairnling**, a **Reedwitch** or
+a **Drownbell** can be found, and the last of those is rare.
 
 The **shrine** on the east side of the plaza is where creatures you are not
 carrying wait. You can hold six; the rest are kept there, and the shrine is
