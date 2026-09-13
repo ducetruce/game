@@ -1348,6 +1348,47 @@ Aldenmere's stall sells it now. Worth a standing habit: anything added to
 
 ---
 
+## 28. A debug menu, and the debounce bug caught building it
+
+Every bug found in this project has been found by playing, and playing to the
+part worth testing meant walking three maps and grinding a party up first.
+`F1` now opens a developer menu: jump to any map, patch the party up, force
+an encounter, grant coin, items, a Lv12 creature, or three levels, over a
+readout of what the overworld currently believes -- map, tile, terrain under
+foot, encounter chance, the area's coin bracket, purse, party HP.
+
+**Gated on `OS.is_debug_build()`, in two places.** The node frees itself at
+`_ready` outside a debug build, and the `F1` check is gated too. Absent from
+a release export rather than hidden behind an undocumented key, because an
+undocumented key is one somebody finds.
+
+**Building it reproduced § 15's debounce bug for the third time.** Closing
+with `F1` emits `closed`, which hands input back in the same physics frame
+the press is still "just pressed" in, so the overworld reopened it instantly
+-- the menu could not be closed with the key that opened it. The two menu
+keys beside it are both gated on `_menu_lock`; the new one was not, because
+the rule lives in a doc rather than in the code. Worth noting that this is
+now the failure mode of *writing the rule down*: § 15 predicted precisely
+this and it still happened.
+
+**Commands that take input over themselves need `dismiss()`, not close.**
+Jumping maps and forcing an encounter both hide the menu without emitting
+`closed`, because `closed` would hand input to the player for the frame
+before the command takes it. The forced encounter hands input back explicitly
+first -- `_begin_encounter` bails early when the party is empty or wiped, and
+without that the player would be left frozen with the menu already gone.
+
+**Three test-harness lessons, all the same shape as the § 25/§ 27 ones.**
+Synthetic taps sent in one frame arrive in one input flush, so the first
+press after opening a menu lands before it starts listening -- counted
+keypresses silently drifted the cursor one row, and the test then exercised
+the wrong command while looking like it exercised the right one. It now
+*seeks* the cursor by command id and asserts where it actually landed. And
+the menu outgrew its panel again (nine rows in a box for eight, the third
+time), which no assertion caught and a screenshot showed immediately.
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than

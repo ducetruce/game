@@ -284,6 +284,14 @@ func warp_at(world_position: Vector2) -> Dictionary:
 	return _warps.get(tile_at(world_position), {})
 
 
+## Tile symbols this map can produce encounters on, in declaration order.
+func encounter_symbols() -> PackedStringArray:
+	var symbols := PackedStringArray()
+	for symbol in _encounters:
+		symbols.append(str(symbol))
+	return symbols
+
+
 ## Per-check probability for this terrain. Zero means no encounters here.
 func encounter_chance(symbol: String) -> float:
 	if symbol.is_empty() or not _encounters.has(symbol):

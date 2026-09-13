@@ -21,6 +21,7 @@ No third-party assets, code, or creature designs.
 | `Z` / `Space` / `Enter` | Interact, advance text, confirm menus |
 | `X` / `Esc` | Back out of a menu — or, in the overworld, pause (resume / party / bag / save / quit to title) |
 | `M` / `Tab` | Open/close the party screen |
+| `F1` | Debug menu — jump between maps, heal, force a fight, grant coin/items/levels. Debug builds only |
 
 ## Project layout
 

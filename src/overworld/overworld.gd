@@ -30,6 +30,7 @@ const TITLE_SCENE := "res://scenes/ui/title_screen.tscn"
 @onready var _pause_menu: Node = $PauseMenu
 @onready var _bag_menu: Node = $BagMenu
 @onready var _storage_menu: Node = $StorageMenu
+@onready var _debug_menu: Node = $DebugMenu
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _fade: ColorRect = $FadeLayer/Fade
@@ -84,6 +85,14 @@ func _ready() -> void:
 	_pause_menu.bag_requested.connect(_on_pause_bag_requested)
 	_pause_menu.save_requested.connect(_on_pause_save_requested)
 	_pause_menu.quit_to_title_requested.connect(_on_pause_quit_requested)
+	# Absent from a release export rather than merely hidden: a key nobody
+	# documented is still a key someone finds.
+	if OS.is_debug_build():
+		_debug_menu.opened.connect(_on_ui_opened)
+		_debug_menu.closed.connect(_on_ui_closed)
+		_debug_menu.command_chosen.connect(_on_debug_command)
+	else:
+		_debug_menu.queue_free()
 	_fade.color.a = 0.0
 
 	var map_id := DEFAULT_MAP_ID
@@ -193,6 +202,94 @@ func _on_pause_quit_requested() -> void:
 	get_tree().change_scene_to_file(TITLE_SCENE)
 
 
+# --- debug menu ------------------------------------------------------------
+# Everything below is developer convenience and never runs in a release build.
+
+## What the overworld currently believes, for the debug readout. Built here
+## rather than reached for, so the menu stays a menu.
+func _debug_state() -> Dictionary:
+	var symbol := _map.terrain_at(_player.global_position)
+	var hp := PackedStringArray()
+	for creature in Party.members:
+		hp.append("%s %d/%d" % [creature.display_name(), creature.current_hp, creature.max_hp()])
+	return {
+		"map": _map.id,
+		"tile": str(_map.tile_at(_player.global_position)),
+		"terrain": symbol,
+		"chance": "%.0f%%" % (_map.encounter_chance(symbol) * 100.0),
+		"reward": str(_map.coin_reward),
+		"coin": str(Inventory.coin),
+		"party": " | ".join(hp) if not hp.is_empty() else "empty",
+	}
+
+
+func _on_debug_command(id: String) -> void:
+	match id:
+		"restore":
+			Party.restore_all()
+		"coin":
+			Inventory.coin += 200
+		"items":
+			for item_id in ["tempering_draught", "knitbone_salve", "waking_root"]:
+				Inventory.add(item_id, 5)
+		"recruit":
+			_debug_recruit()
+		"level":
+			_debug_level_up()
+		"encounter":
+			_debug_encounter()
+			return  # the encounter closes the menu itself
+		_:
+			if id.begins_with("goto_"):
+				_debug_goto(id.trim_prefix("goto_"))
+				return
+	_debug_menu.show_state(_debug_state())
+
+
+## Cycles through the roster so repeated presses build a varied party rather
+## than six of the same thing.
+func _debug_recruit() -> void:
+	var roster := Content.species_ids()
+	if roster.is_empty():
+		return
+	var pick := roster[Party.size() % roster.size()]
+	var creature := Creature.create(pick, 12)
+	if not Party.add(creature):
+		Storage.deposit(creature)
+
+
+func _debug_level_up() -> void:
+	for creature in Party.members:
+		var target := Creature.experience_for_level(mini(creature.level + 3, SpeciesData.MAX_LEVEL))
+		creature.gain_experience(maxi(0, target - creature.experience))
+
+
+## Uses whatever is under the player if it spawns anything, else the first
+## terrain this map declares -- so it works standing on a path.
+func _debug_encounter() -> void:
+	var symbol := _map.terrain_at(_player.global_position)
+	if _map.encounter_chance(symbol) <= 0.0:
+		var declared := _map.encounter_symbols()
+		if declared.is_empty():
+			_debug_menu.show_state(_debug_state())
+			return
+		symbol = declared[0]
+	_debug_menu.dismiss()
+	# Handed back first: _begin_encounter takes it again if a fight actually
+	# starts, and bails early if it cannot -- leaving the player frozen with
+	# the menu already gone if input were left disabled.
+	_player.input_enabled = true
+	_last_position = _player.global_position
+	_begin_encounter(symbol)
+
+
+func _debug_goto(map_id: String) -> void:
+	_debug_menu.dismiss()
+	_load_map(map_id, null)
+	_player.input_enabled = true
+	_tracker.start_grace()
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_autosave()
@@ -213,6 +310,16 @@ func _physics_process(delta: float) -> void:
 
 	if _menu_lock <= 0.0 and Input.is_action_just_pressed("cancel"):
 		_pause_menu.open_menu()
+		return
+
+	# Gated on the menu lock like the two above it. Without that, closing with
+	# F1 re-enables input in the same physics frame the press is still "just
+	# pressed" in, and the menu reopens instantly -- § 15's debounce bug, in a
+	# third place, because a new menu was added without applying the rule.
+	if OS.is_debug_build() and _menu_lock <= 0.0 \
+			and Input.is_action_just_pressed("debug_menu"):
+		_debug_menu.show_state(_debug_state())
+		_debug_menu.open_menu()
 		return
 
 	var moved := _player.global_position.distance_to(_last_position)

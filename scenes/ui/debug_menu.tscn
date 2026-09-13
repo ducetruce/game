@@ -1,0 +1,65 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/debug_menu.gd" id="1_debug"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_box"]
+bg_color = Color(0.0588235, 0.0705882, 0.0980392, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.560784, 0.705882, 0.850980, 1)
+
+[node name="DebugMenu" type="CanvasLayer"]
+layer = 5
+script = ExtResource("1_debug")
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 6.0
+offset_top = 4.0
+offset_right = 314.0
+offset_bottom = 178.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Title" type="Label" parent="Panel"]
+offset_left = 6.0
+offset_top = 2.0
+offset_right = 296.0
+offset_bottom = 13.0
+theme_override_colors/font_color = Color(0.560784, 0.705882, 0.85098, 1)
+theme_override_font_sizes/font_size = 8
+text = "debug — not in release builds"
+
+[node name="Readout" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 14.0
+offset_right = 300.0
+offset_bottom = 50.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="Separator" type="ColorRect" parent="Panel"]
+offset_left = 6.0
+offset_top = 52.0
+offset_right = 296.0
+offset_bottom = 53.0
+color = Color(0.560784, 0.705882, 0.85098, 0.4)
+
+[node name="Menu" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 55.0
+offset_right = 296.0
+offset_bottom = 163.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="Footer" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 163.0
+offset_right = 300.0
+offset_bottom = 175.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
