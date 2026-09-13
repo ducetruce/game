@@ -23,6 +23,9 @@ Inventory="*res://src/data/inventory.gd"
 
 ; Must come after Content too: rebuilding a stored creature needs species data.
 Storage="*res://src/data/storage.gd"
+
+; Must come after Content as well: the stage list is parsed there. See § 30.
+Journal="*res://src/data/journal.gd"
 SaveGame="*res://src/data/save_game.gd"
 
 ; Debug-build only: warns when a menu is clipping its own text. See § 29.

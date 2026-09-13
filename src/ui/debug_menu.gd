@@ -24,6 +24,7 @@ const COLOR_HEAD := "8fb4d9"
 const COMMANDS := [
 	["goto_hollow_clearing", "Go to the Hollow Clearing"],
 	["goto_village_square", "Go to Aldenmere"],
+	["goto_fen_road", "Go to the Fen Road"],
 	["goto_mere_shore", "Go to the Hollowmere"],
 	["restore", "Patch the party up"],
 	["encounter", "Force an encounter"],

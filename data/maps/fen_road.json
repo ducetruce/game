@@ -1,0 +1,233 @@
+{
+  "id": "fen_road",
+  "display_name": "The Fen Road",
+  "player_start": [
+    27,
+    26
+  ],
+  "coin_reward": [
+    14,
+    22
+  ],
+  "tiles": [
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTPPTTTTTTTTTTTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTPPTTTTTTTTTTTT",
+    "TGGGGGGGGGGGGGGGGGTTTTGGGGGPPGGGGGGGGGGGT",
+    "TGTbbbbbbGGGGGGGGGTTTTGGGGGPPGGGGGGTTTTGT",
+    "TGTbbbbbbgGGGGGGGGGbbbbbbbGPPGGGGGGTTTTGT",
+    "TGTbbbbbbGGGGGGgGGGbbbbbbbGPPGGGGGGTTTTGT",
+    "TGTbbbbbbGGGGGGGGGGbbbbbbbGPPGRRRGGGGGGGT",
+    "TGGbbbbbbGGGGGGGGGGbbbbbbbGPPGRRRGGGGGGGT",
+    "TGGGGGGGGGPPPPPPPPPPPPPPPPPPPGGGGgGGGGGGT",
+    "TGGGGGgGGGPPFPPFPPPPPPPPPPPPPGGGGGGGGGGGT",
+    "TGTTTGGGGGPPFWWFGGGGGGGGGGGGGGGGGGGGTTTGT",
+    "TGTTTGGGGGPPFWWFbbbbbbbbbbbbbbbbbbbbTTTGT",
+    "TGTTTGGGGGPPGWWGbbbbbbbbbbbbbbbbbbbbTTTGT",
+    "TGGGGGGGGGPPGWWGbbbbbbbbbbbbbbbbbbbbTTTGT",
+    "TGGGGGTTTGPPGWWGbbbbbbbbbbbbbbbbbbbbTTTGT",
+    "TGGGGGTTTGPPGWWGbbbbbbbbbbbbbbbbbbbbTTTGT",
+    "TGGGGGTTTGPPGWWGbbbbbbbbbbbbbbbbbbbbTTTGT",
+    "TGGGGGGGGGPPGWWGbbbbbbbbbbbbbbbbbbbbGGGGT",
+    "TGGGGGGGGGPPgWWGbbbbbbbbbbbbbbbbbbbbGGGGT",
+    "TGGGGGGgGGPPGWWGbbbbbbbbbbbbbbbbbbbbGGGGT",
+    "TGGGGGGGGGPPPPPPPPPPPPPPPPPPPgGGGGGGGGGGT",
+    "TGTTGGGGGGPPPPPPPPPPPPPPPPPPPGGGGTTTTTTGT",
+    "TGTbbbbbbbGGGWWGgGGGGGgGGGGPPGGGGTTTTTTGT",
+    "TGTbbbbbbbGGGWWGGRRRGGGGGGGPPGGGGTTTTTTGT",
+    "TGTbbbbbbbGGGWWGGRRRGGGGGGGPPGGGGTTTTTTGT",
+    "TGGbbbbbbbGGGWWWWWWWWWWWWGGPPGGgGGGGGGGGT",
+    "TTTbbbbbbbTTTWWWWWWWWWWWWTTPPTTTTTTTTTTTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTPPTTTTTTTTTTTT"
+  ],
+  "objects": [
+    {
+      "type": "warp",
+      "tile": [
+        27,
+        27
+      ],
+      "target_map": "village_square",
+      "target_tile": [
+        27,
+        1
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        28,
+        27
+      ],
+      "target_map": "village_square",
+      "target_tile": [
+        28,
+        1
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        27,
+        0
+      ],
+      "target_map": "mere_shore",
+      "target_tile": [
+        27,
+        22
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        28,
+        0
+      ],
+      "target_map": "mere_shore",
+      "target_tile": [
+        28,
+        22
+      ]
+    },
+    {
+      "type": "sign",
+      "tile": [
+        26,
+        24
+      ],
+      "text": [
+        "ALDENMERE BEHIND. THE MERE AHEAD.",
+        "Under that, scratched in later and not by the same hand: 'the cut is dry. dont drink from it.'"
+      ]
+    },
+    {
+      "type": "npc",
+      "tile": [
+        12,
+        20
+      ],
+      "tint": [
+        0.8,
+        0.9,
+        1.0
+      ],
+      "text": [
+        "The channel's been my job for thirty years. Keep it clear, keep it moving.",
+        "It's clear. It isn't moving. You tell me which of those is my fault."
+      ],
+      "stage_text": [
+        {
+          "from": "the_road",
+          "text": [
+            "You're the one they sent up from the village. Good.",
+            "This cut drains the mere south to Aldenmere. Thirty years I've kept it clear.",
+            "It's clear now. And it's dry. Water doesn't stop unless something stops it.",
+            "Whatever that is, it's up at the head, not down here. Go and look."
+          ]
+        },
+        {
+          "from": "the_shore",
+          "text": [
+            "You saw it, then. I can tell by your face.",
+            "Thirty years I kept the cut clear, and the thing stopping it was never in the cut."
+          ]
+        }
+      ],
+      "sets_stage": "the_sluice"
+    },
+    {
+      "type": "sign",
+      "tile": [
+        16,
+        10
+      ],
+      "text": [
+        "The sluice gate. The frame is sound, the boards are sound, the mechanism turns.",
+        "Below it the channel bed is grey and cracked and has been for some time.",
+        "Nothing here is broken. That is the part that bothers you."
+      ]
+    },
+    {
+      "type": "spring",
+      "tile": [
+        18,
+        10
+      ],
+      "text": [
+        "A seep comes out of the bank beside the dead channel, thin and cold and perfectly clear.",
+        "You wash the fen off and let your creatures drink. Whatever is wrong upstream has not reached this."
+      ]
+    },
+    {
+      "type": "npc",
+      "tile": [
+        29,
+        6
+      ],
+      "tint": [
+        1.0,
+        0.85,
+        0.7
+      ],
+      "text": [
+        "Don't go up to the shore at night. That's not superstition, that's the reeds.",
+        "Things come out of them at level you're not ready for, and they don't scare."
+      ],
+      "stage_text": [
+        {
+          "from": "the_sluice",
+          "text": [
+            "Carting salt up to the mere, same as every week. Nobody's buying it.",
+            "Whole shore's gone quiet. Not empty -- quiet. There's a difference and you'll hear it."
+          ]
+        }
+      ]
+    }
+  ],
+  "encounters": {
+    "b": {
+      "chance": 0.1,
+      "table": [
+        {
+          "species": "moorhound",
+          "weight": 25,
+          "levels": [
+            6,
+            9
+          ]
+        },
+        {
+          "species": "thistlecalf",
+          "weight": 20,
+          "levels": [
+            6,
+            8
+          ]
+        },
+        {
+          "species": "skirling",
+          "weight": 20,
+          "levels": [
+            7,
+            10
+          ]
+        },
+        {
+          "species": "sloughback",
+          "weight": 20,
+          "levels": [
+            7,
+            10
+          ]
+        },
+        {
+          "species": "gloamkin",
+          "weight": 15,
+          "levels": [
+            8,
+            10
+          ]
+        }
+      ]
+    }
+  }
+}

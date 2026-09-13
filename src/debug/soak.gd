@@ -168,6 +168,7 @@ func _start() -> void:
 	root.get_node("Party").reset_for_new_game()
 	root.get_node("Storage").reset_for_new_game()
 	root.get_node("Inventory").reset_for_new_game()
+	root.get_node("Journal").reset_for_new_game()
 
 	_map_ids = _read_map_ids()
 	print("soak: %d map(s) to visit: %s" % [_map_ids.size(), ", ".join(_map_ids)])
@@ -276,7 +277,15 @@ func _nudge() -> void:
 func _travel() -> void:
 	if _map_ids.is_empty() or _in_battle or not bool(_player.get("input_enabled")):
 		return
-	var pick := _map_ids[_rng.randi_range(0, _map_ids.size() - 1)]
+	# Somewhere not yet seen, if there is one. Picking uniformly at random
+	# made "every map was visited" a coin flip rather than an assertion: four
+	# random draws over four maps miss one more often than not.
+	var unseen := PackedStringArray()
+	for map_id in _map_ids:
+		if not _maps_seen.has(map_id):
+			unseen.append(map_id)
+	var pool := unseen if not unseen.is_empty() else _map_ids
+	var pick := pool[_rng.randi_range(0, pool.size() - 1)]
 	if pick == _map_id():
 		return
 	_travel_due = false

@@ -438,11 +438,14 @@ def encounters_declared(doc: dict) -> bool:
 
 
 def check_maps(types: list[str], creatures: dict, items: dict,
-               sold: set, encountered: set) -> int:
+               sold: set, encountered: set, stages: list[str],
+               staged: set) -> int:
     """Validates every map in data/maps/. Returns how many were checked.
 
     Fills `sold` with every item id any shop stocks and `encountered` with
-    every species id any encounter table names, for check_obtainable.
+    every species id any encounter table names, for check_obtainable, and
+    `staged` with every story stage some map can actually move the player
+    on to.
     """
     maps_dir = os.path.join(DATA, "maps")
     if not os.path.isdir(maps_dir):
@@ -501,6 +504,14 @@ def check_maps(types: list[str], creatures: dict, items: dict,
 
         walkable_at(doc.get("player_start"), "player_start")
 
+        arrival = doc.get("arrival_stage")
+        if arrival is not None:
+            if arrival not in stages:
+                err(where, "arrival_stage '%s' is not a stage in story.json"
+                    % arrival)
+            else:
+                staged.add(arrival)
+
         # Coin bracket. Absent means "this area pays nothing", which is right
         # for somewhere with no encounters, so only a malformed one is an error.
         bracket = doc.get("coin_reward")
@@ -534,6 +545,25 @@ def check_maps(types: list[str], creatures: dict, items: dict,
                         sold.add(item_id)
                         if item_id not in items:
                             err(where, "%s catalog names unknown item '%s'" % (label, item_id))
+            for j, variant in enumerate(spec.get("stage_text", [])):
+                variant_label = "%s.stage_text[%d]" % (label, j)
+                if not isinstance(variant, dict):
+                    err(where, "%s must be an object" % variant_label)
+                    continue
+                if variant.get("from") not in stages:
+                    err(where, "%s 'from' is '%s', which is not a stage in"
+                        " story.json" % (variant_label, variant.get("from")))
+                lines = variant.get("text")
+                if not isinstance(lines, list) or not lines:
+                    err(where, "%s needs a non-empty 'text'" % variant_label)
+            sets_stage = spec.get("sets_stage")
+            if sets_stage is not None:
+                if sets_stage not in stages:
+                    err(where, "%s sets_stage '%s' is not a stage in story.json"
+                        % (label, sets_stage))
+                else:
+                    staged.add(sets_stage)
+
             solid = spec.get("solid")
             if solid is not None and not isinstance(solid, bool):
                 err(where, "%s 'solid' must be true or false, got %r" % (label, solid))
@@ -695,6 +725,56 @@ def seed_items() -> set:
     return set(re.findall(r'\badd\(\s*"([^"]+)"', body))
 
 
+def check_story() -> list[str]:
+    """Returns the stage ids in order, for the map checks to cross-reference."""
+    doc = load("story.json")
+    if doc is None:
+        return []
+    stages = require(doc, "stages", list, "story.json")
+    if stages is None:
+        return []
+    if not stages:
+        err("story.json", "'stages' must not be empty; stage 0 is where every"
+            " new game starts")
+        return []
+
+    ids: list[str] = []
+    for i, stage in enumerate(stages):
+        where = "story.json[%d]" % i
+        if not isinstance(stage, dict):
+            err(where, "entry must be an object")
+            continue
+        stage_id = stage.get("id")
+        if not stage_id or not isinstance(stage_id, str):
+            err(where, "missing 'id'")
+            continue
+        if stage_id in ids:
+            err("story.json '%s'" % stage_id, "duplicate stage id")
+        ids.append(stage_id)
+        objective = stage.get("objective")
+        # The pause menu shows this, so an empty one is a blank line where the
+        # player looks to find out what they are doing.
+        if not objective or not isinstance(objective, str):
+            err("story.json '%s'" % stage_id, "needs a non-empty 'objective'")
+    return ids
+
+
+def check_story_reachable(stages: list[str], staged: set) -> None:
+    """Every stage past the first has to be reachable from somewhere.
+
+    The same failure as an unobtainable creature, one level up: a stage can be
+    written, referenced by an NPC's dialogue, and have nothing anywhere in the
+    world that advances the player to it -- at which point that dialogue is
+    unreachable and the story stops at the stage before it.
+    """
+    for stage_id in stages[1:]:
+        if stage_id not in staged:
+            err("story.json '%s'" % stage_id,
+                "no map advances the player to this stage (no object's"
+                " 'sets_stage' and no map's 'arrival_stage' names it), so the"
+                " story cannot get past the stage before it")
+
+
 def check_obtainable(creatures: dict, items: dict, sold: set, encountered: set) -> None:
     starters = seed_species()
     if not starters:
@@ -745,18 +825,25 @@ def main() -> int:
         if not any(m.get("type") == t for m in moves.values()):
             warn("moves.json", "no move has type '%s'" % t)
 
+    stages = check_story()
+
     sold: set = set()
     encountered: set = set()
-    map_count = check_maps(types, creatures, items, sold, encountered)
+    staged: set = set()
+    map_count = check_maps(types, creatures, items, sold, encountered,
+                           stages, staged)
     check_obtainable(creatures, items, sold, encountered)
+    check_story_reachable(stages, staged)
 
     for line in warnings:
         print("warning  %s" % line)
     for line in errors:
         print("ERROR    %s" % line)
 
-    print("\n%d types, %d moves, %d creatures, %d item(s), %d map(s) -- %d error(s), %d warning(s)"
-          % (len(types), len(moves), len(creatures), len(items), map_count, len(errors), len(warnings)))
+    print("\n%d types, %d moves, %d creatures, %d item(s), %d map(s), "
+          "%d story stage(s) -- %d error(s), %d warning(s)"
+          % (len(types), len(moves), len(creatures), len(items), map_count,
+             len(stages), len(errors), len(warnings)))
     return 1 if errors else 0
 
 

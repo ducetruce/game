@@ -67,6 +67,12 @@ func _ready() -> void:
 	_encounters = data.get("encounters", {})
 	_paint(data["tiles"])
 	_spawn_objects(data.get("objects", []))
+	# Some places are themselves the story beat: arriving at the mere is the
+	# point of going there, and making the player hunt for a sign to be told
+	# so would be a worse version of the same moment.
+	var arrival := str(data.get("arrival_stage", ""))
+	if not arrival.is_empty():
+		Journal.advance_to(arrival)
 
 
 ## World-space position the player should occupy when entering this map.
@@ -178,7 +184,7 @@ func _spawn_sign(spec: Dictionary) -> void:
 	var post: SignPost = SIGN_SCENE.instantiate()
 	post.pages = _to_string_array(spec.get("text", []))
 	post.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
-	post.read_requested.connect(_on_read_requested)
+	post.read_requested.connect(_on_read_requested.bind(spec))
 	_apply_solidity(post, spec)
 	_objects.add_child(post)
 
@@ -221,7 +227,7 @@ func _spawn_npc(spec: Dictionary) -> void:
 		var rgb: Array = spec["tint"]
 		if rgb.size() >= 3:
 			villager.tint = Color(float(rgb[0]), float(rgb[1]), float(rgb[2]))
-	villager.read_requested.connect(_on_read_requested)
+	villager.read_requested.connect(_on_read_requested.bind(spec))
 	_apply_solidity(villager, spec)
 	_objects.add_child(villager)
 
@@ -253,8 +259,39 @@ func _apply_solidity(node: CollisionObject2D, spec: Dictionary) -> void:
 	node.collision_layer = LAYER_SOLID_PROP if solid else LAYER_WALKABLE_PROP
 
 
-func _on_read_requested(pages: PackedStringArray) -> void:
-	dialogue_requested.emit(pages)
+func _on_read_requested(pages: PackedStringArray, spec: Dictionary = {}) -> void:
+	dialogue_requested.emit(_speech_for(spec, pages))
+	_advance_story(spec)
+
+
+## Which lines an object says right now.
+##
+## An object may carry alternatives keyed by how far the story has got, as a
+## "stage_text" array of {from, text}; the one that wins is the last whose
+## stage the player has reached. Resolved here, at the moment of reading,
+## rather than when the map spawned: talking to one villager can move the
+## story on, and the villager standing next to them has to have the newer
+## thing to say without the map being reloaded first. See docs/DESIGN.md § 30.
+func _speech_for(spec: Dictionary, fallback: PackedStringArray) -> PackedStringArray:
+	var chosen := fallback
+	for entry in spec.get("stage_text", []):
+		if not (entry is Dictionary):
+			push_warning("%s: 'stage_text' entries must be objects." % map_data_path)
+			continue
+		var from := str(entry.get("from", ""))
+		if from.is_empty() or not Journal.reached(from):
+			continue
+		chosen = _to_string_array(entry.get("text", []))
+	return chosen
+
+
+## Moves the story on, if this object is a beat in it. Does nothing when the
+## player is already past that point, which is what makes walking back and
+## re-reading a sign harmless.
+func _advance_story(spec: Dictionary) -> void:
+	var sets := str(spec.get("sets_stage", ""))
+	if not sets.is_empty():
+		Journal.advance_to(sets)
 
 
 # --- encounters ------------------------------------------------------------

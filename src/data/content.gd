@@ -10,6 +10,7 @@ const MOVES_PATH := "res://data/moves.json"
 const CREATURES_PATH := "res://data/creatures.json"
 const ITEMS_PATH := "res://data/items.json"
 const TEMPERAMENTS_PATH := "res://data/temperaments.json"
+const STORY_PATH := "res://data/story.json"
 
 var type_chart: TypeChart = null
 
@@ -17,6 +18,11 @@ var type_chart: TypeChart = null
 ## nested table (rules + flavor lines per temperament) with no behaviour of
 ## its own, so a dedicated class would just be a pass-through.
 var temperaments: Dictionary = {}
+
+## The story's stages in order, as {id, objective} dictionaries. Order is the
+## whole meaning of this list: "further on" is defined by position in it, so
+## nothing may read it as an unordered set. See docs/DESIGN.md § 30.
+var story_stages: Array = []
 
 ## False if anything failed to parse. Callers that can degrade gracefully
 ## should check it; everything else can rely on the pushed errors.
@@ -36,6 +42,7 @@ func reload() -> void:
 	loaded = false
 	type_chart = null
 	temperaments.clear()
+	story_stages.clear()
 	_moves.clear()
 	_species.clear()
 	_species_order = PackedStringArray()
@@ -93,6 +100,16 @@ func reload() -> void:
 		push_error("%s: missing 'temperaments' object." % TEMPERAMENTS_PATH)
 		return
 	temperaments = temperament_doc
+
+	var story_doc := _read_json(STORY_PATH)
+	if not (story_doc.get("stages", null) is Array):
+		push_error("%s: missing 'stages' array." % STORY_PATH)
+		return
+	for entry in story_doc["stages"]:
+		if not (entry is Dictionary) or not entry.has("id"):
+			push_error("%s: every stage needs an 'id'." % STORY_PATH)
+			return
+		story_stages.append(entry)
 
 	loaded = _cross_check()
 

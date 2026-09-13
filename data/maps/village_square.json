@@ -39,6 +39,16 @@
       "text": [
         "The village well. Someone keeps flowers at its rim, always fresh.",
         "Your creatures drink, and something in them settles."
+      ],
+      "stage_text": [
+        {
+          "from": "the_water",
+          "text": [
+            "The village well. Someone keeps flowers at its rim, always fresh.",
+            "Your creatures drink and are themselves again.",
+            "The bucket comes up two thirds full, and slowly. Whoever set the flowers has not mentioned it."
+          ]
+        }
       ]
     },
     {
@@ -54,7 +64,20 @@
       ],
       "text": [
         "\"First time through the mere? Keep to the path and it keeps to itself.\""
-      ]
+      ],
+      "stage_text": [
+        {
+          "from": "the_water",
+          "text": [
+            "You'll have seen the well, then. Everyone asks about the well.",
+            "It's fed off the cut that runs down from the mere. Has been since before the village had a name.",
+            "The cut's been dry eleven days. Eleven. And the mere hasn't dropped an inch -- I've stood on the shore and looked.",
+            "Water that goes nowhere and doesn't rise. Somebody ought to go up the fen road and find out why.",
+            "Somebody with something at their heel that can handle the reeds."
+          ]
+        }
+      ],
+      "sets_stage": "the_road"
     },
     {
       "type": "npc",
@@ -69,6 +92,16 @@
       ],
       "text": [
         "\"That roof there is older than the well. Older than most of us, too.\""
+      ],
+      "stage_text": [
+        {
+          "from": "the_road",
+          "text": [
+            "That roof there is older than the well. Older than most of us, too.",
+            "My grandmother had the thatch redone the year the cut last stopped. She never said what started it again.",
+            "I did ask. She'd change the subject like she was closing a door."
+          ]
+        }
       ]
     },
     {
@@ -84,6 +117,22 @@
       ],
       "text": [
         "\"You get used to the quiet up here. The clearing's never quiet.\""
+      ],
+      "stage_text": [
+        {
+          "from": "the_road",
+          "text": [
+            "Going up the road, are you? Take the long way, past the sluice.",
+            "Straight north is quicker and it's all bracken. You'll spend what you save."
+          ]
+        },
+        {
+          "from": "the_answer",
+          "text": [
+            "You came back down. Not everyone does, and the ones who do don't usually look like that.",
+            "You can tell me later. Or not. The well's still low either way."
+          ]
+        }
       ]
     },
     {
@@ -110,10 +159,10 @@
         27,
         0
       ],
-      "target_map": "mere_shore",
+      "target_map": "fen_road",
       "target_tile": [
         27,
-        22
+        26
       ]
     },
     {
@@ -122,10 +171,10 @@
         28,
         0
       ],
-      "target_map": "mere_shore",
+      "target_map": "fen_road",
       "target_tile": [
         28,
-        22
+        26
       ]
     },
     {
@@ -177,5 +226,6 @@
     "TTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTTTTTTTTT",
     "TTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTTTTTTTTT"
   ],
-  "encounters": {}
+  "encounters": {},
+  "arrival_stage": "the_water"
 }

@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/overworld/game_map.gd" id="1_map"]
+[ext_resource type="TileSet" path="res://assets/tilesets/placeholder_tileset.tres" id="2_tileset"]
+
+[node name="FenRoad" type="Node2D"]
+script = ExtResource("1_map")
+map_data_path = "res://data/maps/fen_road.json"
+
+[node name="Ground" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="Obstacles" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="Objects" type="Node2D" parent="."]

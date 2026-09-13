@@ -1,0 +1,28 @@
+{
+  "stages": [
+    {
+      "id": "setting_out",
+      "objective": "Follow the path north, out of the clearing."
+    },
+    {
+      "id": "the_water",
+      "objective": "Ask in Aldenmere what is wrong with the water."
+    },
+    {
+      "id": "the_road",
+      "objective": "Take the fen road north, toward the mere."
+    },
+    {
+      "id": "the_sluice",
+      "objective": "Get past the sluice and reach the shore."
+    },
+    {
+      "id": "the_shore",
+      "objective": "Find what the mere is holding."
+    },
+    {
+      "id": "the_answer",
+      "objective": "You have seen it. What to do about it is another question."
+    }
+  ]
+}

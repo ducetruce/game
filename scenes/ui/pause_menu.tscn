@@ -15,14 +15,14 @@ layer = 3
 script = ExtResource("1_pause")
 
 [node name="Panel" type="Panel" parent="."]
-offset_left = 100.0
-offset_top = 30.0
-offset_right = 220.0
-offset_bottom = 150.0
+offset_left = 76.0
+offset_top = 12.0
+offset_right = 244.0
+offset_bottom = 170.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_box")
 
 [node name="Header" type="Label" parent="Panel"]
-offset_right = 120.0
+offset_right = 168.0
 offset_top = 6.0
 offset_bottom = 18.0
 theme_override_colors/font_color = Color(0.85098, 0.658824, 0.360784, 1)
@@ -33,33 +33,42 @@ horizontal_alignment = 1
 [node name="Separator" type="ColorRect" parent="Panel"]
 offset_left = 8.0
 offset_top = 21.0
-offset_right = 112.0
+offset_right = 160.0
 offset_bottom = 22.0
 color = Color(0.427451, 0.470588, 0.541176, 0.6)
 
 [node name="Purse" type="RichTextLabel" parent="Panel"]
 offset_left = 2.0
 offset_top = 24.0
-offset_right = 118.0
+offset_right = 166.0
 offset_bottom = 36.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="Objective" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 38.0
+offset_right = 162.0
+offset_bottom = 74.0
 bbcode_enabled = true
 scroll_active = false
 theme_override_font_sizes/normal_font_size = 8
 
 [node name="Menu" type="RichTextLabel" parent="Panel"]
 offset_left = 4.0
-offset_top = 38.0
-offset_right = 116.0
-offset_bottom = 98.0
+offset_top = 78.0
+offset_right = 164.0
+offset_bottom = 138.0
 bbcode_enabled = true
 scroll_active = false
 theme_override_font_sizes/normal_font_size = 8
 
 [node name="Status" type="RichTextLabel" parent="Panel"]
 offset_left = 2.0
-offset_top = 100.0
-offset_right = 118.0
-offset_bottom = 114.0
+offset_top = 140.0
+offset_right = 166.0
+offset_bottom = 154.0
 bbcode_enabled = true
 scroll_active = false
 theme_override_font_sizes/normal_font_size = 8

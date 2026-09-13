@@ -1481,6 +1481,72 @@ a map added later is soaked without anyone remembering to add it.
 
 ---
 
+## 30. A reason to go, and a road to go on
+
+Two things were missing between Aldenmere and the Hollowmere: a reason to
+walk north, and something to walk through. Both were asked about and both
+were answered the same way -- a story reason to reach the mere, and a route
+between the two rather than a step from level 5 to level 14.
+
+**The Fen Road** sits between them: 41x28, levels 6-10, and a coin bracket of
+14-22 between the clearing's 10-18 and the mere's 18-30. The road itself goes
+the long way -- south gate, west along the old drainage cut, north past the
+sluice, then east and north to the shore -- and the whole middle of the fen
+is one wide bracken field. Cutting straight from gate to gate is four tiles
+shorter and nine tiles of bracken. That is the choice the area exists to
+offer, and it is a choice rather than a wall: the road is slow and safe, the
+fen is quick and expensive, and a player who wants levels knows where to get
+them. There is a spring at the sluice, one step off the bracken, so grinding
+the fen does not mean walking back to Aldenmere between fights.
+
+Aldenmere now has two exits instead of one, and the mere is two warps further
+out than it was.
+
+**The story is one ordered position, not a bag of flags.** `Journal` (an
+autoload, backed by `data/story.json`) holds an index into a list of stages.
+Every question the game asks of the story is "has the player got at least
+this far" -- which line an NPC says, what the pause menu shows as the current
+objective -- and a position answers all of them without anyone reasoning about
+which combinations of flags are possible. It also cannot be driven into a
+state the writing does not cover, which a bag of booleans can and eventually
+does.
+
+Moving backwards is not possible: `advance_to` on an earlier stage is ignored
+rather than treated as an error, because walking back into a map and
+re-reading a sign is a normal thing to do and must not undo progress. Saves
+record the stage by *id*, not by index, so inserting a stage in the middle
+does not silently move every existing save to the wrong place in the story.
+
+The six stages run: out of the clearing, into Aldenmere and the low well,
+north up the fen road, past the warden at the sluice, onto the shore, and
+then the marker at the mouth of the cut -- where the mere is not draining,
+and is not rising either, and is turning slowly around something that is not
+there.
+
+**Dialogue varies by stage, and resolves when read rather than when spawned.**
+An object in a map file may carry a `stage_text` array of `{from, text}`; the
+entry that wins is the last one whose stage the player has reached, falling
+back to the plain `text`. It is resolved in `GameMap._speech_for` at the
+moment of reading, not when the map loaded its objects -- talking to one
+villager can move the story on, and the villager standing next to them has to
+have the newer thing to say without the map being reloaded first.
+
+An object may also carry `sets_stage`, and a map `arrival_stage`. The latter
+exists because some places *are* the beat: arriving at the mere is the point
+of going there, and making the player hunt for a sign to be told so would be
+a worse version of the same moment.
+
+**The validator checks the story the same way it checks everything else.**
+Every `from`, `sets_stage` and `arrival_stage` must name a real stage, and --
+the check worth having -- every stage past the first must be reachable: if no
+object's `sets_stage` and no map's `arrival_stage` names it, the story stops
+at the stage before it and every line written for the rest is unreachable.
+That is § 29's unobtainable-content bug one level up, and it would have been
+just as invisible.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than

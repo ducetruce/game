@@ -133,6 +133,7 @@ func _begin_new_game() -> void:
 	Party.reset_for_new_game()
 	Storage.reset_for_new_game()
 	Inventory.reset_for_new_game()
+	Journal.reset_for_new_game()
 	_enter_overworld()
 
 

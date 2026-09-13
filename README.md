@@ -23,6 +23,8 @@ No third-party assets, code, or creature designs.
 | `M` / `Tab` | Open/close the party screen |
 | `F1` | Debug menu — jump between maps, heal, force a fight, grant coin/items/levels. Debug builds only |
 
+The pause menu shows your purse and what you are meant to be doing next.
+
 ## Project layout
 
 | Path              | Contents |
@@ -66,7 +68,35 @@ that encounter tables name real species with sane level ranges, that shop
 catalogs name real items, and — checked across map files, since a warp names
 another one — that every warp's `target_map` exists and its `target_tile`
 lands on walkable ground there, and that every encounter terrain is actually
-reachable on foot from the map's own starting tile. Exits non-zero on error.
+reachable on foot from the map's own starting tile.
+
+It also checks two things that are not schema errors and so escaped every
+other check. **Obtainability**: every creature must appear in some encounter
+table or in the starting party, and every item must be stocked by some shop
+or granted at the start — a Cairnling with perfect stats that appears nowhere
+and a Waking Root sold by nobody had both shipped. And the **story**: every
+`stage_text`, `sets_stage` and `arrival_stage` must name a real stage in
+`data/story.json`, and every stage past the first must be set by something
+somewhere, or the story stops one stage short and everything written past it
+is unreachable. Exits non-zero on error.
+
+## Soaking it
+
+```
+tools/soak.sh --frames=10000
+```
+
+Plays the game for a while with real held key presses, and fails if the
+player ever loses control of it for longer than a screen could justify, if
+the engine prints an error, or if any map goes unvisited. It asserts nothing
+about *what* happens — a soak that demands outcomes from random input is a
+soak that gets loosened until it passes. `--seed=N` makes a run repeatable.
+
+A debug-build-only autoload, `UiFit`, watches the live scene for any text box
+showing less than it contains and warns with the node path. Four menus had
+shipped with their last row clipped off the bottom, including the battle's
+own action menu, where the Run option had been invisible since the day it was
+added. `tools/soak.sh` fails the run on those warnings too.
 
 To inspect the same data in-engine, open `scenes/debug/codex.tscn` and press
 **F6** (Run Current Scene). `W`/`S` cycles the creature, `A`/`D` the opponent.
@@ -102,7 +132,15 @@ selling the **Knitbone Salve** (heals mid-battle) and the **Waking Root**
 clearing's shopkeeper stocks. Walk back south through the same
 gap to return.
 
-North again, through the gap in Aldenmere's far tree line, is **the
+North again, through the gap in Aldenmere's far tree line, is the **Fen
+Road** — the long crossing to the mere, levels 6–10, paying 14–22 a fight.
+The road itself goes the long way round: west along an old drainage cut,
+north past a **sluice gate** with a spring beside it, then east and north to
+the shore. The whole middle of the fen is bracken. Cutting straight from gate
+to gate is four tiles shorter and nine tiles of fighting, which is the choice
+the area is there to offer.
+
+North again from the road is **the
 Hollowmere** itself — open water, a shingle shore, and reed beds that are the
 area's encounter terrain. What lives there is four to seven levels above the
 clearing and pays better for it (18–30 coin a fight against the clearing's
@@ -113,6 +151,19 @@ The **shrine** on the east side of the plaza is where creatures you are not
 carrying wait. You can hold six; the rest are kept there, and the shrine is
 the only place to swap them, so choose before you set out. Tame something
 with a full party and it goes to the shrine rather than slipping away.
+
+### Why you are going north
+
+There is one story and the pause menu always says what you are meant to be
+doing next. It starts as "follow the path north"; Aldenmere's well comes up
+two thirds full and slowly, and someone there will tell you why that matters.
+The channel that feeds the village has been dry for eleven days and the mere
+has not dropped an inch. The warden at the sluice will send you the rest of
+the way, and there is a marker on the mere's western shore, at the mouth of
+the cut, that is the thing you went to see.
+
+People say different things as the story moves, including people you have
+already talked to. It is worth going back.
 
 ### Taming a wild creature
 
@@ -169,6 +220,14 @@ plus the objects placed on it. The symbol table is in
   `c` plaza, `r` reeds (`b` and `r` are the encounter terrains)
 - Solid: `W` water, `R` rock, `T` tree, `F` fence, `H` wall, `V` roof (put a
   `V` row directly above a matching `H` row to get a two-tile building facade)
+
+Story beats live in the map files too. Any readable object may carry a
+`stage_text` array of `{"from": "<stage id>", "text": [...]}` — the entry that
+wins is the last one whose stage the player has reached, falling back to the
+plain `text` — and a `sets_stage` that moves the story on when it is read. A
+map may carry an `arrival_stage`, which fires just by walking in. The stages
+themselves are `data/story.json`: an ordered list of ids and the objective
+line the pause menu shows for each.
 
 `coin_reward` is the `[low, high]` bracket any battle in that area pays,
 rolled uniformly; leave it out for an area with no encounters. The `objects`
@@ -229,5 +288,7 @@ text editor to see exactly what got saved, or delete it to start over.
 7. 🚧 Toward a workable alpha — a party screen; a second map (Aldenmere)
    connected by warps, so the world reads as a place rather than one field;
    a title screen and pause menu, so starting over, saving on demand, and
-   quitting are all reachable in-game; and an economy — battles pay coin,
-   and Aldenmere sells a healing item
+   quitting are all reachable in-game; an economy — battles pay coin, and
+   Aldenmere sells a healing item; a road between the village and the mere so
+   the level curve has somewhere to happen; and one story, with a reason to
+   walk north and something at the end of it

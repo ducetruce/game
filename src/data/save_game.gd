@@ -32,6 +32,7 @@ func save(map_id: String, position: Vector2) -> bool:
 		"save_version": CURRENT_VERSION,
 		"party": Party.to_dict(),
 		"storage": Storage.to_dict(),
+		"journal": Journal.to_dict(),
 		"inventory": Inventory.to_dict(),
 		"world": {
 			"map_id": map_id,
@@ -73,6 +74,9 @@ func load_and_apply() -> Dictionary:
 	# and an absent one correctly reads as empty. No version bump needed for
 	# an added field with a safe default -- see section 5.
 	Storage.from_dict(_dict_field(data, "storage"))
+	# A save written before the story existed has no journal, and from_dict
+	# reads that as the beginning -- which is where such a save should be.
+	Journal.from_dict(_dict_field(data, "journal"))
 	Inventory.from_dict(_dict_field(data, "inventory"))
 
 	var world := _dict_field(data, "world")

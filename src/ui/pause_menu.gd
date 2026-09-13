@@ -19,6 +19,7 @@ const COLOR_SELECTED := "e8c37a"
 const COLOR_GOOD := "6fae74"
 const COLOR_BAD := "c4614f"
 const COLOR_COIN := "c8a94e"
+const COLOR_OBJECTIVE := "8fb4d9"
 
 enum Entry { RESUME, PARTY, BAG, SAVE, QUIT }
 
@@ -28,6 +29,7 @@ var _cursor := 0
 
 @onready var _panel: Panel = $Panel
 @onready var _purse: RichTextLabel = $Panel/Purse
+@onready var _objective: RichTextLabel = $Panel/Objective
 @onready var _menu: RichTextLabel = $Panel/Menu
 @onready var _status: RichTextLabel = $Panel/Status
 
@@ -113,6 +115,13 @@ func _refresh() -> void:
 	# Battles pay coin now, and a shop counter was the only place it was ever
 	# shown. Being able to check the purse without walking to one matters.
 	_purse.text = "[center][color=#%s]%d coin[/color][/center]" % [COLOR_COIN, Inventory.coin]
+
+	# What the player is supposed to be doing. The pause menu is where anyone
+	# who put the game down for a week will look for it, and there is nowhere
+	# else in the game it is written down. See docs/DESIGN.md § 30.
+	_objective.text = "[center][color=#%s]%s[/color][/center]" % [
+		COLOR_OBJECTIVE, Journal.objective(),
+	]
 
 	var rows := PackedStringArray()
 	for i in ENTRIES.size():
