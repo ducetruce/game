@@ -19,7 +19,7 @@ No third-party assets, code, or creature designs.
 | `WASD` / arrows | Move (free 8-directional) |
 | `Shift` | Run |
 | `Z` / `Space` / `Enter` | Interact, advance text, confirm menus |
-| `X` / `Esc` | Cancel, back out of a menu |
+| `X` / `Esc` | Back out of a menu — or, in the overworld, pause (resume / party / save / quit to title) |
 | `M` / `Tab` | Open/close the party screen |
 
 ## Project layout
@@ -159,10 +159,12 @@ checks every temperament has the flavour lines the code actually looks up.
 
 ## Saving and loading
 
-There is no manual save yet — saving is automatic, at a rest spring, right
-after every battle resolves, and when you close the window. To load, pick
-**Continue** on the title screen; **New Game** erases the save and starts
-over, asking first if there is one to erase.
+Saving is automatic at a rest spring, right after every battle resolves,
+and when you close the window. You can also save on demand from the pause
+menu (`X` / `Esc`), which is also how you quit back to the title screen —
+that saves on the way out too. To load, pick **Continue** on the title
+screen; **New Game** erases the save and starts over, asking first if there
+is one to erase.
 
 The save lives at `user://savegame.json`, which Godot resolves to a real
 folder on disk named after the project (`Hollowmere`) — on Linux that's
@@ -181,4 +183,5 @@ text editor to see exactly what got saved, or delete it to start over.
 6. ✅ Save/load
 7. 🚧 Toward a workable alpha — a party screen; a second map (Aldenmere)
    connected by warps, so the world reads as a place rather than one field;
-   and a title screen, so starting over does not mean deleting a file
+   and a title screen and pause menu, so starting over, saving on demand,
+   and quitting are all reachable in-game

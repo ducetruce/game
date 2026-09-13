@@ -20,12 +20,14 @@ const MENU_LOCK_SECONDS := 0.3
 ## save or a warp names a map id with no matching scene.
 const DEFAULT_MAP_ID := "hollow_clearing"
 const MAP_SCENE_PATH_FORMAT := "res://scenes/overworld/maps/%s.tscn"
+const TITLE_SCENE := "res://scenes/ui/title_screen.tscn"
 
 @onready var _map_container: Node2D = $MapContainer
 @onready var _player: Player = $Player
 @onready var _dialogue: DialogueBox = $DialogueBox
 @onready var _shop: Node = $ShopMenu
 @onready var _party_menu: Node = $PartyMenu
+@onready var _pause_menu: Node = $PauseMenu
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
 @onready var _fade: ColorRect = $FadeLayer/Fade
@@ -49,6 +51,10 @@ var _busy := false
 
 var _menu_lock := 0.0
 
+## Set while the party screen was opened from the pause menu, so closing it
+## goes back there instead of dropping the player into the world.
+var _party_from_pause := false
+
 
 func _ready() -> void:
 	_rng.randomize()
@@ -57,7 +63,12 @@ func _ready() -> void:
 	_shop.opened.connect(_on_ui_opened)
 	_shop.closed.connect(_on_ui_closed)
 	_party_menu.opened.connect(_on_ui_opened)
-	_party_menu.closed.connect(_on_ui_closed)
+	_party_menu.closed.connect(_on_party_closed)
+	_pause_menu.opened.connect(_on_ui_opened)
+	_pause_menu.closed.connect(_on_ui_closed)
+	_pause_menu.party_requested.connect(_on_pause_party_requested)
+	_pause_menu.save_requested.connect(_on_pause_save_requested)
+	_pause_menu.quit_to_title_requested.connect(_on_pause_quit_requested)
 	_fade.color.a = 0.0
 
 	var map_id := DEFAULT_MAP_ID
@@ -120,8 +131,40 @@ func _load_map(map_id: String, target: Variant) -> void:
 	_apply_camera_limits()
 
 
-func _autosave() -> void:
-	SaveGame.save(_map.id, _player.global_position)
+func _autosave() -> bool:
+	return SaveGame.save(_map.id, _player.global_position)
+
+
+# --- pause menu ------------------------------------------------------------
+
+func _on_pause_party_requested() -> void:
+	# The pause menu has already hidden itself expecting the party screen to
+	# take over. If it cannot open, put the pause menu back rather than
+	# leaving the player with no menu and no input.
+	if not Party.has_any():
+		_pause_menu.open_menu()
+		return
+	_party_from_pause = true
+	_party_menu.open_menu()
+
+
+func _on_party_closed() -> void:
+	if _party_from_pause:
+		_party_from_pause = false
+		_pause_menu.open_menu()
+		return
+	_on_ui_closed()
+
+
+func _on_pause_save_requested() -> void:
+	_pause_menu.report_saved(_autosave())
+
+
+## Saves on the way out, matching what closing the window does -- leaving for
+## the title screen should never be the one exit that loses progress.
+func _on_pause_quit_requested() -> void:
+	_autosave()
+	get_tree().change_scene_to_file(TITLE_SCENE)
 
 
 func _notification(what: int) -> void:
@@ -140,6 +183,10 @@ func _physics_process(delta: float) -> void:
 
 	if _menu_lock <= 0.0 and Input.is_action_just_pressed("menu"):
 		_party_menu.open_menu()
+		return
+
+	if _menu_lock <= 0.0 and Input.is_action_just_pressed("cancel"):
+		_pause_menu.open_menu()
 		return
 
 	var moved := _player.global_position.distance_to(_last_position)

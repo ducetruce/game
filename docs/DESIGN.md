@@ -892,6 +892,47 @@ is more than one slot to tell apart.
 
 ---
 
+## 18. The pause menu
+
+`X` / `Esc` in the overworld opens **Resume / Party / Save / Quit to Title**.
+That completes the shell the title screen (§ 17) started: there is now a way
+out of a run that is not closing the window, and a manual save that does not
+depend on walking to a spring.
+
+**Save reports the truth.** `SaveGame.save()` returned `void`, so a manual
+save had no way to know whether it worked and would have claimed success
+even when the file could not be opened. It now returns a bool, the Overworld
+passes that back with `report_saved()`, and the menu says "Saved." or "Could
+not save." Autosaves still ignore the result -- there is nobody to tell.
+
+**Quit to Title saves on the way out**, matching what closing the window
+already did. Leaving through a menu should not be the one exit that costs
+progress, and there is no prompt to go with it because there is nothing to
+warn about.
+
+**The party screen nests, which needed the Overworld to hold the seam.**
+Opening the party screen from the pause menu and closing it returns to the
+pause menu, not to the world. The pause menu hides itself *without* emitting
+`closed` when it hands over, because `closed` is what gives input back to the
+player -- emitting it would drop control into the world for the frame between
+the two menus. The Overworld tracks `_party_from_pause` and routes the party
+screen's close either back to the pause menu or to the usual
+`_on_ui_closed()`. If the party screen refuses to open, the pause menu is put
+back rather than leaving the player with no menu and no input, which is the
+one failure here that would be a genuine soft-lock.
+
+`M` / `Tab` still opens the party screen directly, since it was already built
+and the shortcut is worth keeping.
+
+**No new debounce machinery was needed**, which is the useful part. The
+pause menu opens and closes on the same `cancel` action -- exactly the shape
+that bit twice in § 15 -- but `Overworld._on_ui_closed()` already arms
+`_menu_lock` for every menu that closes, and gating the pause key on that
+same lock was the whole fix. Verified by mashing `X` twelve times in a frame
+and confirming it settles closed.
+
+---
+
 ## Open questions
 
 - Party size beyond the current cap of six, and whether there is storage.
@@ -909,8 +950,6 @@ is more than one slot to tell apart.
 - Whether moves are learned by level, by taught item, or by Temperament.
 - Whether interactables should be solid by default, or whether some
   (ground items, plaques) should be walkable and probed anyway.
-- A pause menu, and with it quit-to-title from inside the overworld. The
-  title screen (§ 17) covers new game and continue; the party screen (§ 15)
-  covers viewing the party. Manual saving and multiple save slots are still
-  open, and slots in particular need a way to read a save without applying
-  it (see § 17).
+- Multiple save slots, which need a way to read a save without applying it
+  (see § 17). The shell itself is done: title screen (§ 17), pause menu and
+  manual save (§ 18), party screen (§ 15).

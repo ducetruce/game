@@ -24,8 +24,10 @@ func _ready() -> void:
 
 
 ## Writes the whole save file. map_id and position describe where the player
-## is standing right now; Party and Inventory serialise themselves.
-func save(map_id: String, position: Vector2) -> void:
+## is standing right now; Party and Inventory serialise themselves. Returns
+## false if the file could not be written -- autosaves ignore that, but a
+## manual save has to be able to say so rather than claim success.
+func save(map_id: String, position: Vector2) -> bool:
 	var data := {
 		"save_version": CURRENT_VERSION,
 		"party": Party.to_dict(),
@@ -40,9 +42,10 @@ func save(map_id: String, position: Vector2) -> void:
 		push_error("SaveGame: could not open %s for writing (%s)." % [
 			SAVE_PATH, error_string(FileAccess.get_open_error()),
 		])
-		return
+		return false
 	file.store_string(JSON.stringify(data, "\t"))
 	has_save = true
+	return true
 
 
 ## Loads Party and Inventory in place, and returns the world placement as
