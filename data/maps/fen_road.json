@@ -201,39 +201,39 @@
       "table": [
         {
           "species": "moorhound",
-          "weight": 25,
+          "weight": 30,
           "levels": [
-            6,
-            9
+            5,
+            8
           ]
         },
         {
           "species": "thistlecalf",
-          "weight": 20,
+          "weight": 25,
           "levels": [
-            6,
-            8
+            5,
+            7
           ]
         },
         {
           "species": "skirling",
           "weight": 20,
           "levels": [
-            7,
-            10
+            6,
+            9
           ]
         },
         {
           "species": "sloughback",
           "weight": 20,
           "levels": [
-            7,
-            10
+            6,
+            9
           ]
         },
         {
           "species": "gloamkin",
-          "weight": 15,
+          "weight": 12,
           "levels": [
             8,
             10

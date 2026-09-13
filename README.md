@@ -80,6 +80,19 @@ and a Waking Root sold by nobody had both shipped. And the **story**: every
 somewhere, or the story stops one stage short and everything written past it
 is unreachable. Exits non-zero on error.
 
+## Checking the level curve
+
+```
+tools/curve.sh
+```
+
+Walks the intended route with the starting party — the clearing, then the fen
+road, then the mere — and reports how many fights each area takes before the
+party can cross it, what level it leaves at, and how far it gets on one rest.
+Fails if an area is never crossable or a battle never terminates. The
+simulated player never heals and never uses an item, so every number is a
+floor.
+
 ## Soaking it
 
 ```
@@ -134,7 +147,8 @@ the clearing's shopkeeper stocks. Walk back south through the same
 gap to return.
 
 North again, through the gap in Aldenmere's far tree line, is the **Fen
-Road** — the long crossing to the mere, levels 6–10, paying 14–22 a fight.
+Road** — the long crossing to the mere, levels 5–10 and weighted to the low
+end, paying 14–22 a fight.
 The road itself goes the long way round: west along an old drainage cut,
 north past a **sluice gate** with a spring beside it, then east and north to
 the shore. There is a **pedlar** by the sluice who sells the **Ninebark

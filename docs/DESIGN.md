@@ -1640,6 +1640,58 @@ path.
 
 ---
 
+## 33. Walking the route, and what it said about the fen road
+
+Every area's level band was chosen by reasoning, and the open questions have
+said since § 20 that the numbers want a session of play to judge. Reasoning
+cannot tell you whether a party that leaves the clearing the moment it can
+win there arrives at the mere able to survive it. Nothing in the game tells
+you either: a player finds out by walking there and losing.
+
+`tools/curve.sh` walks the route -- the starting party, each area's own
+encounter table in map order, one creature tamed per area, a spring between
+fights -- and reports how many fights each area takes before it is crossable
+and what level the party leaves at. Two things about it were wrong first, and
+both of them made the game look like something it is not:
+
+**A win streak is not readiness.** The first version advanced the party once
+it had won eight fights in a row from full health. A party can do that long
+before it can *cross* anything, and the fen road is a crossing: it left the
+clearing at level 6, left the road at 6.3, and arrived at the mere four
+levels under its band -- at which point the tool reported the mere as a wall.
+It was measuring its own exit criterion. An area is now crossable when the
+party can sustain four fights on one rest, which is the thing the road
+actually asks.
+
+**One fight from full health is not the question either.** Winning every
+fight from a spring says the matchups are survivable one at a time. The
+number a player feels is how far they get before going down, so that is what
+is reported: walk in rested, keep fighting, count.
+
+What it found: the fen road was the hardest area in the game, harder than the
+mere. The curve went up and then down. The road's table averaged level 8
+against a party arriving at 6, while the mere's averaged 10.5 against a party
+that had already ground the road to 8 and had more creatures. The road's
+band is now weighted to its low end -- 5-10 rather than 6-10, averaging 7.2 --
+which makes the first stretch of the crossing a step rather than a spike.
+After it: 8 fights to cross the clearing, 24 to cross the road, 16 to cross
+the mere, leaving at levels 6.0, 7.3 and 7.8. The road is still the biggest
+grind in the game, which is right for the longest area, and it is no longer
+the sharpest wall.
+
+One incidental finding, which is about the rules rather than the tool: a
+policy that switches out a creature below a third of its health does
+*worse* than one that never switches at all -- 2.4 fights a rest against 4.3
+on the road. A switch costs the turn and whatever comes in eats a free hit,
+so switching as a rescue loses more than it saves. Switching is for a matchup
+you can see coming, not for one you are already losing. That is a defensible
+rule and it is left alone, but it means the battle menu's Party option is
+narrower than it looks, and anything that later makes switching cheaper
+should be weighed against it.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
