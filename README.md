@@ -113,11 +113,16 @@ Every encounter also has patience: six turns in a row with no progress and
 the creature breaks off. Watch the thin gold bar under its HP bar — that is
 your progress toward taming it.
 
+Hits occasionally land critically for half again the damage. Struggle is
+what a creature falls back on once every move is spent — it hurts whoever
+uses it, so a fight where both sides have run dry still ends.
+
 If you are much stronger than what you are fighting, a single hit can kill
 it before you ever get a chance to read it. Open **Item** in battle and use
 a **Tempering Draught** — for the rest of that fight, no single hit of yours
-can end it outright. It does not make the fight safe, only survivable: keep
-attacking after it is already fragile and you can still finish it off.
+can end it outright, critical hits included. It does not make the fight safe,
+only survivable: keep attacking after it is already fragile and you can still
+finish it off.
 
 ## Running a battle
 

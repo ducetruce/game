@@ -105,17 +105,33 @@ func is_over() -> bool:
 func move_options() -> Array:
 	var options := []
 	var creature := active().creature
+	var anything_left := false
 	for i in creature.moves.size():
 		var move := Content.get_move(creature.moves[i])
 		if move == null:
 			continue
+		var left: int = creature.move_uses[i] if i < creature.move_uses.size() else 0
+		anything_left = anything_left or left > 0
 		options.append({
 			"id": move.id,
 			"name": move.display_name,
 			"type": move.type,
-			"uses": creature.move_uses[i] if i < creature.move_uses.size() else 0,
+			"uses": left,
 			"max_uses": move.uses,
 		})
+
+	# Nothing left to spend: the list becomes the one thing that is always
+	# available. Returning it as an ordinary row means the battle menu needs to
+	# know nothing about Struggle.
+	if not anything_left:
+		var struggle := MoveData.struggle()
+		return [{
+			"id": struggle.id,
+			"name": struggle.display_name,
+			"type": struggle.type,
+			"uses": 1,
+			"max_uses": 1,
+		}]
 	return options
 
 
@@ -222,11 +238,13 @@ func _perform(side: Side, action: Dictionary) -> void:
 ## Resonance from it. hit is false on a miss or an empty/unusable move.
 func _do_move(user: Combatant, target: Combatant, move_id: String) -> Dictionary:
 	var empty_result := {"hit": false, "dealt": 0, "type_multiplier": 1.0, "hp_ratio_before": target.hp_ratio()}
-	var move := Content.get_move(move_id)
+	var struggling := move_id == MoveData.STRUGGLE_ID
+	var move := MoveData.struggle() if struggling else Content.get_move(move_id)
 	if move == null:
 		log_lines.append("%s hesitates." % user.log_name())
 		return empty_result
-	if not user.creature.spend_use(move_id):
+	# Struggle is not in anyone's move list, so there is no use to spend.
+	if not struggling and not user.creature.spend_use(move_id):
 		log_lines.append("%s has nothing left of %s." % [user.log_name(), move.display_name])
 		return empty_result
 
@@ -241,17 +259,28 @@ func _do_move(user: Combatant, target: Combatant, move_id: String) -> Dictionary
 		return empty_result
 
 	var hp_ratio_before := target.hp_ratio()
-	var result := Damage.compute(user, target, move, Damage.roll_variance(rng))
+	var result := Damage.compute(
+		user, target, move, Damage.roll_variance(rng), Damage.roll_critical(rng))
 	var amount := int(result["amount"])
 	if restrained and target.is_wild:
 		# A single hit can never end the fight outright -- it can still be
 		# finished off over several, if the player keeps swinging regardless.
+		# This clamps the crit too, deliberately: the Draught would be worth
+		# little if the one roll it failed to cover were the biggest one.
 		amount = mini(amount, maxi(1, int(float(target.creature.max_hp()) * _restrain_cap_ratio)))
 	var dealt := target.creature.take_damage(amount)
+	if bool(result["critical"]):
+		log_lines.append("It found the gap.")
 	var note := Damage.effectiveness_text(float(result["type_multiplier"]))
 	if not note.is_empty():
 		log_lines.append(note)
 	log_lines.append("%s takes %d." % [target.log_name(), dealt])
+	if struggling:
+		var recoil := maxi(1, int(floorf(
+			float(user.creature.max_hp()) * MoveData.STRUGGLE_RECOIL_RATIO)))
+		log_lines.append("The effort costs %s %d." % [
+			user.log_name(), user.creature.take_damage(recoil),
+		])
 	return {
 		"hit": true,
 		"dealt": dealt,
@@ -646,8 +675,9 @@ func _choose_foe_action() -> Dictionary:
 		if i < foe.creature.move_uses.size() and foe.creature.move_uses[i] > 0:
 			usable.append(foe.creature.moves[i])
 	if usable.is_empty():
-		# Out of everything. Standing there is at least honest.
-		return {"kind": ACTION_STILL}
+		# Out of everything. Struggling hurts it, which is the point: two
+		# creatures with nothing left used to stand facing each other forever.
+		return {"kind": ACTION_MOVE, "move": MoveData.STRUGGLE_ID}
 
 	if rng.randf() < AI_BEST_MOVE_CHANCE:
 		var best := ""

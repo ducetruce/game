@@ -33,9 +33,24 @@ const VARIANCE_MAX := 1.0
 ## three-turn fights with one-shots at level parity.
 const MINIMUM_DAMAGE := 1
 
+## An uncommon roll at a modest multiplier, rather than a rare one at a big
+## multiplier. This design leans on fights being plannable -- a 2x spike turns
+## a fight you had read into a coin flip, and it would do it most often on the
+## turn before a capture lands. 1.5x is felt without being decisive.
+##
+## Crits are applied before the Tempering Draught's cap, never after: the one
+## item whose whole job is preventing an accidental kill must not have a hole
+## in it on the exact roll that most threatens one. See BattleState._do_move.
+const CRITICAL_CHANCE := 1.0 / 16.0
+const CRITICAL_MULTIPLIER := 1.5
+
 
 static func roll_variance(rng: RandomNumberGenerator) -> float:
 	return rng.randf_range(VARIANCE_MIN, VARIANCE_MAX)
+
+
+static func roll_critical(rng: RandomNumberGenerator) -> bool:
+	return rng.randf() < CRITICAL_CHANCE
 
 
 ## Takes Combatants, not Creatures, so stat stages are always applied -- there
@@ -44,11 +59,14 @@ static func roll_variance(rng: RandomNumberGenerator) -> float:
 ## Returns a breakdown rather than a bare number, because the battle log needs
 ## to say *why* a hit landed the way it did. `variance` is a multiplier,
 ## normally from roll_variance; pass VARIANCE_MAX for a deterministic preview.
+## `critical` is likewise passed in rather than rolled here, so a preview or a
+## test can ask for either outcome on purpose.
 static func compute(
 	attacker: Combatant,
 	defender: Combatant,
 	move: MoveData,
-	variance: float = VARIANCE_MAX
+	variance: float = VARIANCE_MAX,
+	critical: bool = false
 ) -> Dictionary:
 	var result := {
 		"amount": 0,
@@ -57,6 +75,7 @@ static func compute(
 		"attack_stat": 0,
 		"defense_stat": 0,
 		"is_damaging": move.is_damaging(),
+		"critical": critical,
 	}
 	if not move.is_damaging():
 		return result
@@ -75,7 +94,9 @@ static func compute(
 	result["type_multiplier"] = type_multiplier
 	result["stab"] = stab
 
-	result["amount"] = maxi(MINIMUM_DAMAGE, int(floorf(base * type_multiplier * stab * variance)))
+	var crit := CRITICAL_MULTIPLIER if critical else 1.0
+	result["amount"] = maxi(
+		MINIMUM_DAMAGE, int(floorf(base * type_multiplier * stab * variance * crit)))
 	return result
 
 

@@ -1057,14 +1057,65 @@ plaque should be walkable and still probeable; a person should not be.
 
 ---
 
+## 21. Critical hits and Struggle
+
+Two of § 20's answers, built together because both live in the turn loop.
+
+**Crits are 1.5x at a 1-in-16 roll**, and they are rolled by the caller, not
+inside `Damage.compute()` -- the same split `variance` already used, so a
+preview or a test can ask for either outcome deliberately instead of hoping
+for one. The multiplier is applied *before* the floor rather than to the
+floored result, which is the less lossy order and means a crit can land one
+point above `floor(normal x 1.5)`.
+
+**A crit cannot punch through the Tempering Draught.** The restrain cap is
+applied in `_do_move` after `Damage.compute` returns, so it clamps a crit
+exactly as it clamps anything else. This is the interaction worth stating
+outright: the Draught's entire job is preventing an accidental kill, and a
+hole in it on the single biggest roll -- the one most likely to kill the
+creature you were three turns into reading -- would make it untrustworthy
+precisely when it matters. Verified by swinging an over-levelled attacker at
+a level 5 wild creature 400 times: every hit landed, none exceeded the cap,
+and it never died.
+
+**Struggle is code, not content.** Nothing learns, teaches or sells it, no
+learnset may name it, and `MoveData.from_dict()` quite rightly refuses a
+damaging move with no type -- which is exactly what Struggle has to be, so it
+can neither take STAB nor be resisted. Putting it in `moves.json` would have
+meant an exemption there *and* in the validator for one reserved id, so it is
+built by `MoveData.struggle()` instead.
+
+It surfaces in two places and needed no UI work for either. `move_options()`
+returns Struggle as an ordinary single row when nothing has uses left, so the
+battle menu never learns it exists; and the foe AI reaches for it instead of
+the `Still` it used to fall back on, which was the actual stalemate -- two
+creatures with nothing left standing at each other forever.
+
+**The recoil is a quarter of the user's own max HP, not of the damage
+dealt.** Struggle exists to end a fight nobody can win, and a cost measured
+against the target's remaining health would shrink exactly when the fight
+most needs ending. Against your own maximum it caps the stalemate at four
+turns; in practice a stripped-bare pair resolves in three.
+
+**A note on the test that nearly lied.** The first version of the crit-cap
+check picked `moves[0]` to swing with. At level 40 that creature's four-move
+list has dropped its attack for later-learned utility, so `moves[0]` was
+`Howl` -- a buff. The test measured zero damage 300 times and passed. It now
+picks the first *damaging* move and asserts the hits actually land before
+asserting they are capped. A test that can pass while doing nothing is worse
+than no test, because it reports safety it never checked.
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
 decisions to make, plus what has not been reached yet.
 
-- The exact crit rate and multiplier, the Struggle recoil fraction, and the
-  Hollow Clearing's 10-18 coin bracket. All picked by reasoning; all single
-  constants, and all want a session of actual play to judge.
+- The crit rate and multiplier (1-in-16, 1.5x), the Struggle recoil fraction
+  (a quarter of max HP), and the Hollow Clearing's 10-18 coin bracket. All
+  picked by reasoning and all now built (§ 19, § 21); all single constants,
+  and all want a session of actual play to judge.
 - Which items the catalog grows by, beyond the revive that § 20 unblocked.
   Held items in particular imply an equip step that does not exist.
 - What a second area's coin bracket should be, once there is one with
