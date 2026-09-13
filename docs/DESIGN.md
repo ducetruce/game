@@ -1107,6 +1107,45 @@ than no test, because it reports safety it never checked.
 
 ---
 
+## 22. Choosing what to forget
+
+A creature that levelled into a fifth move used to be told "could learn X,
+but has no room" and the move was gone. That silently costs the player the
+thing they just earned, which is the one outcome nobody wants.
+
+**The rule stays in `BattleState`, the asking stays in the battle screen.**
+`_learn_new_moves` now parks the move on `pending_learns` instead of dropping
+it, and `resolve_pending_learn(forget_index)` performs the swap or the
+decline and returns the lines to show. The state machine never blocks on a
+player, which is what keeps `scenes/debug/battle_sim.tscn` able to run four
+hundred battles with no UI in sight -- the simulator simply never drains the
+queue.
+
+**It is offered before the outcome screen**, not after, so a move earned by
+the winning blow still gets asked about rather than vanishing with the
+battle. `_after_messages()` is the seam: it already ran between every burst
+of log lines and whatever came next.
+
+**Two steps, not one, and the second reason is the load-bearing one.** The
+prompt asks "make room for it?" and only then lists the four moves. Partly
+because five rows do not fit the 46px menu panel -- the first build cut the
+last row clean off, and it was the row the cursor defaulted to, so nothing
+appeared selected at all. But mostly because a one-step list puts the cursor
+on a real move, and this prompt appears in the middle of a run of messages
+the player is mashing Z through. That is § 15's hazard again, and the answer
+is the same shape as the title screen's: make the mashed outcome the
+harmless one. The question defaults to *Keep the four I have*.
+
+**Backing out is an answer, not an escape.** `X` on the list goes back to the
+question; `X` on the question declines. Neither drops to the action menu,
+which would strand an unanswered prompt in a battle that may already be
+over.
+
+Declining is currently permanent -- there is no relearning later. That is
+listed below rather than solved here.
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
@@ -1116,6 +1155,8 @@ decisions to make, plus what has not been reached yet.
   (a quarter of max HP), and the Hollow Clearing's 10-18 coin bracket. All
   picked by reasoning and all now built (§ 19, § 21); all single constants,
   and all want a session of actual play to judge.
+- Relearning a move that was declined at level-up (§ 22). Declining is
+  permanent today, and there is no tutor to undo it.
 - Which items the catalog grows by, beyond the revive that § 20 unblocked.
   Held items in particular imply an equip step that does not exist.
 - What a second area's coin bracket should be, once there is one with

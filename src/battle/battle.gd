@@ -6,7 +6,15 @@ extends Control
 
 signal finished(outcome: int)
 
-enum Ui { MESSAGE, ACTIONS, MOVES, ITEMS, PARTY, OVER }
+enum Ui { MESSAGE, ACTIONS, MOVES, ITEMS, PARTY, LEARN_ASK, LEARN_PICK, OVER }
+
+## Learning a fifth move asks before it lists, rather than dropping straight
+## into the move list. Two reasons, and the second is the load-bearing one:
+## five rows do not fit the menu panel, and a one-step prompt would put the
+## cursor on a real move, where a player mashing Z through the post-battle
+## messages would forget it without ever reading the question.
+const LEARN_ASK_LABELS := ["Make room for it", "Keep the four I have"]
+const LEARN_ASK_DECLINE := 1
 
 const ACTION_LABELS := ["Fight", "Still", "Item", "Party", "Run"]
 const CREATURE_SPRITE_DIR := "res://assets/sprites/creatures/"
@@ -103,6 +111,11 @@ func _show_next_message() -> void:
 
 func _after_messages() -> void:
 	_refresh_panels()
+	# Before the outcome screen on purpose: a move earned by the winning blow
+	# still gets offered rather than vanishing with the battle.
+	if not _state.pending_learns.is_empty():
+		_open(Ui.LEARN_ASK)
+		return
 	if _state.is_over():
 		_ui = Ui.OVER
 		_menu.text = ""
@@ -153,7 +166,15 @@ func _menu_input(event: InputEvent) -> bool:
 	elif event.is_action("interact"):
 		_confirm()
 	elif event.is_action("cancel"):
-		if not _forced_switch and _ui != Ui.ACTIONS:
+		if _ui == Ui.LEARN_PICK:
+			_open(Ui.LEARN_ASK)  # back to the question, not out of it
+		elif _ui == Ui.LEARN_ASK:
+			# Backing out of "make room for it?" is a real answer: no.
+			# Escaping to the action menu would strand the prompt, and the
+			# battle may already be over.
+			_queue(_state.resolve_pending_learn(-1))
+			_show_next_message()
+		elif not _forced_switch and _ui != Ui.ACTIONS:
 			_open(Ui.ACTIONS)
 	else:
 		return false
@@ -162,7 +183,16 @@ func _menu_input(event: InputEvent) -> bool:
 
 func _open(ui: Ui) -> void:
 	_ui = ui
-	_cursor = _state.active_index if ui == Ui.PARTY else 0
+	if ui == Ui.PARTY:
+		_cursor = _state.active_index
+	elif ui == Ui.LEARN_ASK:
+		# Starts on "keep the four I have". Forgetting a move cannot be undone,
+		# and this prompt lands in the middle of a run of messages the player
+		# is very likely mashing Z through -- the same hazard as the menu
+		# debounce in § 15, answered by making the mashed outcome harmless.
+		_cursor = LEARN_ASK_DECLINE
+	else:
+		_cursor = 0
 	_render_menu()
 
 
@@ -176,8 +206,21 @@ func _menu_length() -> int:
 			return maxi(1, _state.item_options().size())  # 1 for the "nothing to use" row
 		Ui.PARTY:
 			return _state.party.size()
+		Ui.LEARN_ASK:
+			return LEARN_ASK_LABELS.size()
+		Ui.LEARN_PICK:
+			return _learn_creature_moves().size()
 		_:
 			return 0
+
+
+## The move list the forget-a-move prompt is choosing from.
+func _learn_creature_moves() -> PackedStringArray:
+	var entry := _state.next_pending_learn()
+	if entry.is_empty():
+		return PackedStringArray()
+	var creature: Creature = entry["creature"]
+	return creature.moves
 
 
 func _confirm() -> void:
@@ -210,6 +253,15 @@ func _confirm() -> void:
 			_submit({"kind": BattleState.ACTION_ITEM, "item": str(items[_cursor]["id"])})
 		Ui.PARTY:
 			_confirm_party()
+		Ui.LEARN_ASK:
+			if _cursor == LEARN_ASK_DECLINE:
+				_queue(_state.resolve_pending_learn(-1))
+				_show_next_message()
+			else:
+				_open(Ui.LEARN_PICK)
+		Ui.LEARN_PICK:
+			_queue(_state.resolve_pending_learn(_cursor))
+			_show_next_message()
 
 
 func _confirm_party() -> void:
@@ -252,6 +304,10 @@ func _render_menu() -> void:
 			_render_items()
 		Ui.PARTY:
 			_render_party()
+		Ui.LEARN_ASK:
+			_render_learn_ask()
+		Ui.LEARN_PICK:
+			_render_learn_pick()
 
 
 func _render_actions() -> void:
@@ -310,6 +366,46 @@ func _render_party() -> void:
 	_message.text = "[color=#%s]%s[/color]" % [
 		COLOR_DIM,
 		"Who stands in its place?" if _forced_switch else "Send out whom? (X to go back)",
+	]
+
+
+func _render_learn_ask() -> void:
+	var entry := _state.next_pending_learn()
+	if entry.is_empty():
+		return
+	var creature: Creature = entry["creature"]
+	var learning := Content.get_move(str(entry["move_id"]))
+	var learning_name := learning.display_name if learning != null else str(entry["move_id"])
+
+	var rows := PackedStringArray()
+	for i in LEARN_ASK_LABELS.size():
+		rows.append(_row(LEARN_ASK_LABELS[i], i == _cursor))
+	_menu.text = "\n".join(rows)
+
+	_message.text = "[color=#%s]%s can learn %s, but already knows four.[/color]\n[color=#%s]%s[/color]" % [
+		COLOR_TEXT, creature.display_name(), learning_name, COLOR_DIM,
+		"Forgetting one cannot be undone.",
+	]
+
+
+func _render_learn_pick() -> void:
+	var entry := _state.next_pending_learn()
+	if entry.is_empty():
+		return
+	var creature: Creature = entry["creature"]
+	var learning := Content.get_move(str(entry["move_id"]))
+	var learning_name := learning.display_name if learning != null else str(entry["move_id"])
+
+	var rows := PackedStringArray()
+	for i in creature.moves.size():
+		var known := Content.get_move(creature.moves[i])
+		var known_name := known.display_name if known != null else creature.moves[i]
+		var known_type := known.type if known != null else "?"
+		rows.append(_row("%-13s %s" % [known_name, known_type], i == _cursor))
+	_menu.text = "\n".join(rows)
+
+	_message.text = "[color=#%s]Give up which one for %s?[/color]\n[color=#%s]%s[/color]" % [
+		COLOR_TEXT, learning_name, COLOR_DIM, "X to go back.",
 	]
 
 

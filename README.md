@@ -113,6 +113,10 @@ Every encounter also has patience: six turns in a row with no progress and
 the creature breaks off. Watch the thin gold bar under its HP bar — that is
 your progress toward taming it.
 
+When a creature levels into a fifth move it asks whether to make room, and
+then which of the four to give up — the safe answer is the default, and
+backing out keeps what you have.
+
 Hits occasionally land critically for half again the damage. Struggle is
 what a creature falls back on once every move is spent — it hurts whoever
 uses it, so a fight where both sides have run dry still ends.

@@ -63,6 +63,12 @@ var _foe_healed_this_turn := false
 
 var _flee_attempts := 0
 
+## Moves a creature earned but had no room for, as {creature, move_id}. The
+## battle screen drains these after a turn's messages and asks which move to
+## give up -- silently dropping the move the player just earned is the one
+## outcome nobody wants. Empty on every turn that taught nothing.
+var pending_learns: Array = []
+
 ## [low, high] coin a resolved encounter here pays, inclusive. Set by whoever
 ## starts the battle, from the map's own data -- coin is a property of the
 ## place, not of the creature (docs/DESIGN.md § 20). Left at zero, the battle
@@ -628,13 +634,47 @@ func _learn_new_moves(creature: Creature, from_level: int) -> void:
 			var move := Content.get_move(move_id)
 			var move_name := move.display_name if move != null else move_id
 			if creature.moves.size() >= Creature.MAX_MOVES:
-				log_lines.append("%s could learn %s, but has no room." % [
+				pending_learns.append({"creature": creature, "move_id": move_id})
+				log_lines.append("%s is ready to learn %s." % [
 					creature.display_name(), move_name,
 				])
 				continue
 			creature.moves.append(move_id)
 			creature.move_uses.append(move.uses if move != null else 0)
 			log_lines.append("%s learns %s." % [creature.display_name(), move_name])
+
+
+## Settles the first pending learn. `forget_index` names the move to give up;
+## anything outside the move list declines and keeps the four already known.
+## Returns the lines describing what happened, for the caller to show.
+func resolve_pending_learn(forget_index: int) -> PackedStringArray:
+	var lines := PackedStringArray()
+	if pending_learns.is_empty():
+		return lines
+
+	var entry: Dictionary = pending_learns.pop_front()
+	var creature: Creature = entry["creature"]
+	var move_id := str(entry["move_id"])
+	var move := Content.get_move(move_id)
+	var move_name := move.display_name if move != null else move_id
+
+	if forget_index < 0 or forget_index >= creature.moves.size():
+		lines.append("%s sets %s aside." % [creature.display_name(), move_name])
+		return lines
+
+	var replaced := Content.get_move(creature.moves[forget_index])
+	var replaced_name := replaced.display_name if replaced != null else creature.moves[forget_index]
+	creature.moves[forget_index] = move_id
+	creature.move_uses[forget_index] = move.uses if move != null else 0
+	lines.append("%s forgets %s, and learns %s." % [
+		creature.display_name(), replaced_name, move_name,
+	])
+	return lines
+
+
+## The creature and move the next prompt is about, or {} if there is none.
+func next_pending_learn() -> Dictionary:
+	return pending_learns[0] if not pending_learns.is_empty() else {}
 
 
 func _has_healthy_reserve() -> bool:
