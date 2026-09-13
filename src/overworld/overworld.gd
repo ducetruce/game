@@ -80,8 +80,15 @@ func _ready() -> void:
 ## named it.
 func _load_map(map_id: String, target: Variant) -> void:
 	if _map != null:
+		# Taken out of the tree immediately, not just queued for deletion:
+		# queue_free() does not take effect until the end of the frame, which
+		# leaves the outgoing map's collision live in the physics space at the
+		# same world coordinates the player is about to be placed at. Arriving
+		# on a tile the *old* map had a wall on then depenetrates the player
+		# several pixels off the tile the warp named, and they stay there.
 		# Godot disconnects a freed node's signals on its own, so there is
 		# nothing to unhook here first.
+		_map_container.remove_child(_map)
 		_map.queue_free()
 		_map = null
 

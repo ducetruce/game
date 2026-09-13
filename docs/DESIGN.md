@@ -796,20 +796,47 @@ warp and checks its `target_map` exists and its `target_tile` lands on
 walkable ground in *that* map's grid, only possible once every file has been
 read.
 
-**Verification.** Real-engine only, as established after the black-screen
-incident earlier in this project -- none of this was trusted from reading
-the code. A scripted `SceneTree` walkthrough drove a
-`Player` node onto the Hollow Clearing warp tile, confirmed `Overworld`
-switched to `village_square` and landed at the exact expected tile, then
-drove it onto the village's return warp and confirmed the trip back landed
-at the exact tile the Hollow Clearing warp's `target_tile` names -- both
-positions matched to the pixel once given enough real time for the two fade
-tweens to finish (the first version of this check read the position mid-fade
-and flagged a false failure, which is the tell for "increase the settle
-window," not "the warp landed in the wrong place"). The village map itself
-was screenshotted through a real `Camera2D` under Xvfb + llvmpipe: grass
-border, both building facades, the flagstone plaza, the three villagers, and
-the well all render as designed.
+**Verification, and the bug only walking found.** The first check moved the
+player onto each warp tile by assigning `global_position`, and it passed
+both ways. Then the same trip was driven with actual held key input --
+walking the path north from the real spawn point and back -- and the return
+leg landed the player 7.4px off the tile the warp named, permanently, every
+time.
+
+The cause: `_load_map` freed the outgoing map with `queue_free()`, which
+does not take effect until the end of the frame. So when the player was
+placed on the incoming map, the *outgoing* map's collision was still live in
+the physics space at the same world coordinates, and `move_and_slide()`
+depenetrated them out of it. Arriving back in the Hollow Clearing at tile
+`(20, 1)` put the player inside the village's solid tree border, which
+occupies those exact coordinates on the map being torn down. The northbound
+leg looked fine only by luck: the Hollow Clearing happens to have walkable
+path at the village's arrival coordinates, so there was nothing to push
+against. The fix is one line -- `_map_container.remove_child(_map)` before
+the `queue_free()`, so the old collision leaves the physics space
+immediately and deletion stays deferred and safe.
+
+**Worth generalising: a teleport is not a walk.** Assigning
+`global_position` skips everything the physics body does on arrival, which
+is exactly where this bug lived. This is the same lesson as the black-screen
+incident and the interact-mash bug (§ 15) in a third costume -- verifying
+the mechanism rather than the experience keeps producing checks that pass
+over real defects. Warp travel is now checked by holding a movement key and
+letting the player's own controller do the walking, over two full round
+trips, asserting the exact landing tile each way and that map instances do
+not accumulate in the container.
+
+Cross-map save/restore is checked the same way, against real save files: a
+save naming the village boots into the village at the saved position, and a
+save naming a map that no longer exists falls back to the Hollow Clearing
+with an error rather than a black screen. A position saved on top of a prop
+(the well) restores and is then nudged clear by physics, which is the right
+outcome -- `is_walkable()` reads the tile grid, not spawned bodies, and does
+not need to.
+
+The village map itself was screenshotted through a real `Camera2D` under
+Xvfb + llvmpipe: grass border, both building facades, the flagstone plaza,
+the three villagers, and the well all render as designed.
 
 ---
 
