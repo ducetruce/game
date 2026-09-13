@@ -1559,6 +1559,45 @@ just as invisible.
 
 ---
 
+## 31. Two more items, and the gap one of them fills
+
+§ 20 settled that the item catalog should grow. It grows by two, and one of
+them exists because of a mechanic that had no answer outside a rest spring.
+
+**The Ninebark Tonic** (30 coin, usable in a fight) is a new effect kind,
+`restore_uses`: it puts five uses back into every move a creature knows, each
+capped at its own maximum. Move uses were the one resource with exactly one
+source of resupply -- a spring -- which was fine when a spring was four tiles
+away and stopped being fine the moment the Fen Road made the trip north a
+long one. Running dry mid-crossing meant Struggle (§ 21) or walking all the
+way back, and neither is a decision, just a tax.
+
+It refuses before it charges, like everything else here: a creature with
+nothing spent is told so and keeps the tonic. In the bag it is deliberately
+allowed on a fainted creature -- topping its moves up before reviving it is
+exactly what you would want to do, and refusing would only mean using the two
+in a particular order for no reason.
+
+**The Heartwood Root** (90 coin, out of battle only) is a Waking Root that
+brings one back whole rather than halfway, at more than twice the price. It
+is the same effect kind, so it needed no code at all -- which is the point of
+having effect kinds in data.
+
+The road now has a pedlar by the sluice spring, since a long crossing with
+nowhere to restock is a crossing you make carrying everything, and Aldenmere's
+stall carries the Heartwood Root.
+
+Two boxes had to grow to fit them, both found by `UiFit` rather than by
+looking: the bag's description line clipped on the Heartwood Root's longer
+description, and the bag's item list was a fixed six rows in a game whose
+item catalog was just declared to be growing. The list now windows like the
+battle menu and the storage screen (§ 29). That is three screens with the
+same treatment, which is a sign it belongs in one place -- worth doing when
+there is a fourth.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than

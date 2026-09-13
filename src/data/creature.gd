@@ -63,6 +63,32 @@ func restore() -> void:
 	refill_moves()
 
 
+## How many move uses have been spent across every move this creature knows.
+## Zero means an item that restores uses would do nothing, which the bag and
+## the battle both need to know *before* charging for it.
+func spent_uses() -> int:
+	var spent := 0
+	for i in move_uses.size():
+		var move := Content.get_move(moves[i])
+		if move != null:
+			spent += maxi(0, move.uses - move_uses[i])
+	return spent
+
+
+## Puts `amount` uses back into every move, each capped at its own maximum.
+## Returns how many were actually restored.
+func restore_uses(amount: int) -> int:
+	var restored := 0
+	for i in move_uses.size():
+		var move := Content.get_move(moves[i])
+		if move == null:
+			continue
+		var before := move_uses[i]
+		move_uses[i] = mini(move.uses, before + amount)
+		restored += move_uses[i] - before
+	return restored
+
+
 func refill_moves() -> void:
 	move_uses = PackedInt32Array()
 	for move_id in moves:

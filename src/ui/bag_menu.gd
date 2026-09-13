@@ -20,7 +20,12 @@ const COLOR_GOOD := "6fae74"
 enum Step { ITEMS, TARGET }
 
 var _step: Step = Step.ITEMS
+## Rows the list box holds at once.
+const VISIBLE_ROWS := 6
+
 var _cursor := 0
+## First row of the list window, when there are more items than fit.
+var _scroll := 0
 var _items := PackedStringArray()
 ## Index into _items picked on the first step. Kept separate from _cursor,
 ## which moves on to the party list once a target is being chosen.
@@ -67,7 +72,8 @@ func _refresh_items() -> void:
 		if item == null:
 			continue
 		var kind := str(item.effect.get("kind", ""))
-		if kind == ItemData.EFFECT_HEAL or kind == ItemData.EFFECT_REVIVE:
+		if kind in [ItemData.EFFECT_HEAL, ItemData.EFFECT_REVIVE,
+				ItemData.EFFECT_RESTORE_USES]:
 			_items.append(item_id)
 
 
@@ -116,6 +122,7 @@ func _back() -> void:
 	if _step == Step.TARGET:
 		_step = Step.ITEMS
 		_cursor = 0
+		_scroll = 0
 		_render()
 		return
 	_close()
@@ -129,6 +136,7 @@ func _confirm() -> void:
 		_chosen = _cursor
 		_step = Step.TARGET
 		_cursor = 0
+		_scroll = 0
 		_render()
 		return
 	_use_on(Party.members[_cursor])
@@ -155,11 +163,22 @@ func _use_on(creature: Creature) -> void:
 		if creature.current_hp >= creature.max_hp():
 			_say("%s is not hurt." % creature.display_name())
 			return
+	if kind == ItemData.EFFECT_RESTORE_USES:
+		# Deliberately allowed on a fainted creature: topping its moves up
+		# while it is down is exactly what you would want to do before
+		# reviving it, and refusing would only mean using the two in a
+		# particular order.
+		if creature.spent_uses() <= 0:
+			_say("%s has spent nothing." % creature.display_name())
+			return
 
 	Inventory.consume(item.id)
 	if kind == ItemData.EFFECT_REVIVE:
 		creature.current_hp = mini(amount, creature.max_hp())
 		_say("%s comes back round." % creature.display_name(), true)
+	elif kind == ItemData.EFFECT_RESTORE_USES:
+		var given := creature.restore_uses(int(item.effect.get("uses", 0)))
+		_say("%s finds %d more in itself." % [creature.display_name(), given], true)
 	else:
 		_say("%s knits back %d." % [creature.display_name(), creature.heal(amount)], true)
 
@@ -169,6 +188,34 @@ func _use_on(creature: Creature) -> void:
 		_step = Step.ITEMS
 		_chosen = 0
 		_cursor = 0
+		_scroll = 0
+
+
+## Draws `rows` into the list box: all of them if they fit, otherwise a window
+## of VISIBLE_ROWS following the cursor, marking the rows it hides. The bag
+## holds every item the catalog ever grows to, so a box sized to today's list
+## is a box that breaks on the next item added. Same treatment as the battle
+## menu and the storage screen -- see docs/DESIGN.md § 29.
+func _set_list(rows: PackedStringArray) -> void:
+	if rows.size() <= VISIBLE_ROWS:
+		_scroll = 0
+		_list.text = "\n".join(rows)
+		return
+
+	if _cursor < _scroll:
+		_scroll = _cursor
+	elif _cursor >= _scroll + VISIBLE_ROWS:
+		_scroll = _cursor - VISIBLE_ROWS + 1
+	_scroll = clampi(_scroll, 0, rows.size() - VISIBLE_ROWS)
+
+	var shown := PackedStringArray()
+	for i in range(_scroll, _scroll + VISIBLE_ROWS):
+		shown.append(rows[i])
+	if _scroll > 0:
+		shown[0] += " [color=#%s]^[/color]" % COLOR_DIM
+	if _scroll + VISIBLE_ROWS < rows.size():
+		shown[VISIBLE_ROWS - 1] += " [color=#%s]v[/color]" % COLOR_DIM
+	_list.text = "\n".join(shown)
 
 
 func _chosen_item_id() -> String:
@@ -212,7 +259,7 @@ func _render_items() -> void:
 			colour, ">" if i == _cursor else " ", item.display_name,
 			Inventory.count(item.id),
 		])
-	_list.text = "\n".join(rows)
+	_set_list(rows)
 
 	var chosen := Content.get_item(_items[_cursor]) if _cursor < _items.size() else null
 	_detail.text = "[color=#%s]%s[/color]" % [COLOR_DIM, chosen.description if chosen != null else ""]
@@ -235,7 +282,7 @@ func _render_targets() -> void:
 			colour, ">" if i == _cursor else " ", creature.display_name(),
 			creature.level, creature.current_hp, creature.max_hp(),
 		])
-	_list.text = "\n".join(rows)
+	_set_list(rows)
 	_detail.text = "[color=#%s]%s[/color]" % [
 		COLOR_DIM, "Who has gone down?" if reviving else "Who needs it?",
 	]

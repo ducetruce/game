@@ -391,6 +391,14 @@ func _do_item(side: Side, item_id: String) -> void:
 			var percent := float(item.effect.get("percent", 0))
 			var healed := mending.heal(int(roundf(float(mending.max_hp()) * percent / 100.0)))
 			log_lines.append("%s knits back %d." % [mending.display_name(), healed])
+		ItemData.EFFECT_RESTORE_USES:
+			# Same rule as healing: it goes to whoever is out, because the
+			# battle UI has no step for choosing a target.
+			var tiring := active().creature
+			var given := tiring.restore_uses(int(item.effect.get("uses", 0)))
+			log_lines.append("%s finds %d more in itself." % [
+				tiring.display_name(), given,
+			])
 
 
 ## Why this item would do nothing right now, or "" if it would work.
@@ -403,6 +411,10 @@ func _item_refusal(item: ItemData) -> String:
 			var mending := active().creature
 			if mending.current_hp >= mending.max_hp():
 				return "%s is not hurt." % mending.display_name()
+		ItemData.EFFECT_RESTORE_USES:
+			var tiring := active().creature
+			if tiring.spent_uses() <= 0:
+				return "%s has spent nothing yet." % tiring.display_name()
 		_:
 			return "Nothing comes of it."
 	return ""

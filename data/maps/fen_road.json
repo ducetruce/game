@@ -181,6 +181,18 @@
           ]
         }
       ]
+    },
+    {
+      "type": "shop",
+      "tile": [
+        21,
+        10
+      ],
+      "catalog": [
+        "knitbone_salve",
+        "ninebark_tonic",
+        "tempering_draught"
+      ]
     }
   ],
   "encounters": {

@@ -127,16 +127,19 @@ pause menu.
 Follow the path north, through the gap in the tree line, to reach
 **Aldenmere**, a village with no encounters of its own — a safe stop with its
 own well (also a rest spring), a few villagers to talk to, and a stall
-selling the **Knitbone Salve** (heals mid-battle) and the **Waking Root**
-(brings a fainted creature back, out of battle) — neither of which the
-clearing's shopkeeper stocks. Walk back south through the same
+selling the **Knitbone Salve** (heals mid-battle), the **Waking Root**
+(brings a fainted creature back halfway, out of battle) and the **Heartwood
+Root** (brings one back whole, for more than twice the price) — none of which
+the clearing's shopkeeper stocks. Walk back south through the same
 gap to return.
 
 North again, through the gap in Aldenmere's far tree line, is the **Fen
 Road** — the long crossing to the mere, levels 6–10, paying 14–22 a fight.
 The road itself goes the long way round: west along an old drainage cut,
 north past a **sluice gate** with a spring beside it, then east and north to
-the shore. The whole middle of the fen is bracken. Cutting straight from gate
+the shore. There is a **pedlar** by the sluice who sells the **Ninebark
+Tonic** — five uses back into every move a creature knows, the only way to
+top moves up away from a spring. The whole middle of the fen is bracken. Cutting straight from gate
 to gate is four tiles shorter and nine tiles of fighting, which is the choice
 the area is there to offer.
 
@@ -253,14 +256,17 @@ gains and penalties, the stall-flee threshold) and the flavour lines the
 battle log picks from — no GDScript changes needed to retune or add a
 temperament. `data/items.json` holds each item's price and effect — the
 Tempering Draught's per-hit damage cap, the Knitbone Salve's heal
-percentage. Re-run `tools/validate_data.py` after editing either; it
+percentage, the Ninebark Tonic's move uses. The effect kinds are
+`restrain_hit`, `heal`, `revive` and `restore_uses`; an item combining an
+existing kind with new numbers needs no code at all. Re-run `tools/validate_data.py` after editing either; it
 checks every temperament has the flavour lines the code actually looks up.
 
 ## Saving and loading
 
 The pause menu also holds your **Bag** — items you can use outside a fight.
-The **Waking Root**, sold nowhere yet but carryable, brings a fainted
-creature back at half health; the Knitbone Salve works out here too. A
+The **Waking Root** and the **Heartwood Root** bring a fainted creature back
+at half health and at full; the Knitbone Salve and the Ninebark Tonic work
+out here too. A
 Tempering Draught is not offered, since it only means something mid-battle.
 
 Saving is automatic at a rest spring, right after every battle resolves,

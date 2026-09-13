@@ -37,7 +37,7 @@ OBJECT_TYPES = ("sign", "spring", "shop", "npc", "shrine", "warp")
 # Mirrors ItemData.EFFECT_KINDS, which is what BattleState._do_item can
 # actually apply. Duplicated on purpose, same as the tile legend: the point is
 # to catch the two drifting apart.
-ITEM_EFFECT_KINDS = ("restrain_hit", "heal", "revive")
+ITEM_EFFECT_KINDS = ("restrain_hit", "heal", "revive", "restore_uses")
 TEMPERAMENT_NAMES = ("skittish", "proud", "feral")
 # Mirrors the flavor_state values BattleState._tick_reactive_resonance /
 # _tick_feral_resonance actually look up -- a state missing here fails
@@ -114,6 +114,11 @@ def check_items(types_unused=None) -> dict:
             # defeat penalty exists to charge for. See DESIGN.md section 23.
             if effect["kind"] == "revive" and item.get("usable_in_battle"):
                 err(where, "a revive must not be usable_in_battle")
+        elif effect["kind"] == "restore_uses":
+            uses = effect.get("uses")
+            if not isinstance(uses, int) or uses <= 0:
+                err(where, "restore_uses 'uses' must be a positive integer,"
+                    " got %r" % uses)
     return by_id
 
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Purchasable/usable items. Effect kinds: 'restrain_hit' caps a single hit's damage against a wild creature at cap_ratio * its max HP, for the rest of the current battle -- it does not stop a creature from being finished off over several hits, only from being ended in one. 'heal' restores percent% of a creature's max HP. 'revive' brings a fainted creature back at percent% of max HP and is deliberately not usable_in_battle -- see docs/DESIGN.md sections 13, 19 and 23.",
+  "_comment": "Purchasable/usable items. Effect kinds: 'restrain_hit' caps a single hit's damage against a wild creature at cap_ratio * its max HP, for the rest of the current battle -- it does not stop a creature from being finished off over several hits, only from being ended in one. 'heal' restores percent% of a creature's max HP. 'revive' brings a fainted creature back at percent% of max HP and is deliberately not usable_in_battle. 'restore_uses' puts 'uses' back into every move a creature knows, each capped at its own maximum -- the only way to top moves up away from a spring. See docs/DESIGN.md sections 13, 19, 23 and 31.",
   "items": [
     {
       "id": "tempering_draught",
@@ -7,7 +7,10 @@
       "description": "Steadies the hand. For the rest of this fight, no single blow you land can end it outright.",
       "price": 20,
       "usable_in_battle": true,
-      "effect": { "kind": "restrain_hit", "cap_ratio": 0.25 }
+      "effect": {
+        "kind": "restrain_hit",
+        "cap_ratio": 0.25
+      }
     },
     {
       "id": "knitbone_salve",
@@ -15,7 +18,10 @@
       "description": "Comfrey root and tallow, packed cold. Closes what it can reach.",
       "price": 16,
       "usable_in_battle": true,
-      "effect": { "kind": "heal", "percent": 50 }
+      "effect": {
+        "kind": "heal",
+        "percent": 50
+      }
     },
     {
       "id": "waking_root",
@@ -23,7 +29,32 @@
       "description": "Bitter enough to argue with. Brings back one that has gone down, halfway.",
       "price": 40,
       "usable_in_battle": false,
-      "effect": { "kind": "revive", "percent": 50 }
+      "effect": {
+        "kind": "revive",
+        "percent": 50
+      }
+    },
+    {
+      "id": "ninebark_tonic",
+      "name": "Ninebark Tonic",
+      "description": "Bark boiled down past bitter. Gives back some of what a long day took out.",
+      "price": 30,
+      "usable_in_battle": true,
+      "effect": {
+        "kind": "restore_uses",
+        "uses": 5
+      }
+    },
+    {
+      "id": "heartwood_root",
+      "name": "Heartwood Root",
+      "description": "Cut from the middle of the tree, where the tree keeps what it cannot spare. Brings one back whole.",
+      "price": 90,
+      "usable_in_battle": false,
+      "effect": {
+        "kind": "revive",
+        "percent": 100
+      }
     }
   ]
 }
