@@ -33,6 +33,13 @@ const PRIORITY_NORMAL := 0
 ## one that sometimes does something else.
 const AI_BEST_MOVE_CHANCE := 0.7
 
+## Coin paid per resolved encounter -- see coin_award(). Kept here rather than
+## in data/ because nothing else in the battle's numbers is data-driven yet
+## (the flee odds and the experience divisor are both constants too), and one
+## inconsistent half-migration is worse than either whole.
+const COIN_BASE := 4
+const COIN_PER_LEVEL := 3
+
 var party: Array[Combatant] = []
 var active_index := 0
 var foe: Combatant = null
@@ -318,21 +325,49 @@ func _do_item(side: Side, item_id: String) -> void:
 	if side != Side.PLAYER:
 		return  # a wild creature carries nothing
 	var item := Content.get_item(item_id)
-	if item == null or not item.usable_in_battle or not Inventory.consume(item_id):
+	if item == null or not item.usable_in_battle or not Inventory.has(item_id):
 		log_lines.append("Nothing comes of it.")
 		return
 
+	# Whether the item can do anything is settled before it is spent. Burning
+	# a charge to be told it did nothing teaches the player to distrust the
+	# item menu. The turn is still used up -- that much is the price of
+	# choosing wrongly.
+	var refusal := _item_refusal(item)
+	if not refusal.is_empty():
+		log_lines.append(refusal)
+		return
+
+	Inventory.consume(item_id)
 	log_lines.append("You use the %s." % item.display_name)
 	match str(item.effect.get("kind", "")):
 		ItemData.EFFECT_RESTRAIN_HIT:
+			restrained = true
+			_restrain_cap_ratio = float(item.effect.get("cap_ratio", 1.0))
+			log_lines.append("You steady your hand. Nothing you do now can end this in one blow.")
+		ItemData.EFFECT_HEAL:
+			# Heals whoever is out, not a creature of the player's choosing --
+			# picking a target needs a selection step the battle UI does not
+			# have yet.
+			var mending := active().creature
+			var percent := float(item.effect.get("percent", 0))
+			var healed := mending.heal(int(roundf(float(mending.max_hp()) * percent / 100.0)))
+			log_lines.append("%s knits back %d." % [mending.display_name(), healed])
+
+
+## Why this item would do nothing right now, or "" if it would work.
+func _item_refusal(item: ItemData) -> String:
+	match str(item.effect.get("kind", "")):
+		ItemData.EFFECT_RESTRAIN_HIT:
 			if restrained:
-				log_lines.append("You are already holding back.")
-			else:
-				restrained = true
-				_restrain_cap_ratio = float(item.effect.get("cap_ratio", 1.0))
-				log_lines.append("You steady your hand. Nothing you do now can end this in one blow.")
+				return "You are already holding back."
+		ItemData.EFFECT_HEAL:
+			var mending := active().creature
+			if mending.current_hp >= mending.max_hp():
+				return "%s is not hurt." % mending.display_name()
 		_:
-			log_lines.append("Nothing comes of it.")
+			return "Nothing comes of it."
+	return ""
 
 
 # --- Attunement --------------------------------------------------------
@@ -440,6 +475,9 @@ func _attune() -> void:
 	phase = Phase.ATTUNED
 	if not Party.add(foe.creature):
 		log_lines.append("There is no room to carry it yet, and it slips away regardless.")
+	# Paid even when there was no room: the encounter still resolved, and the
+	# player has no way to make space mid-battle to avoid the loss.
+	_grant_coin()
 
 
 func _flavor_line(temperament: String, state: String) -> String:
@@ -462,6 +500,7 @@ func _resolve_faints() -> void:
 		log_lines.append("%s goes down." % foe.log_name())
 		phase = Phase.WON
 		_grant_experience()
+		_grant_coin()
 		return
 	if active().creature.is_fainted():
 		log_lines.append("%s goes down." % active().creature.display_name())
@@ -471,6 +510,23 @@ func _resolve_faints() -> void:
 func _mark_participant(index: int) -> void:
 	if index >= 0 and not participants.has(index):
 		participants.append(index)
+
+
+## What an encounter pays in coin. Unlike experience_award() this is level-only
+## and ignores the species: experience already carries "that one was worth
+## more", and coin reads better when the player can weigh it against a shop
+## price without knowing a creature's stat spread. Levels 3-7 in the clearing
+## work out to 13-25 a fight, against a 16-20 coin item.
+func coin_award() -> int:
+	return COIN_BASE + COIN_PER_LEVEL * foe.creature.level
+
+
+## Paid whether the foe went down or was attuned. Attunement is what the whole
+## design is pointed at, so it must not quietly be the poorer option.
+func _grant_coin() -> void:
+	var award := coin_award()
+	Inventory.coin += award
+	log_lines.append("You collect %d coin." % award)
 
 
 ## What the defeated creature is worth. Scales with its level and with how

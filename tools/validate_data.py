@@ -32,7 +32,10 @@ WALKABLE_TILES = set("GgPpbc")
 SOLID_TILES = set("WRTFHV")
 OBJECT_TYPES = ("sign", "spring", "shop", "npc", "warp")
 
-ITEM_EFFECT_KINDS = ("restrain_hit",)
+# Mirrors ItemData.EFFECT_KINDS, which is what BattleState._do_item can
+# actually apply. Duplicated on purpose, same as the tile legend: the point is
+# to catch the two drifting apart.
+ITEM_EFFECT_KINDS = ("restrain_hit", "heal")
 TEMPERAMENT_NAMES = ("skittish", "proud", "feral")
 # Mirrors the flavor_state values BattleState._tick_reactive_resonance /
 # _tick_feral_resonance actually look up -- a state missing here fails
@@ -96,6 +99,13 @@ def check_items(types_unused=None) -> dict:
             ratio = effect.get("cap_ratio")
             if not isinstance(ratio, (int, float)) or not (0.0 < ratio <= 1.0):
                 err(where, "cap_ratio must be a number in (0, 1], got %r" % ratio)
+        elif effect["kind"] == "heal":
+            pct = effect.get("percent")
+            if not isinstance(pct, int) or not (1 <= pct <= 100):
+                err(where, "heal 'percent' must be an integer 1-100, got %r" % pct)
+            if not item.get("usable_in_battle"):
+                warn(where, "a heal that is not usable_in_battle can never be used;"
+                     " there is no out-of-battle item menu")
     return by_id
 
 

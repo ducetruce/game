@@ -83,10 +83,16 @@ southwest and one northeast — and you will be pulled into battles. The
 **spring** east of the path restores your party. The **shopkeeper** north on
 the path sells more Draughts.
 
+Every battle you finish pays coin, whether you knock the creature out or
+tame it — taming is the point of the game, so it is never the poorer option.
+Check your purse from the pause menu.
+
 Follow the path north, through the gap in the tree line, to reach
 **Aldenmere**, a village with no encounters of its own — a safe stop with its
-own well (also a rest spring) and a few villagers to talk to. Walk back south
-through the same gap to return.
+own well (also a rest spring), a few villagers to talk to, and a stall
+selling the **Knitbone Salve**, which heals mid-battle and is the one thing
+the clearing's shopkeeper does not stock. Walk back south through the same
+gap to return.
 
 ### Taming a wild creature
 
@@ -153,8 +159,9 @@ Edit it in a text editor and re-run the game. This is temporary — see
 `data/temperaments.json` holds every numeric constant for taming (Resonance
 gains and penalties, the stall-flee threshold) and the flavour lines the
 battle log picks from — no GDScript changes needed to retune or add a
-temperament. `data/items.json` holds the Tempering Draught's price and its
-per-hit damage cap. Re-run `tools/validate_data.py` after editing either; it
+temperament. `data/items.json` holds each item's price and effect — the
+Tempering Draught's per-hit damage cap, the Knitbone Salve's heal
+percentage. Re-run `tools/validate_data.py` after editing either; it
 checks every temperament has the flavour lines the code actually looks up.
 
 ## Saving and loading
@@ -183,5 +190,6 @@ text editor to see exactly what got saved, or delete it to start over.
 6. ✅ Save/load
 7. 🚧 Toward a workable alpha — a party screen; a second map (Aldenmere)
    connected by warps, so the world reads as a place rather than one field;
-   and a title screen and pause menu, so starting over, saving on demand,
-   and quitting are all reachable in-game
+   a title screen and pause menu, so starting over, saving on demand, and
+   quitting are all reachable in-game; and an economy — battles pay coin,
+   and Aldenmere sells a healing item

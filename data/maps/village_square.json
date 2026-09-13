@@ -75,6 +75,16 @@
       ]
     },
     {
+      "type": "shop",
+      "tile": [
+        6,
+        16
+      ],
+      "catalog": [
+        "knitbone_salve"
+      ]
+    },
+    {
       "type": "warp",
       "tile": [
         20,

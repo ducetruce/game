@@ -17,6 +17,7 @@ const COLOR_DIM := "5d6878"
 const COLOR_SELECTED := "e8c37a"
 const COLOR_GOOD := "6fae74"
 const COLOR_BAD := "c4614f"
+const COLOR_COIN := "c8a94e"
 
 enum Entry { RESUME, PARTY, SAVE, QUIT }
 
@@ -25,6 +26,7 @@ const ENTRIES := [Entry.RESUME, Entry.PARTY, Entry.SAVE, Entry.QUIT]
 var _cursor := 0
 
 @onready var _panel: Panel = $Panel
+@onready var _purse: RichTextLabel = $Panel/Purse
 @onready var _menu: RichTextLabel = $Panel/Menu
 @onready var _status: RichTextLabel = $Panel/Status
 
@@ -104,6 +106,10 @@ func _choose() -> void:
 
 
 func _refresh() -> void:
+	# Battles pay coin now, and a shop counter was the only place it was ever
+	# shown. Being able to check the purse without walking to one matters.
+	_purse.text = "[center][color=#%s]%d coin[/color][/center]" % [COLOR_COIN, Inventory.coin]
+
 	var rows := PackedStringArray()
 	for i in ENTRIES.size():
 		var selected := i == _cursor

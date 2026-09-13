@@ -933,6 +933,55 @@ and confirming it settles closed.
 
 ---
 
+## 19. The economy loop
+
+Coin existed, a shop existed, and there was no way to earn a single piece:
+the player got one starting purse and that was the whole economy (§ 13 left
+this open deliberately). Aldenmere (§ 16) had the matching problem from the
+other side -- a village with nothing to do in it.
+
+**Encounters pay, and taming pays the same as killing.** `coin_award()` is
+`4 + 3 × the foe's level`, granted on `WON` and on `ATTUNED` alike. Paying
+only for knockouts is the traditional choice and it was rejected here: the
+entire design points at Attunement, and an economy that quietly made taming
+the poorer option would be arguing with the rest of the game. It is also the
+wrong tone for a world whose own signposts say *they do not hunt you, they
+are only curious*.
+
+Unlike `experience_award()`, coin deliberately ignores the species' base
+stats and scales on level alone. Experience already carries "that one was
+worth more"; coin is read against a price tag, and a number the player can
+predict is worth more than a number that is precisely fair. The clearing's
+levels 3-7 pay 13-25 a fight against 16-20 coin items -- roughly an item per
+win, which is generous, and is two constants to turn once there is
+playtesting to turn them by.
+
+**A second effect kind, and Aldenmere's reason to exist.** Items now support
+`heal` alongside `restrain_hit`, mirroring the `percent`-of-max-HP shape
+moves already used rather than inventing a flat-amount variant. The village
+sells the **Knitbone Salve** (50%, 16 coin) and the clearing does not, so the
+walk north buys something the walk east cannot. Rest springs are still free
+and still the only full-party heal; the salve is what you carry *into* a
+fight, which is where the gap actually was.
+
+Healing applies to whoever is out, not a creature of the player's choosing --
+picking a target needs a selection step the battle UI does not have.
+
+**Items no longer charge for doing nothing.** `_do_item` consumed the item
+first and worked out whether it applied second, so a Draught used while
+already Restrained was spent to print "You are already holding back." Adding
+a heal would have made that much worse, since being at full HP is a state
+players walk into constantly. Applicability is now decided before the charge
+is spent, via `_item_refusal()`. The *turn* is still used up: that is the
+price of choosing wrongly, and unwinding it would mean reaching into the turn
+machine for a case the player can simply avoid.
+
+**The purse is visible outside a shop.** A shop counter was the only place
+coin was ever displayed, which was tolerable when the number never changed
+and absurd once battles move it. The pause menu (§ 18) shows it.
+
+---
+
 ## Open questions
 
 - Party size beyond the current cap of six, and whether there is storage.
@@ -942,10 +991,13 @@ and confirming it settles closed.
 - Whether critical hits exist at all, given how much the design leans on
   readable, near-deterministic combat.
 - Whether Attunement is available against tamer-owned creatures, or wild only.
-- How the player earns coin (see § 13) -- the economy is currently one
-  starting purse and nothing else.
-- Whether the item catalog grows (healing items, held items) or the shop
-  stays this narrow.
+- What the coin payout should actually be. Encounters pay now (§ 19), but
+  `4 + 3 x level` against 16-20 coin items was picked by reasoning, not by
+  playing -- and with only two items to buy, a long session banks coin it
+  has nothing to spend on.
+- Whether the item catalog grows further (held items, revives) or stays at
+  the two it has. A revive in particular was set aside because it softens
+  the only real consequence of losing, which is still open below.
 - Levelling: experience curve, or milestone-based growth.
 - Whether moves are learned by level, by taught item, or by Temperament.
 - Whether interactables should be solid by default, or whether some

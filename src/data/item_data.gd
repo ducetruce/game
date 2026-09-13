@@ -3,6 +3,11 @@ extends RefCounted
 ## One item definition, loaded from data/items.json.
 
 const EFFECT_RESTRAIN_HIT := "restrain_hit"
+const EFFECT_HEAL := "heal"
+
+## Every effect kind BattleState._do_item knows how to apply. An item naming
+## anything else is rejected at load rather than failing silently mid-battle.
+const EFFECT_KINDS := [EFFECT_RESTRAIN_HIT, EFFECT_HEAL]
 
 var id := ""
 var display_name := ""
@@ -30,7 +35,7 @@ static func from_dict(data: Dictionary, source: String) -> ItemData:
 	item.usable_in_battle = bool(data.get("usable_in_battle", false))
 	item.effect = data["effect"]
 
-	if not (item.effect is Dictionary) or str(item.effect.get("kind", "")) != EFFECT_RESTRAIN_HIT:
+	if not (item.effect is Dictionary) or not EFFECT_KINDS.has(str(item.effect.get("kind", ""))):
 		push_error("%s: item '%s' has an unrecognised effect." % [source, item_id])
 		return null
 
