@@ -501,7 +501,14 @@ def check_maps(types: list[str], creatures: dict, items: dict) -> int:
                     for item_id in catalog:
                         if item_id not in items:
                             err(where, "%s catalog names unknown item '%s'" % (label, item_id))
-            elif obj_type == "npc":
+            solid = spec.get("solid")
+            if solid is not None and not isinstance(solid, bool):
+                err(where, "%s 'solid' must be true or false, got %r" % (label, solid))
+            if obj_type == "warp" and solid is not None:
+                warn(where, "%s sets 'solid', which a warp has no body to apply it to"
+                     % label)
+
+            if obj_type == "npc":
                 tint = spec.get("tint")
                 if tint is not None and (
                     not isinstance(tint, list) or len(tint) != 3

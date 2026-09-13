@@ -33,6 +33,9 @@ var _choices: Array[int] = []
 ## Starts on the answer that changes nothing. A destructive action should
 ## never be one keypress away from a player who is mashing to skip.
 var _confirm_cursor := 1
+## What Continue would resume, read once at _ready. Empty when there is no
+## save, which is also when Continue is not offered.
+var _save_summary := {}
 
 @onready var _menu: RichTextLabel = $Menu
 @onready var _prompt: RichTextLabel = $Prompt
@@ -40,6 +43,7 @@ var _confirm_cursor := 1
 
 
 func _ready() -> void:
+	_save_summary = SaveGame.peek()
 	_build_choices()
 	_refresh()
 
@@ -138,7 +142,7 @@ func _enter_overworld() -> void:
 
 func _refresh() -> void:
 	if _mode == Mode.MAIN:
-		_prompt.text = ""
+		_prompt.text = _summary_line()
 		_footer.text = _centered("W/S select     Z confirm", COLOR_DIM)
 		var rows := PackedStringArray()
 		for i in _choices.size():
@@ -155,6 +159,21 @@ func _refresh() -> void:
 		_row("Erase it and start over", _confirm_cursor == 0),
 		_row("Keep my game", _confirm_cursor == 1),
 	]))
+
+
+## One line describing the save, shown above the menu. Nothing at all when
+## there is no save to describe -- an empty gap reads better than "no save".
+func _summary_line() -> String:
+	if _save_summary.is_empty():
+		return ""
+	var lead := str(_save_summary.get("lead_name", ""))
+	var carried := int(_save_summary.get("party_size", 0))
+	if lead.is_empty():
+		return _centered(str(_save_summary.get("map_name", "")), COLOR_DIM)
+	return _centered("%s  —  %s Lv%d, %d carried" % [
+		_save_summary.get("map_name", ""), lead,
+		int(_save_summary.get("lead_level", 0)), carried,
+	], COLOR_DIM)
 
 
 func _label_for(choice: int) -> String:

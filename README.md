@@ -74,7 +74,8 @@ and live damage numbers from the real `Damage` code.
 ## Playing it
 
 Press **F5** for the title screen: **Continue** (only shown once you have a
-save), **New Game**, **Quit**. Starting a new game when a save exists asks
+save, and it tells you where you left off and who is leading), **New Game**,
+**Quit**. Starting a new game when a save exists asks
 first — there is only one save, and erasing it cannot be undone.
 
 You start on the path with a party of two at level 5, 60 coin, and one free
@@ -162,7 +163,9 @@ rolled uniformly; leave it out for an area with no encounters. The `objects`
 array places props on the grid: `sign` and `npc` show text,
 `spring` restores the party and doubles as a save point, `shop` opens a buy
 menu, `shrine` opens creature storage, and `warp` — invisible, no art — sends
-the player to a tile on another map when they walk onto it. Every map scene lives at
+the player to a tile on another map when they walk onto it. Any of them can
+set `"solid": false` to be walked over while still being readable, which is
+what the plaque in Aldenmere's plaza does. Every map scene lives at
 `res://scenes/overworld/maps/<id>.tscn` and is loaded by that id; add a map
 by creating both the JSON and the matching scene (copy an existing one — the
 scene is just a `GameMap` root with `Ground`/`Obstacles` TileMapLayers and an

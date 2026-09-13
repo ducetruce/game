@@ -1227,6 +1227,45 @@ is worse than no footer.
 
 ---
 
+## 25. Solidity per object, and reading a save without opening it
+
+The last two of § 20's answers, unrelated to each other except in size.
+
+**Solidity is declared, not assumed.** An object spec may carry
+`"solid": false`; everything defaults to solid. The mechanism is two physics
+layers rather than a flag anyone checks at runtime: solid props sit on layer
+1, which the player's *body* masks, and walkable ones sit on layer 3, which
+only the *interaction probe* masks. So a walkable prop is still found by a
+probe that reaches for it and simply is not there as far as movement is
+concerned -- no branch, no special case in the controller.
+
+Aldenmere's plaza gained a floor plaque to exercise it, since a capability
+with nothing using it is a capability nobody will notice has broken.
+
+**`SaveGame.peek()` reads a save without applying it**, and the title
+screen's Continue now says which place, which lead creature and how many are
+carried. Deliberately a separate function from `load_and_apply()`: describing
+a save and entering it are different acts, and a screen that is only
+*offering* a choice must not have already made it. The map's readable name
+comes from reading that map's JSON directly -- loading a whole map scene to
+pull one string out would be a great deal of machinery for a label.
+
+This is also the API multiple save slots would need first (§ 20), so the half
+that has a use today is built and the half that does not is still deferred.
+
+**Two tests in this section were written wrong first, the same way.** The
+solidity check asserted the probe's mask against a number typed into the
+test rather than read from the player scene -- it would have passed with the
+scene misconfigured. And the walk-over check gave the player 45 loop
+iterations to cross four tiles, which in headless mode is nothing like 45
+frames of walking: the player moved one tile, and "did not get past the
+plaque" looked exactly like "was blocked by the plaque". With 400 iterations
+the player walks 67px clean over the plaque and is stopped after 3px by a
+villager. Both failures are the § 21 lesson in a new costume: a test that
+cannot fail proves nothing, and headless iteration count is not time.
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
@@ -1244,7 +1283,8 @@ decisions to make, plus what has not been reached yet.
   one list rather than two rules about what is usable where.
 - What a second area's coin bracket should be, once there is one with
   encounters in it -- Aldenmere has none.
-- Multiple save slots, deferred in § 20 rather than rejected.
+- Multiple save slots, deferred in § 20 rather than rejected. The reading
+  half of the API now exists (§ 25).
 - Whether storage should ever be partitioned into boxes, which only matters
   once anyone fills 60 slots (§ 24).
 - Tamer battles, which Attunement is now explicitly not part of.

@@ -17,6 +17,13 @@ signal storage_requested
 signal checkpoint_reached
 
 const TILE_SIZE := 16
+
+## Physics layer bits for spawned props. Solid ones sit on layer 1, which the
+## player's body masks; walkable ones sit on layer 3, which only the
+## interaction probe masks. That split is the whole mechanism behind an object
+## declaring `"solid": false` -- see docs/DESIGN.md § 25.
+const LAYER_SOLID_PROP := 1
+const LAYER_WALKABLE_PROP := 4
 const SIGN_SCENE := preload("res://scenes/overworld/sign_post.tscn")
 const SPRING_SCENE := preload("res://scenes/overworld/rest_spring.tscn")
 const SHOPKEEPER_SCENE := preload("res://scenes/overworld/shopkeeper.tscn")
@@ -172,6 +179,7 @@ func _spawn_sign(spec: Dictionary) -> void:
 	post.pages = _to_string_array(spec.get("text", []))
 	post.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
 	post.read_requested.connect(_on_read_requested)
+	_apply_solidity(post, spec)
 	_objects.add_child(post)
 
 
@@ -180,6 +188,7 @@ func _spawn_spring(spec: Dictionary) -> void:
 	spring.pages = _to_string_array(spec.get("text", []))
 	spring.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
 	spring.used.connect(_on_spring_used)
+	_apply_solidity(spring, spec)
 	_objects.add_child(spring)
 
 
@@ -196,6 +205,7 @@ func _spawn_shop(spec: Dictionary) -> void:
 	keeper.catalog = catalog
 	keeper.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
 	keeper.shop_requested.connect(_on_shop_requested)
+	_apply_solidity(keeper, spec)
 	_objects.add_child(keeper)
 
 
@@ -212,6 +222,7 @@ func _spawn_npc(spec: Dictionary) -> void:
 		if rgb.size() >= 3:
 			villager.tint = Color(float(rgb[0]), float(rgb[1]), float(rgb[2]))
 	villager.read_requested.connect(_on_read_requested)
+	_apply_solidity(villager, spec)
 	_objects.add_child(villager)
 
 
@@ -219,6 +230,7 @@ func _spawn_shrine(spec: Dictionary) -> void:
 	var shrine: Shrine = SHRINE_SCENE.instantiate()
 	shrine.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
 	shrine.storage_requested.connect(_on_storage_requested)
+	_apply_solidity(shrine, spec)
 	_objects.add_child(shrine)
 
 
@@ -232,6 +244,13 @@ func _register_warp(spec: Dictionary) -> void:
 		"target_map": str(spec.get("target_map", "")),
 		"target_tile": _tile_from(spec.get("target_tile", [0, 0])),
 	}
+
+
+## Solid unless the object says otherwise. A person or a signpost should stop
+## you; a plaque set into the floor should not, while still being readable.
+func _apply_solidity(node: CollisionObject2D, spec: Dictionary) -> void:
+	var solid := bool(spec.get("solid", true))
+	node.collision_layer = LAYER_SOLID_PROP if solid else LAYER_WALKABLE_PROP
 
 
 func _on_read_requested(pages: PackedStringArray) -> void:

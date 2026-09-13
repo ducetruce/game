@@ -88,6 +88,53 @@ func load_and_apply() -> Dictionary:
 	}
 
 
+## Reads the save without applying any of it, for the title screen to describe
+## what Continue would resume. Deliberately separate from load_and_apply():
+## describing a save and entering it are different acts, and a screen that is
+## only offering a choice must not have already made it.
+##
+## Returns {} if there is nothing readable. Otherwise {map_name, party_size,
+## lead_name, lead_level} -- enough for one line, no more.
+func peek() -> Dictionary:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	var data := _migrate(parsed as Dictionary)
+	if data.is_empty():
+		return {}
+
+	var members: Array = _dict_field(data, "party").get("members", [])
+	var summary := {
+		"map_name": _map_name(str(_dict_field(data, "world").get("map_id", ""))),
+		"party_size": members.size(),
+		"lead_name": "",
+		"lead_level": 0,
+	}
+	if not members.is_empty() and members[0] is Dictionary:
+		var lead := Creature.from_dict(members[0])
+		if lead != null:
+			summary["lead_name"] = lead.display_name()
+			summary["lead_level"] = lead.level
+	return summary
+
+
+## The map's own display_name, read straight from its JSON. The maps are not
+## loaded at the title screen and loading one to read a string would be a
+## great deal of machinery for a label.
+func _map_name(map_id: String) -> String:
+	if map_id.is_empty():
+		return "Somewhere"
+	var path := "res://data/maps/%s.json" % map_id
+	if not FileAccess.file_exists(path):
+		return map_id
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return map_id
+	return str((parsed as Dictionary).get("display_name", map_id))
+
+
 ## Deletes the save. Nothing currently calls this -- it exists for a future
 ## "new game" option that should not silently resume an old one.
 func erase() -> void:

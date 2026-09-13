@@ -10,6 +10,18 @@
     {
       "type": "sign",
       "tile": [
+        20,
+        12
+      ],
+      "solid": false,
+      "text": [
+        "A flagstone worn smoother than the rest, lettered around its rim.",
+        "TO THOSE WHO CAME BACK. Names follow, and there are not many of them."
+      ]
+    },
+    {
+      "type": "sign",
+      "tile": [
         19,
         19
       ],
