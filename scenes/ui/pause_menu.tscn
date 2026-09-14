@@ -16,9 +16,9 @@ script = ExtResource("1_pause")
 
 [node name="Panel" type="Panel" parent="."]
 offset_left = 76.0
-offset_top = 12.0
+offset_top = 4.0
 offset_right = 244.0
-offset_bottom = 170.0
+offset_bottom = 176.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_box")
 
 [node name="Header" type="Label" parent="Panel"]
@@ -59,16 +59,16 @@ theme_override_font_sizes/normal_font_size = 8
 offset_left = 4.0
 offset_top = 78.0
 offset_right = 164.0
-offset_bottom = 138.0
+offset_bottom = 150.0
 bbcode_enabled = true
 scroll_active = false
 theme_override_font_sizes/normal_font_size = 8
 
 [node name="Status" type="RichTextLabel" parent="Panel"]
 offset_left = 2.0
-offset_top = 140.0
+offset_top = 152.0
 offset_right = 166.0
-offset_bottom = 154.0
+offset_bottom = 166.0
 bbcode_enabled = true
 scroll_active = false
 theme_override_font_sizes/normal_font_size = 8

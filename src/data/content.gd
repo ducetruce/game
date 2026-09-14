@@ -10,7 +10,8 @@ const MOVES_PATH := "res://data/moves.json"
 const CREATURES_PATH := "res://data/creatures.json"
 const ITEMS_PATH := "res://data/items.json"
 const TEMPERAMENTS_PATH := "res://data/temperaments.json"
-const STORY_PATH := "res://data/story.json"
+const QUESTS_PATH := "res://data/quests.json"
+const MAP_PATH_FORMAT := "res://data/maps/%s.json"
 
 var type_chart: TypeChart = null
 
@@ -19,10 +20,17 @@ var type_chart: TypeChart = null
 ## its own, so a dedicated class would just be a pass-through.
 var temperaments: Dictionary = {}
 
-## The story's stages in order, as {id, objective} dictionaries. Order is the
-## whole meaning of this list: "further on" is defined by position in it, so
-## nothing may read it as an unordered set. See docs/DESIGN.md § 30.
-var story_stages: Array = []
+## Every quest, in the order the data declares them. Each quest's own `steps`
+## are ordered too, and that order is the whole meaning of them: "further on"
+## is defined by position, so nothing may read a step list as an unordered
+## set. See docs/DESIGN.md § 34.
+var quests: Array = []
+
+## How many quests must be finished before the Elder's Gauntlet can be
+## challenged, and what to show the player when no quest is telling them what
+## to do.
+var gauntlet_requirement := 0
+var default_objective := ""
 
 ## False if anything failed to parse. Callers that can degrade gracefully
 ## should check it; everything else can rely on the pushed errors.
@@ -32,6 +40,7 @@ var _moves := {}
 var _species := {}
 var _species_order := PackedStringArray()
 var _items := {}
+var _map_names := {}
 
 
 func _ready() -> void:
@@ -42,11 +51,12 @@ func reload() -> void:
 	loaded = false
 	type_chart = null
 	temperaments.clear()
-	story_stages.clear()
+	quests.clear()
 	_moves.clear()
 	_species.clear()
 	_species_order = PackedStringArray()
 	_items.clear()
+	_map_names.clear()
 
 	var chart_doc := _read_json(TYPE_CHART_PATH)
 	if chart_doc.is_empty():
@@ -101,15 +111,21 @@ func reload() -> void:
 		return
 	temperaments = temperament_doc
 
-	var story_doc := _read_json(STORY_PATH)
-	if not (story_doc.get("stages", null) is Array):
-		push_error("%s: missing 'stages' array." % STORY_PATH)
+	var quest_doc := _read_json(QUESTS_PATH)
+	if not (quest_doc.get("quests", null) is Array):
+		push_error("%s: missing 'quests' array." % QUESTS_PATH)
 		return
-	for entry in story_doc["stages"]:
+	gauntlet_requirement = int(quest_doc.get("gauntlet_requirement", 0))
+	default_objective = str(quest_doc.get("default_objective", ""))
+	for entry in quest_doc["quests"]:
 		if not (entry is Dictionary) or not entry.has("id"):
-			push_error("%s: every stage needs an 'id'." % STORY_PATH)
+			push_error("%s: every quest needs an 'id'." % QUESTS_PATH)
 			return
-		story_stages.append(entry)
+		if not (entry.get("steps", null) is Array) or (entry["steps"] as Array).is_empty():
+			push_error("%s: quest '%s' needs a non-empty 'steps' array."
+				% [QUESTS_PATH, entry["id"]])
+			return
+		quests.append(entry)
 
 	loaded = _cross_check()
 
@@ -148,6 +164,28 @@ func _cross_check() -> bool:
 			])
 			ok = false
 	return ok
+
+
+## A map's own display_name, read straight from its JSON and remembered.
+##
+## Maps are scenes, and the two places that want this -- the title screen's
+## save summary and the quest log -- both want it without one loaded. Loading
+## a map to read a string would be a great deal of machinery for a label, and
+## two copies of the same file-reading was how it started.
+func map_name(map_id: String) -> String:
+	if map_id.is_empty():
+		return "Somewhere"
+	if _map_names.has(map_id):
+		return _map_names[map_id]
+
+	var name := map_id
+	var path := MAP_PATH_FORMAT % map_id
+	if FileAccess.file_exists(path):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if typeof(parsed) == TYPE_DICTIONARY:
+			name = str((parsed as Dictionary).get("display_name", map_id))
+	_map_names[map_id] = name
+	return name
 
 
 func get_move(move_id: String) -> MoveData:

@@ -1,0 +1,39 @@
+{
+  "_comment": "Every quest in the game. A quest belongs to one area and has ordered steps; the player's position in it is a step index, the same model the main story used before quests existed (docs/DESIGN.md sections 30 and 34). Completing `gauntlet_requirement` of them is what makes the Elder's Gauntlet challengeable. Map objects move quests on: see the `quest`, `quest_text`, `sets_step` and `completes_quest` keys in data/maps/*.json.",
+  "gauntlet_requirement": 10,
+  "default_objective": "Follow the path north, out of the clearing.",
+  "quests": [
+    {
+      "id": "the_dry_cut",
+      "name": "The Dry Cut",
+      "area": "mere_shore",
+      "summary": "Aldenmere's well is low and the channel that feeds it has been dry eleven days. The mere it drains has not dropped an inch.",
+      "steps": [
+        {
+          "id": "rumour",
+          "objective": "Ask in Aldenmere what is wrong with the water."
+        },
+        {
+          "id": "the_road",
+          "objective": "Take the fen road north, toward the mere."
+        },
+        {
+          "id": "the_sluice",
+          "objective": "Get past the sluice and reach the shore."
+        },
+        {
+          "id": "the_shore",
+          "objective": "Find what the mere is holding."
+        },
+        {
+          "id": "the_answer",
+          "objective": "Carry what you found back to Aldenmere."
+        }
+      ],
+      "reward": {
+        "coin": 150,
+        "items": ["heartwood_root"]
+      }
+    }
+  ]
+}

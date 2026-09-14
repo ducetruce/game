@@ -105,6 +105,7 @@
         12,
         20
       ],
+      "quest": "the_dry_cut",
       "tint": [
         0.8,
         0.9,
@@ -114,7 +115,7 @@
         "The channel's been my job for thirty years. Keep it clear, keep it moving.",
         "It's clear. It isn't moving. You tell me which of those is my fault."
       ],
-      "stage_text": [
+      "quest_text": [
         {
           "from": "the_road",
           "text": [
@@ -132,7 +133,7 @@
           ]
         }
       ],
-      "sets_stage": "the_sluice"
+      "sets_step": "the_sluice"
     },
     {
       "type": "sign",
@@ -163,6 +164,7 @@
         29,
         6
       ],
+      "quest": "the_dry_cut",
       "tint": [
         1.0,
         0.85,
@@ -172,7 +174,7 @@
         "Don't go up to the shore at night. That's not superstition, that's the reeds.",
         "Things come out of them at level you're not ready for, and they don't scare."
       ],
-      "stage_text": [
+      "quest_text": [
         {
           "from": "the_sluice",
           "text": [

@@ -202,7 +202,14 @@ func _open(ui: Ui) -> void:
 	_ui = ui
 	_scroll = 0
 	if ui == Ui.PARTY:
-		_cursor = _state.active_index
+		# On a forced switch the active creature is the one that just went
+		# down, so starting the cursor on it opens the menu pointing at the
+		# only choice that cannot be made: confirm refuses, and a player
+		# mashing Z gets nothing at all until they happen to press W or S. A
+		# soak run mashed at exactly this for eight thousand frames. Same rule
+		# as the learn prompt in § 22 -- the cursor starts somewhere pressing
+		# confirm does the sensible thing.
+		_cursor = _first_able_index() if _forced_switch else _state.active_index
 	elif ui == Ui.LEARN_ASK:
 		# Starts on "keep the four I have". Forgetting a move cannot be undone,
 		# and this prompt lands in the middle of a run of messages the player
@@ -280,6 +287,16 @@ func _confirm() -> void:
 		Ui.LEARN_PICK:
 			_queue(_state.resolve_pending_learn(_cursor))
 			_show_next_message()
+
+
+## The first party member that can actually be sent out, or the active index
+## if somehow none can -- in which case the battle is already over and the
+## menu is about to close anyway.
+func _first_able_index() -> int:
+	for i in _state.party.size():
+		if not _state.party[i].creature.is_fainted():
+			return i
+	return _state.active_index
 
 
 func _confirm_party() -> void:

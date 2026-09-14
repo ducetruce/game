@@ -170,6 +170,15 @@ carrying wait. You can hold six; the rest are kept there, and the shrine is
 the only place to swap them, so choose before you set out. Tame something
 with a full party and it goes to the shrine rather than slipping away.
 
+### What you are ultimately doing
+
+Ten quests, in ten different areas, and then the **Elder's Gauntlet**. The
+pause menu keeps a **Quest log** — what you are in the middle of, what you
+have finished, and how many of the ten the elders count. Quests are moved by
+going places and talking to people, never from the log itself.
+
+The first of them is below.
+
 ### Why you are going north
 
 There is one story and the pause menu always says what you are meant to be
@@ -263,6 +272,30 @@ it in with a `warp` object on each side.
 
 Edit it in a text editor and re-run the game. This is temporary — see
 `docs/DESIGN.md` § 8 for when maps move into Godot's TileMapLayer editor.
+
+## Writing a quest
+
+`data/quests.json` holds every quest: an id, the area it belongs to, a
+summary, and an ordered list of steps, each with the objective line the pause
+menu shows while the player is on it. A quest also names its `reward` in coin
+and items. `gauntlet_requirement` is how many must be finished before the
+endgame opens.
+
+Quests are moved by objects in `data/maps/*.json`. An object names a `quest`
+and may then carry:
+
+- `quest_text` — `[{"from": "<step id>", "text": [...]}]`, the last entry
+  whose step the player has reached wins, falling back to the plain `text`
+- `sets_step` — moves the quest to that step when read
+- `completes_quest` — finishes it and pays, but only from the last step
+- `requires` — `{"kind": "has_item", "item": ..., "count": 1, "consume": true}`
+  or `{"kind": "defeated", "species": ..., "count": 3}`, plus a `text` saying
+  what is missing. Checked before anything moves; the refusal replaces the
+  object's lines rather than preceding them.
+
+A map may carry `arrival_quest` and `arrival_step`, for places that are
+themselves the beat. `tools/validate_data.py` checks all of it, including that
+every step is set by something somewhere and every quest has a completer.
 
 ## Tuning Attunement
 

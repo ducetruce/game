@@ -443,14 +443,14 @@ def encounters_declared(doc: dict) -> bool:
 
 
 def check_maps(types: list[str], creatures: dict, items: dict,
-               sold: set, encountered: set, stages: list[str],
-               staged: set) -> int:
+               sold: set, encountered: set, quests: dict,
+               staged: dict, completers: dict) -> int:
     """Validates every map in data/maps/. Returns how many were checked.
 
     Fills `sold` with every item id any shop stocks and `encountered` with
     every species id any encounter table names, for check_obtainable, and
-    `staged` with every story stage some map can actually move the player
-    on to.
+    `staged` with {quest id: set of steps} some map can actually move the
+    player on to, and `completers` with the map that finishes each quest.
     """
     maps_dir = os.path.join(DATA, "maps")
     if not os.path.isdir(maps_dir):
@@ -509,13 +509,20 @@ def check_maps(types: list[str], creatures: dict, items: dict,
 
         walkable_at(doc.get("player_start"), "player_start")
 
-        arrival = doc.get("arrival_stage")
-        if arrival is not None:
-            if arrival not in stages:
-                err(where, "arrival_stage '%s' is not a stage in story.json"
-                    % arrival)
+        arrival_quest = doc.get("arrival_quest")
+        arrival_step = doc.get("arrival_step")
+        if (arrival_quest is None) != (arrival_step is None):
+            err(where, "arrival_quest and arrival_step go together; only one"
+                " of them is set")
+        elif arrival_quest is not None:
+            if arrival_quest not in quests:
+                err(where, "arrival_quest '%s' is not a quest in quests.json"
+                    % arrival_quest)
+            elif arrival_step not in quests[arrival_quest]:
+                err(where, "arrival_step '%s' is not a step of quest '%s'"
+                    % (arrival_step, arrival_quest))
             else:
-                staged.add(arrival)
+                staged.setdefault(arrival_quest, set()).add(arrival_step)
 
         # Coin bracket. Absent means "this area pays nothing", which is right
         # for somewhere with no encounters, so only a malformed one is an error.
@@ -550,24 +557,64 @@ def check_maps(types: list[str], creatures: dict, items: dict,
                         sold.add(item_id)
                         if item_id not in items:
                             err(where, "%s catalog names unknown item '%s'" % (label, item_id))
-            for j, variant in enumerate(spec.get("stage_text", [])):
-                variant_label = "%s.stage_text[%d]" % (label, j)
+            quest_id = spec.get("quest")
+            quest_steps = quests.get(quest_id, []) if quest_id else []
+            needs_quest = any(key in spec for key in
+                              ("quest_text", "sets_step", "completes_quest"))
+            if needs_quest and not quest_id:
+                err(where, "%s uses quest keys but names no 'quest'" % label)
+            elif quest_id is not None and quest_id not in quests:
+                err(where, "%s names unknown quest '%s'" % (label, quest_id))
+
+            for j, variant in enumerate(spec.get("quest_text", [])):
+                variant_label = "%s.quest_text[%d]" % (label, j)
                 if not isinstance(variant, dict):
                     err(where, "%s must be an object" % variant_label)
                     continue
-                if variant.get("from") not in stages:
-                    err(where, "%s 'from' is '%s', which is not a stage in"
-                        " story.json" % (variant_label, variant.get("from")))
+                if variant.get("from") not in quest_steps:
+                    err(where, "%s 'from' is '%s', which is not a step of quest"
+                        " '%s'" % (variant_label, variant.get("from"), quest_id))
                 lines = variant.get("text")
                 if not isinstance(lines, list) or not lines:
                     err(where, "%s needs a non-empty 'text'" % variant_label)
-            sets_stage = spec.get("sets_stage")
-            if sets_stage is not None:
-                if sets_stage not in stages:
-                    err(where, "%s sets_stage '%s' is not a stage in story.json"
-                        % (label, sets_stage))
+
+            sets_step = spec.get("sets_step")
+            if sets_step is not None:
+                if sets_step not in quest_steps:
+                    err(where, "%s sets_step '%s' is not a step of quest '%s'"
+                        % (label, sets_step, quest_id))
                 else:
-                    staged.add(sets_stage)
+                    staged.setdefault(quest_id, set()).add(sets_step)
+
+            if spec.get("completes_quest"):
+                if quest_id in quests:
+                    if quest_id in completers:
+                        warn(where, "%s also completes quest '%s', which"
+                             " %s already does" % (label, quest_id,
+                                                   completers[quest_id]))
+                    completers.setdefault(quest_id, where)
+
+            wants = spec.get("requires")
+            if wants is not None:
+                if not isinstance(wants, dict):
+                    err(where, "%s 'requires' must be an object" % label)
+                else:
+                    kind = wants.get("kind")
+                    if kind == "has_item":
+                        if wants.get("item") not in items:
+                            err(where, "%s requires unknown item '%s'"
+                                % (label, wants.get("item")))
+                    elif kind == "defeated":
+                        if wants.get("species") not in creatures:
+                            err(where, "%s requires defeating unknown species"
+                                " '%s'" % (label, wants.get("species")))
+                    else:
+                        err(where, "%s requirement kind '%s' is not one of"
+                            " has_item, defeated" % (label, kind))
+                    if not wants.get("text"):
+                        err(where, "%s 'requires' needs a 'text' to say what is"
+                            " missing; without it the object refuses silently"
+                            % label)
 
             solid = spec.get("solid")
             if solid is not None and not isinstance(solid, bool):
@@ -730,54 +777,116 @@ def seed_items() -> set:
     return set(re.findall(r'\badd\(\s*"([^"]+)"', body))
 
 
-def check_story() -> list[str]:
-    """Returns the stage ids in order, for the map checks to cross-reference."""
-    doc = load("story.json")
+def check_quests() -> dict:
+    """Returns {quest_id: [step ids in order]} for the map checks to use."""
+    doc = load("quests.json")
     if doc is None:
-        return []
-    stages = require(doc, "stages", list, "story.json")
-    if stages is None:
-        return []
-    if not stages:
-        err("story.json", "'stages' must not be empty; stage 0 is where every"
-            " new game starts")
-        return []
+        return {}
+    entries = require(doc, "quests", list, "quests.json")
+    if entries is None:
+        return {}
 
-    ids: list[str] = []
-    for i, stage in enumerate(stages):
-        where = "story.json[%d]" % i
-        if not isinstance(stage, dict):
+    requirement = doc.get("gauntlet_requirement")
+    if not isinstance(requirement, int) or requirement <= 0:
+        err("quests.json", "gauntlet_requirement must be a positive integer,"
+            " got %r" % requirement)
+    elif requirement > len(entries):
+        # Not an error while the game is being built out -- the whole point of
+        # the number is that quests are still being written toward it -- but
+        # worth saying out loud, because until it is met the endgame cannot be
+        # reached at all.
+        warn("quests.json", "gauntlet_requirement is %d but only %d quest(s)"
+             " exist, so the gauntlet cannot yet be unlocked"
+             % (requirement, len(entries)))
+    if not doc.get("default_objective"):
+        err("quests.json", "needs a 'default_objective' to show when no quest"
+            " is telling the player what to do")
+
+    quests: dict = {}
+    areas: dict = {}
+    for i, quest in enumerate(entries):
+        where = "quests.json[%d]" % i
+        if not isinstance(quest, dict):
             err(where, "entry must be an object")
             continue
-        stage_id = stage.get("id")
-        if not stage_id or not isinstance(stage_id, str):
+        quest_id = quest.get("id")
+        if not quest_id or not isinstance(quest_id, str):
             err(where, "missing 'id'")
             continue
-        if stage_id in ids:
-            err("story.json '%s'" % stage_id, "duplicate stage id")
-        ids.append(stage_id)
-        objective = stage.get("objective")
-        # The pause menu shows this, so an empty one is a blank line where the
-        # player looks to find out what they are doing.
-        if not objective or not isinstance(objective, str):
-            err("story.json '%s'" % stage_id, "needs a non-empty 'objective'")
-    return ids
+        where = "quests.json '%s'" % quest_id
+        if quest_id in quests:
+            err(where, "duplicate quest id")
+
+        for key in ("name", "area", "summary"):
+            if not quest.get(key):
+                err(where, "missing '%s'" % key)
+        # One quest per area is the shape the endgame counts in: ten quests in
+        # ten areas. Two quests in one area and one area with none would still
+        # total ten and would not be that.
+        area = quest.get("area")
+        if area:
+            if area in areas:
+                err(where, "area '%s' already has the quest '%s'; the gauntlet"
+                    " counts quests in distinct areas" % (area, areas[area]))
+            areas[area] = quest_id
+
+        steps = quest.get("steps")
+        if not isinstance(steps, list) or not steps:
+            err(where, "needs a non-empty 'steps' array")
+            quests[quest_id] = []
+            continue
+
+        ids: list[str] = []
+        for j, step in enumerate(steps):
+            step_where = "%s step[%d]" % (where, j)
+            if not isinstance(step, dict):
+                err(step_where, "must be an object")
+                continue
+            step_id = step.get("id")
+            if not step_id or not isinstance(step_id, str):
+                err(step_where, "missing 'id'")
+                continue
+            if step_id in ids:
+                err(step_where, "duplicate step id '%s'" % step_id)
+            ids.append(step_id)
+            if not step.get("objective"):
+                err("%s step '%s'" % (where, step_id),
+                    "needs a non-empty 'objective'; it is what the pause menu"
+                    " shows while the player is on this step")
+        quests[quest_id] = ids
+
+        reward = quest.get("reward", {})
+        if not isinstance(reward, dict):
+            err(where, "'reward' must be an object")
+        else:
+            coin = reward.get("coin", 0)
+            if not isinstance(coin, int) or coin < 0:
+                err(where, "reward coin must be a non-negative integer, got %r" % coin)
+    return quests
 
 
-def check_story_reachable(stages: list[str], staged: set) -> None:
-    """Every stage past the first has to be reachable from somewhere.
+def check_quests_reachable(quests: dict, quest_areas: dict, staged: dict) -> None:
+    """Every step and every quest has to be reachable from somewhere.
 
-    The same failure as an unobtainable creature, one level up: a stage can be
+    The same failure as an unobtainable creature, one level up: a step can be
     written, referenced by an NPC's dialogue, and have nothing anywhere in the
     world that advances the player to it -- at which point that dialogue is
-    unreachable and the story stops at the stage before it.
+    unreachable and the quest stops at the step before it. A quest with no
+    completer never counts toward the gauntlet however many times it is
+    finished in spirit.
     """
-    for stage_id in stages[1:]:
-        if stage_id not in staged:
-            err("story.json '%s'" % stage_id,
-                "no map advances the player to this stage (no object's"
-                " 'sets_stage' and no map's 'arrival_stage' names it), so the"
-                " story cannot get past the stage before it")
+    for quest_id, steps in quests.items():
+        reached = staged.get(quest_id, set())
+        for step_id in steps:
+            if step_id not in reached:
+                err("quests.json '%s'" % quest_id,
+                    "nothing advances the player to step '%s' (no object's"
+                    " 'sets_step' and no map's 'arrival_step' names it), so the"
+                    " quest cannot get past the step before it" % step_id)
+        if quest_id not in quest_areas:
+            err("quests.json '%s'" % quest_id,
+                "no object anywhere sets 'completes_quest' for it, so it can"
+                " never be finished and never counts toward the gauntlet")
 
 
 def check_obtainable(creatures: dict, items: dict, sold: set, encountered: set) -> None:
@@ -830,15 +939,16 @@ def main() -> int:
         if not any(m.get("type") == t for m in moves.values()):
             warn("moves.json", "no move has type '%s'" % t)
 
-    stages = check_story()
+    quests = check_quests()
 
     sold: set = set()
     encountered: set = set()
-    staged: set = set()
+    staged: dict = {}
+    completers: dict = {}
     map_count = check_maps(types, creatures, items, sold, encountered,
-                           stages, staged)
+                           quests, staged, completers)
     check_obtainable(creatures, items, sold, encountered)
-    check_story_reachable(stages, staged)
+    check_quests_reachable(quests, completers, staged)
 
     for line in warnings:
         print("warning  %s" % line)
@@ -846,9 +956,9 @@ def main() -> int:
         print("ERROR    %s" % line)
 
     print("\n%d types, %d moves, %d creatures, %d item(s), %d map(s), "
-          "%d story stage(s) -- %d error(s), %d warning(s)"
+          "%d quest(s) -- %d error(s), %d warning(s)"
           % (len(types), len(moves), len(creatures), len(items), map_count,
-             len(stages), len(errors), len(warnings)))
+             len(quests), len(errors), len(warnings)))
     return 1 if errors else 0
 
 

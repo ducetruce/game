@@ -10,6 +10,7 @@ signal opened
 signal closed
 signal party_requested
 signal bag_requested
+signal quests_requested
 signal save_requested
 signal quit_to_title_requested
 
@@ -21,9 +22,11 @@ const COLOR_BAD := "c4614f"
 const COLOR_COIN := "c8a94e"
 const COLOR_OBJECTIVE := "8fb4d9"
 
-enum Entry { RESUME, PARTY, BAG, SAVE, QUIT }
+enum Entry { RESUME, PARTY, BAG, QUESTS, SAVE, QUIT }
 
-const ENTRIES := [Entry.RESUME, Entry.PARTY, Entry.BAG, Entry.SAVE, Entry.QUIT]
+const ENTRIES := [
+	Entry.RESUME, Entry.PARTY, Entry.BAG, Entry.QUESTS, Entry.SAVE, Entry.QUIT,
+]
 
 var _cursor := 0
 
@@ -104,6 +107,9 @@ func _choose() -> void:
 		Entry.BAG:
 			_hide_panel()
 			bag_requested.emit()
+		Entry.QUESTS:
+			_hide_panel()
+			quests_requested.emit()
 		Entry.SAVE:
 			save_requested.emit()
 		Entry.QUIT:
@@ -120,7 +126,7 @@ func _refresh() -> void:
 	# who put the game down for a week will look for it, and there is nowhere
 	# else in the game it is written down. See docs/DESIGN.md § 30.
 	_objective.text = "[center][color=#%s]%s[/color][/center]" % [
-		COLOR_OBJECTIVE, Journal.objective(),
+		COLOR_OBJECTIVE, Journal.current_objective(),
 	]
 
 	var rows := PackedStringArray()
@@ -142,6 +148,8 @@ func _label_for(entry: int) -> String:
 			return "Party"
 		Entry.BAG:
 			return "Bag"
+		Entry.QUESTS:
+			return "Quests"
 		Entry.SAVE:
 			return "Save"
 		_:

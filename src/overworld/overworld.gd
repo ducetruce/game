@@ -30,6 +30,7 @@ const TITLE_SCENE := "res://scenes/ui/title_screen.tscn"
 @onready var _pause_menu: Node = $PauseMenu
 @onready var _bag_menu: Node = $BagMenu
 @onready var _storage_menu: Node = $StorageMenu
+@onready var _quest_log: Node = $QuestLog
 @onready var _debug_menu: Node = $DebugMenu
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
@@ -54,6 +55,10 @@ var _busy := false
 
 var _menu_lock := 0.0
 
+## What the current battle is against, remembered here because the battle node
+## is freed before its outcome is acted on.
+var _battle_foe_species := ""
+
 ## Set while a screen was opened *from* the pause menu, so closing it goes
 ## back there instead of dropping the player into the world.
 var _returns_to_pause := false
@@ -77,12 +82,15 @@ func _ready() -> void:
 	_party_menu.closed.connect(_on_sub_screen_closed)
 	_bag_menu.opened.connect(_on_ui_opened)
 	_bag_menu.closed.connect(_on_sub_screen_closed)
+	_quest_log.opened.connect(_on_ui_opened)
+	_quest_log.closed.connect(_on_sub_screen_closed)
 	_storage_menu.opened.connect(_on_ui_opened)
 	_storage_menu.closed.connect(_on_ui_closed)
 	_pause_menu.opened.connect(_on_ui_opened)
 	_pause_menu.closed.connect(_on_ui_closed)
 	_pause_menu.party_requested.connect(_on_pause_party_requested)
 	_pause_menu.bag_requested.connect(_on_pause_bag_requested)
+	_pause_menu.quests_requested.connect(_on_pause_quests_requested)
 	_pause_menu.save_requested.connect(_on_pause_save_requested)
 	_pause_menu.quit_to_title_requested.connect(_on_pause_quit_requested)
 	# Absent from a release export rather than merely hidden: a key nobody
@@ -142,6 +150,7 @@ func _load_map(map_id: String, target: Variant) -> void:
 	_map.shop_requested.connect(_shop.open_with)
 	_map.storage_requested.connect(_storage_menu.open_menu)
 	_map.checkpoint_reached.connect(_autosave)
+	_map.quest_completed.connect(_on_quest_completed)
 
 	var position := _map.player_spawn_position()
 	if target is Vector2i:
@@ -189,6 +198,11 @@ func _on_sub_screen_closed() -> void:
 		_pause_menu.open_menu()
 		return
 	_on_ui_closed()
+
+
+func _on_pause_quests_requested() -> void:
+	_returns_to_pause = true
+	_quest_log.open_menu()
 
 
 func _on_pause_save_requested() -> void:
@@ -382,6 +396,7 @@ func _begin_encounter(symbol: String) -> void:
 	_player.input_enabled = false
 	await _fade_to(1.0)
 
+	_battle_foe_species = wild.species_id
 	_battle = BATTLE_SCENE.instantiate()
 	# The party is passed by reference, so damage and experience stick.
 	_battle.configure(Party.members, wild, _map.coin_reward,
@@ -400,6 +415,13 @@ func _on_battle_finished(outcome: int) -> void:
 	if _battle != null:
 		_battle.queue_free()
 		_battle = null
+
+	# Counted before the battle node goes, since the tally is keyed on what was
+	# fought. "Slay this thing" is a quest shape and a step that asks for it
+	# needs somewhere to count -- see docs/DESIGN.md § 34.
+	if outcome == BattleState.Phase.WON and _battle_foe_species != "":
+		Journal.record_defeat(_battle_foe_species)
+	_battle_foe_species = ""
 
 	var lost := outcome == BattleState.Phase.LOST
 	if lost:
@@ -426,6 +448,40 @@ func _on_battle_finished(outcome: int) -> void:
 			"What you carry is still down, and lighter by whatever it cost to drag you here.",
 			"There is water not far off. There usually is.",
 		]))
+
+
+## Says what a finished quest paid. The map emits and knows nothing about coin
+## or dialogue; this is the only place that puts the two together.
+func _on_quest_completed(quest_id: String, reward: Dictionary) -> void:
+	var lines := PackedStringArray()
+	var coin := int(reward.get("coin", 0))
+	var items: PackedStringArray = reward.get("items", PackedStringArray())
+	var names := PackedStringArray()
+	for item_id in items:
+		var item := Content.get_item(str(item_id))
+		names.append(item.display_name if item != null else str(item_id))
+
+	var quest_name := quest_id
+	for quest in Content.quests:
+		if str(quest.get("id", "")) == quest_id:
+			quest_name = str(quest.get("name", quest_id))
+	lines.append("[ %s -- done ]" % quest_name)
+	if coin > 0 and not names.is_empty():
+		lines.append("You are %d coin better off, and carrying %s."
+			% [coin, " and ".join(names)])
+	elif coin > 0:
+		lines.append("You are %d coin better off." % coin)
+	elif not names.is_empty():
+		lines.append("You are carrying %s." % " and ".join(names))
+
+	var done := Journal.completed_count()
+	var needed := Content.gauntlet_requirement
+	if Journal.gauntlet_unlocked():
+		lines.append("That is %d. The elders will hear you now." % done)
+	else:
+		lines.append("%d of the %d the elders count. %s to go."
+			% [done, needed, needed - done])
+	_dialogue.show_pages(lines)
 
 
 func _fade_to(alpha: float) -> void:

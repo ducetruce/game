@@ -18,12 +18,13 @@
         26,
         19
       ],
+      "quest": "the_dry_cut",
       "text": [
         "A post driven into the shingle, its grain raised by weather.",
         "THE HOLLOWMERE. The water is deeper than it looks, and older than it is.",
         "Beneath, in a steadier hand: do not go in after them."
       ],
-      "stage_text": [
+      "quest_text": [
         {
           "from": "the_shore",
           "text": [
@@ -75,6 +76,7 @@
         11,
         11
       ],
+      "quest": "the_dry_cut",
       "text": [
         "A stone marker on the western shore, and behind it the mouth of the cut -- where the mere should drain south toward Aldenmere.",
         "The channel is clear. The gate is open. The water stands against the opening and will not go through it.",
@@ -82,7 +84,7 @@
         "Nothing is going down. There is nothing under it but shingle, and whatever the shingle is lying on.",
         "Something is holding the Hollowmere, and holding it on purpose, and it is not finished."
       ],
-      "sets_stage": "the_answer"
+      "sets_step": "the_answer"
     }
   ],
   "encounters": {
@@ -174,5 +176,6 @@
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTT",
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTT"
   ],
-  "arrival_stage": "the_shore"
+  "arrival_quest": "the_dry_cut",
+  "arrival_step": "the_shore"
 }

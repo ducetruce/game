@@ -45,6 +45,17 @@ const BASE_TICKS_PER_SECOND := 60
 const MENU_STUCK_FRAMES := 400
 const BATTLE_STUCK_FRAMES := 30000
 
+## A battle under constant mashing should be over well inside this. The
+## generous lockout budget above exists because a battle legitimately holds
+## the overworld for as long as it lasts, but it is so generous that a battle
+## which cannot progress at all hides under it: a forced-switch menu that
+## opened its cursor on the creature that had just fainted, so that confirm
+## refused forever, ran 7794 frames and passed. With that fixed, battles finish inside 250
+## frames under mashing, so this sits ten times clear of them. It is the
+## narrower question
+## -- not "is the player locked out" but "is this battle getting anywhere".
+const BATTLE_LENGTH_CAP := 2500
+
 ## Keys, by physical keycode, weighted the way a player's hands are: mostly
 ## walking, with confirm and cancel mixed in often enough to work every menu
 ## the walking opens. Only one direction is held at a time; the diagonal case
@@ -128,6 +139,8 @@ var _last_position := Vector2.ZERO
 var _maps_seen := {}
 var _battles := 0
 var _in_battle := false
+var _battle_frames := 0
+var _worst_battle := 0
 var _menu_frames := 0
 
 ## Which screens the player spent frames locked behind, so a run that spends
@@ -329,7 +342,14 @@ func _observe() -> void:
 	var fighting := battle != null and is_instance_valid(battle)
 	if fighting and not _in_battle:
 		_battles += 1
+	if fighting:
+		_battle_frames += 1
+		_worst_battle = maxi(_worst_battle, _battle_frames)
+		if _battle_frames == BATTLE_LENGTH_CAP:
+			_fail("a battle has run %d frames without ending (frame %d, map %s)"
+				% [_battle_frames, _frames, _map_id()])
 	if fighting != _in_battle:
+		_battle_frames = 0
 		# The two states have very different budgets below, so a freeze that
 		# began in one must not be judged against the other's. Without this a
 		# long battle "fails" the instant it ends, because its frames are
@@ -392,19 +412,16 @@ func _finalize() -> void:
 	_report()
 
 
-func _report() -> void:
-	if _reported:
-		return
-	_reported = true
-	if _frames < _total_frames:
-		_fail("the run ended on frame %d of %d" % [_frames, _total_frames])
-	var maps: Array = _maps_seen.keys()
-	maps.sort()
-	print("soak: walked %.0fpx across %d map(s) (%s), %d deliberate trip(s)"
-		% [_distance, maps.size(), ", ".join(maps), _travels])
-	# Only a fair demand if the run actually had the chances. Asserted
-	# unconditionally, a short soak fails for being short; skipped silently, a
-	# short soak claims a coverage it never attempted, so both cases say so.
+## Whether every map was visited -- but only when the run actually had the
+## chances to. Asserted unconditionally, a short soak fails for being short;
+## skipped silently, a short soak claims a coverage it never attempted, so
+## both cases say so out loud.
+##
+## Its own function rather than a block inside the report, because as a block
+## it returned early on the "not checked" path and skipped printing the
+## result line -- which the wrapper reads, so a run that was merely short
+## looked like a run that crashed.
+func _check_coverage() -> void:
 	if _total_frames < TRAVEL_EVERY_FRAMES * _map_ids.size():
 		print("soak: too short to expect every map (needs %d frames); coverage not checked"
 			% (TRAVEL_EVERY_FRAMES * _map_ids.size()))
@@ -416,8 +433,21 @@ func _report() -> void:
 	for map_id in _map_ids:
 		if not _maps_seen.has(map_id):
 			_fail("never set foot in '%s'" % map_id)
-	print("soak: %d battle(s), %d frame(s) with a menu up, longest freeze %d frame(s)"
-		% [_battles, _menu_frames, _worst_freeze])
+
+
+func _report() -> void:
+	if _reported:
+		return
+	_reported = true
+	if _frames < _total_frames:
+		_fail("the run ended on frame %d of %d" % [_frames, _total_frames])
+	var maps: Array = _maps_seen.keys()
+	maps.sort()
+	print("soak: walked %.0fpx across %d map(s) (%s), %d deliberate trip(s)"
+		% [_distance, maps.size(), ", ".join(maps), _travels])
+	_check_coverage()
+	print("soak: %d battle(s), longest %d frame(s); %d frame(s) with a menu up, longest freeze %d"
+		% [_battles, _worst_battle, _menu_frames, _worst_freeze])
 	print("soak: %d screen opening(s), %d nudge(s) to get back out, %d trip(s) to the title"
 		% [_menu_opens, _nudges, _returns_to_title])
 	var tally: Array = _menu_tally.keys()

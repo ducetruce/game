@@ -36,13 +36,14 @@
         20,
         10
       ],
+      "quest": "the_dry_cut",
       "text": [
         "The village well. Someone keeps flowers at its rim, always fresh.",
         "Your creatures drink, and something in them settles."
       ],
-      "stage_text": [
+      "quest_text": [
         {
-          "from": "the_water",
+          "from": "rumour",
           "text": [
             "The village well. Someone keeps flowers at its rim, always fresh.",
             "Your creatures drink and are themselves again.",
@@ -57,6 +58,7 @@
         16,
         9
       ],
+      "quest": "the_dry_cut",
       "tint": [
         0.95,
         0.78,
@@ -65,9 +67,9 @@
       "text": [
         "\"First time through the mere? Keep to the path and it keeps to itself.\""
       ],
-      "stage_text": [
+      "quest_text": [
         {
-          "from": "the_water",
+          "from": "rumour",
           "text": [
             "You'll have seen the well, then. Everyone asks about the well.",
             "It's fed off the cut that runs down from the mere. Has been since before the village had a name.",
@@ -75,9 +77,20 @@
             "Water that goes nowhere and doesn't rise. Somebody ought to go up the fen road and find out why.",
             "Somebody with something at their heel that can handle the reeds."
           ]
+        },
+        {
+          "from": "the_answer",
+          "text": [
+            "You went. Nobody thought you'd go.",
+            "Say that again -- it stands against the opening and won't go through. And it turns.",
+            "Then it isn't the cut. It was never the cut. Thirty years of clearing the cut.",
+            "Here. It was my grandmother's and she'd have wanted it going up there rather than sitting in a drawer down here.",
+            "The elders will want to hear this from you, not from me. When you've done enough that they'll listen."
+          ]
         }
       ],
-      "sets_stage": "the_road"
+      "sets_step": "the_road",
+      "completes_quest": true
     },
     {
       "type": "npc",
@@ -85,6 +98,7 @@
         24,
         9
       ],
+      "quest": "the_dry_cut",
       "tint": [
         0.68,
         0.8,
@@ -93,7 +107,7 @@
       "text": [
         "\"That roof there is older than the well. Older than most of us, too.\""
       ],
-      "stage_text": [
+      "quest_text": [
         {
           "from": "the_road",
           "text": [
@@ -110,6 +124,7 @@
         20,
         16
       ],
+      "quest": "the_dry_cut",
       "tint": [
         0.75,
         0.9,
@@ -118,7 +133,7 @@
       "text": [
         "\"You get used to the quiet up here. The clearing's never quiet.\""
       ],
-      "stage_text": [
+      "quest_text": [
         {
           "from": "the_road",
           "text": [
@@ -228,5 +243,6 @@
     "TTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTTTTTTTTT"
   ],
   "encounters": {},
-  "arrival_stage": "the_water"
+  "arrival_quest": "the_dry_cut",
+  "arrival_step": "rumour"
 }

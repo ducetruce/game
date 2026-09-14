@@ -15,6 +15,9 @@ signal shop_requested(catalog: PackedStringArray)
 signal storage_requested
 ## A rest spring was used. The overworld treats this as a save point.
 signal checkpoint_reached
+## A quest was finished here, and paid what `reward` says. The overworld says
+## so; the map knows nothing about how.
+signal quest_completed(quest_id: String, reward: Dictionary)
 
 const TILE_SIZE := 16
 
@@ -67,12 +70,13 @@ func _ready() -> void:
 	_encounters = data.get("encounters", {})
 	_paint(data["tiles"])
 	_spawn_objects(data.get("objects", []))
-	# Some places are themselves the story beat: arriving at the mere is the
-	# point of going there, and making the player hunt for a sign to be told
-	# so would be a worse version of the same moment.
-	var arrival := str(data.get("arrival_stage", ""))
-	if not arrival.is_empty():
-		Journal.advance_to(arrival)
+	# Some places are themselves the beat: arriving at the mere is the point of
+	# going there, and making the player hunt for a sign to be told so would be
+	# a worse version of the same moment.
+	var arrival_quest := str(data.get("arrival_quest", ""))
+	var arrival_step := str(data.get("arrival_step", ""))
+	if not arrival_quest.is_empty() and not arrival_step.is_empty():
+		Journal.advance(arrival_quest, arrival_step)
 
 
 ## World-space position the player should occupy when entering this map.
@@ -260,38 +264,92 @@ func _apply_solidity(node: CollisionObject2D, spec: Dictionary) -> void:
 
 
 func _on_read_requested(pages: PackedStringArray, spec: Dictionary = {}) -> void:
+	# An object that asks for something it has not been given says so and does
+	# not move: the refusal is the reply, so it replaces the lines rather than
+	# preceding them.
+	var refusal := _unmet_requirement(spec)
+	if not refusal.is_empty():
+		dialogue_requested.emit(refusal)
+		return
 	dialogue_requested.emit(_speech_for(spec, pages))
-	_advance_story(spec)
+	_advance_quest(spec)
 
 
 ## Which lines an object says right now.
 ##
-## An object may carry alternatives keyed by how far the story has got, as a
-## "stage_text" array of {from, text}; the one that wins is the last whose
-## stage the player has reached. Resolved here, at the moment of reading,
-## rather than when the map spawned: talking to one villager can move the
-## story on, and the villager standing next to them has to have the newer
-## thing to say without the map being reloaded first. See docs/DESIGN.md § 30.
+## An object naming a `quest` may carry alternatives keyed by how far that
+## quest has got, as a "quest_text" array of {from, text}; the one that wins is
+## the last whose step the player has reached. Resolved here, at the moment of
+## reading, rather than when the map spawned: talking to one villager can move
+## a quest on, and the villager standing next to them has to have the newer
+## thing to say without the map being reloaded first. See docs/DESIGN.md § 34.
 func _speech_for(spec: Dictionary, fallback: PackedStringArray) -> PackedStringArray:
+	var quest_id := str(spec.get("quest", ""))
 	var chosen := fallback
-	for entry in spec.get("stage_text", []):
+	for entry in spec.get("quest_text", []):
 		if not (entry is Dictionary):
-			push_warning("%s: 'stage_text' entries must be objects." % map_data_path)
+			push_warning("%s: 'quest_text' entries must be objects." % map_data_path)
 			continue
 		var from := str(entry.get("from", ""))
-		if from.is_empty() or not Journal.reached(from):
+		if from.is_empty() or not Journal.reached(quest_id, from):
 			continue
 		chosen = _to_string_array(entry.get("text", []))
 	return chosen
 
 
-## Moves the story on, if this object is a beat in it. Does nothing when the
+## Moves a quest on, if this object is a beat in one. Does nothing when the
 ## player is already past that point, which is what makes walking back and
 ## re-reading a sign harmless.
-func _advance_story(spec: Dictionary) -> void:
-	var sets := str(spec.get("sets_stage", ""))
-	if not sets.is_empty():
-		Journal.advance_to(sets)
+func _advance_quest(spec: Dictionary) -> void:
+	var quest_id := str(spec.get("quest", ""))
+	if quest_id.is_empty():
+		return
+	var step := str(spec.get("sets_step", ""))
+	if not step.is_empty():
+		Journal.advance(quest_id, step)
+	if bool(spec.get("completes_quest", false)):
+		var paid := Journal.complete(quest_id)
+		if not paid.is_empty():
+			quest_completed.emit(quest_id, paid)
+
+
+## What this object says instead, when it wants something the player has not
+## got. Empty when there is nothing to want or the want is met.
+##
+## Two kinds, because they are the two shapes of every quest errand: bring me
+## a thing, and deal with a thing. Both are checked *before* the object moves
+## the quest on, and `has_item` consumes only once it is going to.
+func _unmet_requirement(spec: Dictionary) -> PackedStringArray:
+	var wants: Dictionary = spec.get("requires", {})
+	if wants.is_empty():
+		return PackedStringArray()
+	# Only asked for while the quest is still waiting on it. Walking back past
+	# a door you have already opened should not be asked to open it again.
+	var quest_id := str(spec.get("quest", ""))
+	var step := str(spec.get("sets_step", ""))
+	if not quest_id.is_empty() and not step.is_empty() \
+			and Journal.reached(quest_id, step):
+		return PackedStringArray()
+
+	var kind := str(wants.get("kind", ""))
+	var met := false
+	match kind:
+		"has_item":
+			var item_id := str(wants.get("item", ""))
+			var count := maxi(1, int(wants.get("count", 1)))
+			met = Inventory.count(item_id) >= count
+			if met and bool(wants.get("consume", false)):
+				for _i in count:
+					Inventory.consume(item_id)
+		"defeated":
+			met = Journal.defeats_of(str(wants.get("species", ""))) \
+				>= maxi(1, int(wants.get("count", 1)))
+		_:
+			push_warning("%s: unknown requirement kind '%s'." % [map_data_path, kind])
+			met = true
+	if met:
+		return PackedStringArray()
+	return _to_string_array(wants.get("text", ["Not yet."]))
 
 
 # --- encounters ------------------------------------------------------------

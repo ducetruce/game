@@ -1695,6 +1695,99 @@ should be weighed against it.
 
 ---
 
+## 34. Quests, and the shape of the endgame
+
+The game now has an end: an **Elder's Gauntlet**, challengeable once ten
+quests in ten distinct areas are finished. That settles a question § 20 left
+open -- what the player is ultimately doing -- and it changes what progression
+has to be. § 30's single ordered story position was right for one thread and
+is wrong for ten running at once.
+
+**A quest is the same model, one per quest.** `Journal` (still the autoload's
+name, and now the right one) holds a dictionary of quest id to step index,
+where a quest is an ordered list of steps declared in `data/quests.json`.
+Every question asked of a quest is still "has the player got at least this
+far", a position still answers all of them, and a position still cannot be
+driven into a state the writing does not cover. What changed is the number of
+them. The Hollowmere story is now quest one of ten, `the_dry_cut`, with its
+six stages rewritten as five steps and a report-back.
+
+Quests still never move backwards, and saves still record a position by *id*
+rather than index, so inserting a step in the middle of a quest does not move
+every existing save to the wrong place in it.
+
+**Finishing is separate from advancing, and only from the last step.** A
+quest is completed by an object carrying `completes_quest`, and that object is
+usually the one that started it -- the person who sent you is the person you
+report back to. Without the last-step rule, talking to them the first time
+would finish the quest on the spot and pay for it. `Journal.complete` pays the
+reward itself rather than leaving that to the caller, so a quest cannot be
+completed twice for twice the coin.
+
+**Map objects grew three keys and a gate.** An object names a `quest`, and
+then `quest_text` picks lines by step (the last one whose step the player has
+reached), `sets_step` moves it on, and `completes_quest` ends it. A map may
+carry `arrival_quest`/`arrival_step`, because some places are themselves the
+beat.
+
+The gate is `requires`, in two kinds, because they are the two shapes of
+every errand the user described: **bring me a thing** (`has_item`, optionally
+consumed) and **deal with a thing** (`defeated`, a species and a count). Both
+are checked before the object moves anything, and a refusal *replaces* the
+object's lines rather than preceding them -- the refusal is the reply. A
+requirement is only asked for while the quest is still waiting on it, so
+walking back past a door you have already opened is not asked to open it
+again.
+
+`defeated` needs a tally, so `Journal` keeps one: species id to how many the
+player has put down, recorded by the overworld on a won battle. It is the
+only state there that is not a quest position, and quests are its only
+reader.
+
+**The quest log** is a new screen off the pause menu, read-only like the party
+screen: a quest moves because the player went somewhere or talked to someone,
+never because they pressed a button on a list. It lists what is running and
+what is done, never what has not been offered -- a log of things nobody has
+mentioned to you yet is a spoiler, not a log -- and its title is the count
+toward the gauntlet. It windows its rows, which is the fifth screen to need
+that (§ 29) and the point at which the treatment should probably become one
+shared thing rather than five copies.
+
+**The validator checks the quest graph.** Quest ids unique, areas real and
+distinct (the gauntlet counts quests in *distinct* areas: two in one area and
+one with none would still total ten and would not be that), every step with
+an objective, every `quest_text` `from` and every `sets_step` naming a real
+step of the named quest, and every `requires` naming a real item or species
+with a `text` to say what is missing. Then the two reachability checks that
+matter: every step must be set by something somewhere, or the quest stops at
+the step before it; and every quest must have a completer, or it can never be
+finished and never counts toward the gauntlet. Both are § 29's
+unobtainable-content bug one level up.
+
+**The soak found a real one while this was being built.** A run spent all
+8000 of its frames inside a single battle. On a forced switch -- the party
+menu the game opens for you when your creature goes down -- the cursor
+started on `active_index`, which is the creature that just fainted. Confirm
+refused, said so, and left the menu up; a player mashing Z got nothing at all
+until they happened to press W or S. It is the same rule § 22 applied to the
+learn prompt, missed here: the cursor must start somewhere that pressing
+confirm does the sensible thing. Fixed, battles finish inside 250 frames
+under mashing, against the 7794 that one took.
+
+The lockout budget did not catch it, because a battle legitimately holds the
+overworld for as long as it lasts and the budget is sized for that. So the
+soak now asks the narrower question separately -- not "is the player locked
+out" but "is this battle getting anywhere" -- and fails a battle running past
+2500 frames, ten times clear of a real one.
+
+`gauntlet_requirement` being larger than the number of quests written is a
+warning rather than an error -- the number is a target being built toward --
+but it says so every run, because until it is met the endgame cannot be
+reached at all.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
