@@ -195,6 +195,66 @@
         "ninebark_tonic",
         "tempering_draught"
       ]
+    },
+    {
+      "type": "tamer",
+      "id": "ostry",
+      "name": "Ostry",
+      "tile": [
+        10,
+        15
+      ],
+      "patrol": [
+        [
+          10,
+          12
+        ],
+        [
+          10,
+          19
+        ],
+        [
+          11,
+          19
+        ],
+        [
+          11,
+          12
+        ]
+      ],
+      "tint": [
+        0.85,
+        0.75,
+        0.6
+      ],
+      "purse": 90,
+      "team": [
+        {
+          "species": "moorhound",
+          "level": 8
+        },
+        {
+          "species": "rushwither",
+          "level": 9
+        }
+      ],
+      "intro": [
+        "Hold up. You've been walking this road like it belongs to you.",
+        "It doesn't. But I'll hear the argument."
+      ],
+      "rematch_intro": [
+        "I got the letter to you, then. Good.",
+        "Same road. Different outcome."
+      ],
+      "beaten_text": [
+        "Ostry lifts a hand without looking up from the channel.",
+        "\"Not yet. I'll send word.\""
+      ],
+      "letter": [
+        "The paper is folded twice and written on both sides.",
+        "\"I have been walking this road thinking about the way you opened. I have an answer for it now.",
+        "Come back up the fen when you can spare the afternoon. -- Ostry\""
+      ]
     }
   ],
   "encounters": {

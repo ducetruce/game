@@ -15,6 +15,9 @@ signal shop_requested(catalog: PackedStringArray)
 signal storage_requested
 ## A rest spring was used. The overworld treats this as a save point.
 signal checkpoint_reached
+## A tamer wants a fight. The overworld owns battles; the map only places the
+## person and says who they are.
+signal challenge_requested(tamer_id: String)
 ## A quest was finished here, and paid what `reward` says. The overworld says
 ## so; the map knows nothing about how.
 signal quest_completed(quest_id: String, reward: Dictionary)
@@ -32,6 +35,7 @@ const SPRING_SCENE := preload("res://scenes/overworld/rest_spring.tscn")
 const SHOPKEEPER_SCENE := preload("res://scenes/overworld/shopkeeper.tscn")
 const VILLAGER_SCENE := preload("res://scenes/overworld/villager.tscn")
 const SHRINE_SCENE := preload("res://scenes/overworld/shrine.tscn")
+const TAMER_SCENE := preload("res://scenes/overworld/tamer.tscn")
 
 @export_file("*.json") var map_data_path: String = ""
 
@@ -53,6 +57,9 @@ var _encounters := {}
 ## one of these tiles is what actually leaves the map, checked by the
 ## overworld the same way it checks encounter terrain.
 var _warps := {}
+## Tamer id -> the spec that placed them, so the overworld can ask who it is
+## about to fight without the map knowing what a battle is.
+var _tamers := {}
 
 @onready var _ground: TileMapLayer = $Ground
 @onready var _obstacles: TileMapLayer = $Obstacles
@@ -68,6 +75,7 @@ func _ready() -> void:
 	_player_start = _tile_from(data["player_start"])
 	coin_reward = _tile_from(data.get("coin_reward", [0, 0]))
 	_encounters = data.get("encounters", {})
+	_tamers.clear()
 	_paint(data["tiles"])
 	_spawn_objects(data.get("objects", []))
 	# Some places are themselves the beat: arriving at the mere is the point of
@@ -178,6 +186,8 @@ func _spawn_objects(objects: Array) -> void:
 				_spawn_npc(spec)
 			"shrine":
 				_spawn_shrine(spec)
+			"tamer":
+				_spawn_tamer(spec)
 			"warp":
 				_register_warp(spec)
 			_:
@@ -228,9 +238,7 @@ func _spawn_npc(spec: Dictionary) -> void:
 	villager.pages = _to_string_array(spec.get("text", []))
 	villager.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
 	if spec.has("tint"):
-		var rgb: Array = spec["tint"]
-		if rgb.size() >= 3:
-			villager.tint = Color(float(rgb[0]), float(rgb[1]), float(rgb[2]))
+		villager.tint = _color_from(spec["tint"])
 	villager.read_requested.connect(_on_read_requested.bind(spec))
 	_apply_solidity(villager, spec)
 	_objects.add_child(villager)
@@ -258,6 +266,50 @@ func _register_warp(spec: Dictionary) -> void:
 
 ## Solid unless the object says otherwise. A person or a signpost should stop
 ## you; a plaque set into the floor should not, while still being readable.
+func _spawn_tamer(spec: Dictionary) -> void:
+	var tamer: Tamer = TAMER_SCENE.instantiate()
+	tamer.tamer_id = str(spec.get("id", ""))
+	if tamer.tamer_id.is_empty():
+		push_error("%s: a tamer needs an 'id'; it is what remembers whether"
+			% map_data_path + " they have been beaten.")
+	_tamers[tamer.tamer_id] = spec
+	tamer.display_name = str(spec.get("name", "A tamer"))
+	tamer.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
+	# The beat is given as tiles and walked in world space. A route of one
+	# point (or none) is a tamer who stands where they were put, which is a
+	# legitimate way to place one.
+	var route := PackedVector2Array()
+	for point in spec.get("patrol", []):
+		route.append(tile_to_world(_tile_from(point)))
+	tamer.route = route
+	if spec.has("tint"):
+		tamer.tint = _color_from(spec["tint"])
+	tamer.challenge_requested.connect(_on_challenge_requested)
+	_apply_solidity(tamer, spec)
+	_objects.add_child(tamer)
+
+
+func _on_challenge_requested(tamer_id: String) -> void:
+	challenge_requested.emit(tamer_id)
+
+
+## Who a tamer on this map is, as the data declared them. Empty for an id this
+## map does not have.
+func tamer_spec(tamer_id: String) -> Dictionary:
+	return _tamers.get(tamer_id, {})
+
+
+## An [r, g, b] array from map data. White for anything malformed, which is
+## the no-tint value, so a typo recolours nothing rather than blacking a
+## villager out.
+func _color_from(value: Variant) -> Color:
+	if not (value is Array) or (value as Array).size() < 3:
+		push_warning("%s: tint must be an [r, g, b] array." % map_data_path)
+		return Color.WHITE
+	var rgb: Array = value
+	return Color(float(rgb[0]), float(rgb[1]), float(rgb[2]))
+
+
 func _apply_solidity(node: CollisionObject2D, spec: Dictionary) -> void:
 	var solid := bool(spec.get("solid", true))
 	node.collision_layer = LAYER_SOLID_PROP if solid else LAYER_WALKABLE_PROP

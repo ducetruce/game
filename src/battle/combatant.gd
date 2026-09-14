@@ -76,10 +76,16 @@ func hp_ratio() -> float:
 	return 0.0 if maximum <= 0 else clampf(float(creature.current_hp) / float(maximum), 0.0, 1.0)
 
 
+## Set on a tamer's creatures. They are still `is_wild` -- that flag marks the
+## side of the field, and everything about turn order and targeting reads it --
+## but they are nobody's idea of wild, so the log must not call them that.
+var owned_by_tamer := false
+
+
 ## Name as it appears in the battle log. Wild creatures are never on
-## first-name terms.
+## first-name terms; a tamer's are, because somebody named them.
 func log_name() -> String:
-	if is_wild:
+	if is_wild and not owned_by_tamer:
 		return "The wild %s" % creature.display_name()
 	return creature.display_name()
 

@@ -25,6 +25,14 @@ extends Node
 signal quest_started(quest_id: String)
 signal quest_advanced(quest_id: String, step_id: String)
 signal quest_completed(quest_id: String)
+## A tamer the player has already beaten has become due for a rematch. The
+## overworld turns this into a letter.
+signal rematch_due(tamer_id: String)
+
+## How much play between beating a tamer and them coming looking for you.
+## Twenty minutes is long enough that it is never the thing you are doing and
+## short enough to happen inside one session.
+const REMATCH_AFTER_SECONDS := 1200.0
 
 ## quest id -> index of the step the player is on.
 var _step := {}
@@ -32,6 +40,19 @@ var _step := {}
 var _done := {}
 ## species id -> how many of them the player has put down.
 var _defeats := {}
+
+## Seconds of play. Not wall-clock time and not time since the save was
+## written: a player who leaves the game running overnight has not earned a
+## rematch, and one who plays an hour a week has. Ticked by the overworld,
+## which is the only place time passing means anything.
+var playtime := 0.0
+
+## tamer id -> the playtime reading when they were beaten. A tamer in here is
+## beaten; one whose reading is more than REMATCH_AFTER_SECONDS behind is
+## beaten and wants another go.
+var _beaten_tamers := {}
+## Tamers already announced as wanting a rematch, so the pigeon comes once.
+var _challenges_sent := {}
 
 
 func _ready() -> void:
@@ -42,6 +63,9 @@ func reset_for_new_game() -> void:
 	_step.clear()
 	_done.clear()
 	_defeats.clear()
+	playtime = 0.0
+	_beaten_tamers.clear()
+	_challenges_sent.clear()
 
 
 # --- asking -----------------------------------------------------------------
@@ -195,6 +219,46 @@ func defeats_of(species_id: String) -> int:
 	return int(_defeats.get(species_id, 0))
 
 
+# --- tamers ------------------------------------------------------------------
+
+## Advances the clock and announces any tamer who has become due. Called by
+## the overworld once per physics frame; nowhere else has a reason to.
+func tick(delta: float) -> void:
+	playtime += delta
+	for tamer_id in _beaten_tamers:
+		if _challenges_sent.has(tamer_id) or not wants_rematch(tamer_id):
+			continue
+		_challenges_sent[tamer_id] = true
+		rematch_due.emit(tamer_id)
+
+
+func has_beaten(tamer_id: String) -> bool:
+	return _beaten_tamers.has(tamer_id)
+
+
+## True for a tamer who has been beaten and has had long enough to want
+## another go. False for one never beaten -- they want a *first* go, which is
+## a different question and is just `not has_beaten`.
+func wants_rematch(tamer_id: String) -> bool:
+	if not _beaten_tamers.has(tamer_id):
+		return false
+	return playtime - float(_beaten_tamers[tamer_id]) >= REMATCH_AFTER_SECONDS
+
+
+## True when this tamer will fight right now: never beaten, or beaten and due.
+func will_fight(tamer_id: String) -> bool:
+	return not has_beaten(tamer_id) or wants_rematch(tamer_id)
+
+
+func record_tamer_beaten(tamer_id: String) -> void:
+	if tamer_id.is_empty():
+		return
+	_beaten_tamers[tamer_id] = playtime
+	# The clock restarts, so the next letter is a new one rather than the old
+	# one still standing.
+	_challenges_sent.erase(tamer_id)
+
+
 # --- saving ------------------------------------------------------------------
 
 func to_dict() -> Dictionary:
@@ -208,6 +272,9 @@ func to_dict() -> Dictionary:
 		"steps": steps,
 		"done": _done.keys(),
 		"defeats": _defeats.duplicate(),
+		"playtime": playtime,
+		"tamers": _beaten_tamers.duplicate(),
+		"challenged": _challenges_sent.keys(),
 	}
 
 
@@ -233,6 +300,12 @@ func from_dict(data: Dictionary) -> void:
 	var defeats: Dictionary = data.get("defeats", {})
 	for species_id in defeats:
 		_defeats[str(species_id)] = int(defeats[species_id])
+	playtime = float(data.get("playtime", 0.0))
+	var tamers: Dictionary = data.get("tamers", {})
+	for tamer_id in tamers:
+		_beaten_tamers[str(tamer_id)] = float(tamers[tamer_id])
+	for tamer_id in data.get("challenged", []):
+		_challenges_sent[str(tamer_id)] = true
 
 
 # --- reading the data --------------------------------------------------------

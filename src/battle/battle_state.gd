@@ -37,9 +37,27 @@ const AI_BEST_MOVE_CHANCE := 0.7
 const LOSS_PENALTY_LOW := 0.05
 const LOSS_PENALTY_HIGH := 0.10
 
+## Losing to a tamer costs a flat fifth, not a roll. A wild loss is bad luck
+## in a field; a tamer beat you, knew it, and the two should not feel like the
+## same event. See docs/DESIGN.md § 35.
+const TAMER_LOSS_PENALTY := 0.20
+
 var party: Array[Combatant] = []
 var active_index := 0
 var foe: Combatant = null
+
+## A tamer's remaining creatures, sent out in order as the one before it goes
+## down. Empty for a wild battle, which is every battle that has no tamer in
+## it -- and `is_tamer` rather than "foe_bench is non-empty" is what gates the
+## rules, because a tamer with one creature is still a tamer.
+var foe_bench: Array[Combatant] = []
+var is_tamer := false
+## Flat purse a tamer pays on being beaten. A tamer is a person with money,
+## not a property of the ground they are standing on, so this is theirs rather
+## than the area's bracket.
+var tamer_purse := 0
+## What to call them in the log.
+var tamer_name := ""
 
 var phase := Phase.CHOOSING
 var turn := 0
@@ -90,6 +108,22 @@ static func create(party_creatures: Array, wild_creature: Creature, seed_value: 
 			state.active_index = i
 			break
 	state._mark_participant(state.active_index)
+	return state
+
+
+## A battle against a person rather than a field. Their first creature is the
+## foe and the rest wait on the bench; Attunement and running are both off.
+static func create_tamer(party_creatures: Array, team: Array, who: String,
+		purse: int, seed_value: int = 0) -> BattleState:
+	var state := BattleState.create(party_creatures, team[0], seed_value)
+	state.is_tamer = true
+	state.tamer_name = who
+	state.tamer_purse = purse
+	state.foe.owned_by_tamer = true
+	for i in range(1, team.size()):
+		var reserve := Combatant.of(team[i], true)
+		reserve.owned_by_tamer = true
+		state.foe_bench.append(reserve)
 	return state
 
 
@@ -347,6 +381,13 @@ func _do_switch(side: Side, index: int) -> void:
 func _do_flee(side: Side) -> void:
 	if side != Side.PLAYER:
 		return
+	if is_tamer:
+		# Not a refusal to be worked around -- there is nowhere to run to.
+		# Walking away from a person who came to fight you is a different
+		# thing from walking away from a field, and the game does not have it.
+		log_lines.append("%s is standing between you and the way out."
+			% _tamer_label())
+		return
 	_flee_attempts += 1
 	# Speed matters, but repeated attempts matter more, so a slow party is never
 	# permanently trapped by something fast.
@@ -405,6 +446,10 @@ func _do_item(side: Side, item_id: String) -> void:
 func _item_refusal(item: ItemData) -> String:
 	match str(item.effect.get("kind", "")):
 		ItemData.EFFECT_RESTRAIN_HIT:
+			if is_tamer:
+				# Its only purpose is keeping a wild creature alive long
+				# enough to read. There is nothing here to read.
+				return "There is nothing here to hold back for."
 			if restrained:
 				return "You are already holding back."
 		ItemData.EFFECT_HEAL:
@@ -427,6 +472,11 @@ func _item_refusal(item: ItemData) -> String:
 # so a foe's own mid-turn self-heal is reflected before the check runs.
 
 func _tick_reactive_resonance(action_kind: String, move_result: Dictionary) -> void:
+	# Attunement is for wild creatures only (docs/DESIGN.md § 20). A tamer's
+	# creature already belongs to somebody, and taking it would be a different
+	# game.
+	if is_tamer:
+		return
 	var temperament := foe.temperament()
 	var rules := Content.temperament_rules(temperament)
 	if rules.is_empty():
@@ -474,6 +524,8 @@ func _tick_reactive_resonance(action_kind: String, move_result: Dictionary) -> v
 
 
 func _tick_feral_resonance() -> void:
+	if is_tamer:
+		return
 	var rules := Content.temperament_rules("feral")
 	if rules.is_empty():
 		return
@@ -552,10 +604,17 @@ func _resolve_faints() -> void:
 		return
 	if foe.creature.is_fainted():
 		log_lines.append("%s goes down." % foe.log_name())
-		phase = Phase.WON
+		# Experience is settled per creature felled, not per battle, so a
+		# tamer's team pays for each of them rather than once at the end.
 		_grant_experience()
-		_grant_coin()
-		return
+		if not _send_next_foe():
+			phase = Phase.WON
+			_grant_coin()
+			return
+		# Deliberately falls through. Both sides can go down on the same turn,
+		# and returning here left the player's own faint unnoticed -- the
+		# battle carried on with a fainted creature out, taking hits it could
+		# not answer.
 	if active().creature.is_fainted():
 		log_lines.append("%s goes down." % active().creature.display_name())
 		if _has_healthy_reserve():
@@ -563,6 +622,24 @@ func _resolve_faints() -> void:
 		else:
 			phase = Phase.LOST
 			_charge_defeat()
+
+
+## Brings a tamer's next creature out, if they have one. Returns false when
+## there is nobody left, which is what ends the battle.
+func _send_next_foe() -> bool:
+	if foe_bench.is_empty():
+		return false
+	foe = foe_bench.pop_front()
+	# A fresh foe has never been read, so nothing the player learned about the
+	# last one carries over. Resonance is per-combatant already; this is only
+	# the turn-scoped flag.
+	_foe_healed_this_turn = false
+	log_lines.append("%s sends out %s." % [_tamer_label(), foe.creature.display_name()])
+	return true
+
+
+func _tamer_label() -> String:
+	return tamer_name if not tamer_name.is_empty() else "The tamer"
 
 
 func _mark_participant(index: int) -> void:
@@ -575,6 +652,8 @@ func _mark_participant(index: int) -> void:
 ## what they had just met, and what an hour somewhere is worth should be a
 ## property of the somewhere.
 func coin_award() -> int:
+	if is_tamer:
+		return maxi(0, tamer_purse)
 	var low := mini(coin_reward.x, coin_reward.y)
 	var high := maxi(coin_reward.x, coin_reward.y)
 	if high <= 0:
@@ -598,8 +677,9 @@ func _grant_coin() -> void:
 ## exactly the play we want. A player with nothing loses nothing, on purpose:
 ## the floor should not be a wall.
 func _charge_defeat() -> void:
-	var lost := int(floorf(float(Inventory.coin)
-		* rng.randf_range(LOSS_PENALTY_LOW, LOSS_PENALTY_HIGH)))
+	var share := TAMER_LOSS_PENALTY if is_tamer else \
+		rng.randf_range(LOSS_PENALTY_LOW, LOSS_PENALTY_HIGH)
+	var lost := int(floorf(float(Inventory.coin) * share))
 	if lost <= 0:
 		return
 	Inventory.coin -= lost

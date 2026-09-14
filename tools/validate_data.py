@@ -32,7 +32,7 @@ EFFECT_KINDS = ("stat_stage", "heal")
 # this check is to catch the two drifting apart.
 WALKABLE_TILES = set("GgPpbcr")
 SOLID_TILES = set("WRTFHV")
-OBJECT_TYPES = ("sign", "spring", "shop", "npc", "shrine", "warp")
+OBJECT_TYPES = ("sign", "spring", "shop", "npc", "shrine", "warp", "tamer")
 
 # Mirrors ItemData.EFFECT_KINDS, which is what BattleState._do_item can
 # actually apply. Duplicated on purpose, same as the tile legend: the point is
@@ -444,7 +444,7 @@ def encounters_declared(doc: dict) -> bool:
 
 def check_maps(types: list[str], creatures: dict, items: dict,
                sold: set, encountered: set, quests: dict,
-               staged: dict, completers: dict) -> int:
+               staged: dict, completers: dict, tamers: dict) -> int:
     """Validates every map in data/maps/. Returns how many were checked.
 
     Fills `sold` with every item id any shop stocks and `encountered` with
@@ -593,6 +593,48 @@ def check_maps(types: list[str], creatures: dict, items: dict,
                              " %s already does" % (label, quest_id,
                                                    completers[quest_id]))
                     completers.setdefault(quest_id, where)
+
+            if obj_type == "tamer":
+                tamer_id = spec.get("id")
+                if not tamer_id or not isinstance(tamer_id, str):
+                    err(where, "%s needs an 'id'; it is what remembers whether"
+                        " the player has beaten them" % label)
+                elif tamer_id in tamers:
+                    err(where, "%s duplicates tamer id '%s', already placed in"
+                        " %s -- one id, one person, or beating either counts"
+                        " as beating both" % (label, tamer_id, tamers[tamer_id]))
+                else:
+                    tamers[tamer_id] = where
+                if not spec.get("name"):
+                    err(where, "%s needs a 'name' to be addressed by" % label)
+                purse = spec.get("purse", 0)
+                if not isinstance(purse, int) or purse < 0:
+                    err(where, "%s purse must be a non-negative integer, got %r"
+                        % (label, purse))
+
+                team = spec.get("team")
+                if not isinstance(team, list) or not team:
+                    err(where, "%s needs a non-empty 'team'" % label)
+                else:
+                    if len(team) > 6:
+                        err(where, "%s has a team of %d; six is the most the"
+                            " player can field and more than that is not a"
+                            " fight" % (label, len(team)))
+                    for k, member in enumerate(team):
+                        member_label = "%s.team[%d]" % (label, k)
+                        if not isinstance(member, dict):
+                            err(where, "%s must be an object" % member_label)
+                            continue
+                        if member.get("species") not in creatures:
+                            err(where, "%s names unknown species '%s'"
+                                % (member_label, member.get("species")))
+                        level = member.get("level")
+                        if not isinstance(level, int) or not (1 <= level <= MAX_LEVEL):
+                            err(where, "%s level must be an integer 1-%d, got %r"
+                                % (member_label, MAX_LEVEL, level))
+
+                for point in spec.get("patrol", []):
+                    walkable_at(point, "%s.patrol point" % label)
 
             wants = spec.get("requires")
             if wants is not None:
@@ -945,8 +987,9 @@ def main() -> int:
     encountered: set = set()
     staged: dict = {}
     completers: dict = {}
+    tamers: dict = {}
     map_count = check_maps(types, creatures, items, sold, encountered,
-                           quests, staged, completers)
+                           quests, staged, completers, tamers)
     check_obtainable(creatures, items, sold, encountered)
     check_quests_reachable(quests, completers, staged)
 
@@ -956,9 +999,9 @@ def main() -> int:
         print("ERROR    %s" % line)
 
     print("\n%d types, %d moves, %d creatures, %d item(s), %d map(s), "
-          "%d quest(s) -- %d error(s), %d warning(s)"
+          "%d quest(s), %d tamer(s) -- %d error(s), %d warning(s)"
           % (len(types), len(moves), len(creatures), len(items), map_count,
-             len(quests), len(errors), len(warnings)))
+             len(quests), len(tamers), len(errors), len(warnings)))
     return 1 if errors else 0
 
 

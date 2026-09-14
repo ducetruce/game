@@ -1788,6 +1788,71 @@ reached at all.
 
 ---
 
+## 35. Tamers
+
+Other people who fight you, answering the four things asked about them:
+wandering rather than posted, rematches paced by play time, a letter to say
+when one is due, and a flat fifth of the purse for losing.
+
+**The engine gained a bench, not a second battle mode.** `BattleState` keeps
+one `foe` and a `foe_bench` behind it; when the foe goes down and the bench is
+not empty, the next one walks out and the battle carries on. Experience and
+coin settle per creature felled rather than per battle, so a team of three
+pays three times over rather than once at the end. `is_tamer` -- not "the
+bench is non-empty", because a tamer with one creature is still a tamer --
+gates the three rules that differ: no Attunement (§ 20 settled that as wild
+only; a tamer's creature already belongs to somebody), no running, and the
+Tempering Draught refuses, since its only purpose is keeping a wild creature
+alive long enough to read.
+
+The action menu drops Still and Run in a tamer battle, and because the rows
+are no longer the same rows, it dispatches on an action id rather than on
+cursor position. A menu that offers what it will refuse is worse than a
+shorter menu.
+
+Writing this turned up a bug in the shared path: when the foe went down, the
+faint check returned before asking whether the *player's* creature had also
+gone down that turn. Both sides can fall on the same blow, and the battle
+carried on with a fainted creature out, taking hits it could not answer. The
+tamer path made it visible because the battle no longer ended there.
+
+**They walk.** A tamer you can see coming and decide to avoid is a better
+encounter than a gate you have to pass, and the same map reads differently
+depending on where they happen to be. A moving *solid* body is a hazard,
+though -- a static body that moves does not resolve collisions, it simply
+occupies the space, and the player gets pushed out of it -- so a tamer will
+not step onto the tile the player is standing on. It waits.
+
+**Rematches are paced by play time, not wall-clock time.** `Journal` counts
+seconds the overworld has been running, saved with everything else. A player
+who leaves the game open overnight has not earned a rematch; one who plays an
+hour a week has. Twenty minutes of play after a defeat, and the tamer comes
+due: long enough never to be the thing you are doing, short enough to happen
+inside a session.
+
+The clock is ticked from the overworld's `_physics_process` rather than from
+`Journal`'s own `_process`, because Journal also exists on the title screen
+and time spent there is not play.
+
+**The pigeon waits for a quiet moment.** A rematch coming due queues a letter
+rather than showing one, and the overworld delivers it from the same place it
+checks for encounters -- not mid-battle, not mid-fade, not three pages into
+somebody else's conversation. A notification that interrupts any of those is
+a bug; one you have to go somewhere to collect is not a notification.
+
+**Losing to a tamer costs a flat 20%**, against the wild 5-10% roll of § 27. A
+wild loss is bad luck in a field; a tamer beat you, knew it, and the two
+should not feel like the same event.
+
+Tamers are identified by an `id` in map data, which is what remembers whether
+they have been beaten, so the validator refuses a tamer without one and
+refuses two tamers sharing one -- beating either would otherwise count as
+beating both. It also caps a team at six, since that is what the player can
+field and more than that is not a fight.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than

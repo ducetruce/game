@@ -59,6 +59,11 @@ var _menu_lock := 0.0
 ## is freed before its outcome is acted on.
 var _battle_foe_species := ""
 
+## The tamer the current battle is against, and the letters waiting for a
+## quiet moment to be delivered.
+var _pending_tamer := ""
+var _pending_letters: Array[String] = []
+
 ## Set while a screen was opened *from* the pause menu, so closing it goes
 ## back there instead of dropping the player into the world.
 var _returns_to_pause := false
@@ -101,6 +106,7 @@ func _ready() -> void:
 		_debug_menu.command_chosen.connect(_on_debug_command)
 	else:
 		_debug_menu.queue_free()
+	Journal.rematch_due.connect(_on_rematch_due)
 	_fade.color.a = 0.0
 
 	var map_id := DEFAULT_MAP_ID
@@ -151,6 +157,7 @@ func _load_map(map_id: String, target: Variant) -> void:
 	_map.storage_requested.connect(_storage_menu.open_menu)
 	_map.checkpoint_reached.connect(_autosave)
 	_map.quest_completed.connect(_on_quest_completed)
+	_map.challenge_requested.connect(_on_challenge_requested)
 
 	var position := _map.player_spawn_position()
 	if target is Vector2i:
@@ -312,6 +319,11 @@ func _notification(what: int) -> void:
 
 func _physics_process(delta: float) -> void:
 	_menu_lock = maxf(0.0, _menu_lock - delta)
+	# Before every early return below. Play time is time spent in the world,
+	# including the time spent standing in a menu deciding something -- what
+	# it must not count is a game left running on the title screen, which is
+	# why this is here and not in Journal's own _process.
+	Journal.tick(delta)
 
 	if _busy or _battle != null or not _player.input_enabled:
 		# Keep the anchor current so pausing does not bank distance.
@@ -334,6 +346,10 @@ func _physics_process(delta: float) -> void:
 			and Input.is_action_just_pressed("debug_menu"):
 		_debug_menu.show_state(_debug_state())
 		_debug_menu.open_menu()
+		return
+
+	if not _pending_letters.is_empty():
+		_deliver_letter()
 		return
 
 	var moved := _player.global_position.distance_to(_last_position)
@@ -383,6 +399,108 @@ func _begin_warp(warp: Dictionary) -> void:
 	_busy = false
 
 
+# --- tamers ----------------------------------------------------------------
+
+## Someone walked up to a tamer and pressed Z.
+func _on_challenge_requested(tamer_id: String) -> void:
+	var spec := _map.tamer_spec(tamer_id)
+	if spec.is_empty() or _busy or _battle != null:
+		return
+
+	var who := str(spec.get("name", "A tamer"))
+	if not Journal.will_fight(tamer_id):
+		# Beaten and not yet due. They still have something to say -- a person
+		# who beat you and then ignores you is worse than no person at all.
+		_dialogue.show_pages(_pages(spec.get("beaten_text", [
+			"%s looks up, and looks away again. Not today." % who,
+		])))
+		return
+
+	var team := _tamer_team(spec)
+	if team.is_empty():
+		push_error("Overworld: tamer '%s' has no team to fight with." % tamer_id)
+		return
+	if not Party.has_any() or Party.all_fainted():
+		_dialogue.show_pages(PackedStringArray([
+			"%s looks at what you are carrying and decides against it." % who,
+		]))
+		return
+
+	_pending_tamer = tamer_id
+	_begin_tamer_battle(spec, team, who)
+
+
+func _tamer_team(spec: Dictionary) -> Array:
+	var team: Array = []
+	for entry in spec.get("team", []):
+		if not (entry is Dictionary):
+			continue
+		var creature := Creature.create(
+			str(entry.get("species", "")), int(entry.get("level", 5)))
+		if creature != null:
+			team.append(creature)
+	return team
+
+
+func _begin_tamer_battle(spec: Dictionary, team: Array, who: String) -> void:
+	_busy = true
+	_player.input_enabled = false
+	await _fade_to(1.0)
+
+	var intro := _pages(spec.get("intro", ["%s steps into your way." % who]))
+	if Journal.has_beaten(_pending_tamer):
+		intro = _pages(spec.get("rematch_intro", [
+			"%s is already unrolling a sleeve. They have thought about this." % who,
+		]))
+
+	_battle = BATTLE_SCENE.instantiate()
+	_battle.configure_tamer(
+		Party.members, team, who, int(spec.get("purse", 0)), intro)
+	_battle.finished.connect(_on_battle_finished)
+	_battle_layer.add_child(_battle)
+
+	await _fade_to(0.0)
+	_busy = false
+
+
+## A pigeon, when a tamer has had long enough to want another go. Delivered
+## wherever the player happens to be standing, because a notification you have
+## to go somewhere to collect is not a notification.
+func _on_rematch_due(tamer_id: String) -> void:
+	_pending_letters.append(tamer_id)
+
+
+## Shown at the first safe moment rather than the instant it fires: the player
+## may be mid-battle, mid-fade or three pages into a conversation, and a
+## pigeon that interrupts any of those is a bug.
+func _deliver_letter() -> void:
+	if _pending_letters.is_empty() or _busy or _battle != null \
+			or not _player.input_enabled or _menu_lock > 0.0:
+		return
+	var tamer_id: String = _pending_letters[0]
+	_pending_letters.remove_at(0)
+	var spec := _map.tamer_spec(tamer_id)
+	var who := str(spec.get("name", "Someone"))
+	var body := _pages(spec.get("letter", [
+		"Whatever you did to me, I have been practising against it. Come back. -- %s" % who,
+	]))
+	var pages := PackedStringArray([
+		"A pigeon comes down hard on the fence rail beside you, with a paper on its leg.",
+	])
+	for line in body:
+		pages.append(line)
+	_dialogue.show_pages(pages)
+
+
+func _pages(value: Variant) -> PackedStringArray:
+	var pages := PackedStringArray()
+	if value is PackedStringArray:
+		return value
+	for line in (value if value is Array else []):
+		pages.append(str(line))
+	return pages
+
+
 # --- encounters ------------------------------------------------------------
 
 func _begin_encounter(symbol: String) -> void:
@@ -422,6 +540,9 @@ func _on_battle_finished(outcome: int) -> void:
 	if outcome == BattleState.Phase.WON and _battle_foe_species != "":
 		Journal.record_defeat(_battle_foe_species)
 	_battle_foe_species = ""
+	if outcome == BattleState.Phase.WON and _pending_tamer != "":
+		Journal.record_tamer_beaten(_pending_tamer)
+	_pending_tamer = ""
 
 	var lost := outcome == BattleState.Phase.LOST
 	if lost:

@@ -16,7 +16,21 @@ enum Ui { MESSAGE, ACTIONS, MOVES, ITEMS, PARTY, LEARN_ASK, LEARN_PICK, OVER }
 const LEARN_ASK_LABELS := ["Make room for it", "Keep the four I have"]
 const LEARN_ASK_DECLINE := 1
 
-const ACTION_LABELS := ["Fight", "Still", "Item", "Party", "Run"]
+## The action menu, as ids rather than labels: a tamer battle drops Still and
+## Run -- neither does anything there, and a menu that offers what it will
+## refuse is worse than a shorter menu -- so the row a cursor position means
+## is not fixed. Dispatching on the id keeps the two menus from having to
+## agree about indices. `_actions()` picks between them and everything that
+## reads the action menu goes through it.
+const ACTIONS := ["fight", "still", "item", "party", "run"]
+const TAMER_ACTIONS := ["fight", "item", "party"]
+const ACTION_LABELS := {
+	"fight": "Fight",
+	"still": "Still",
+	"item": "Item",
+	"party": "Party",
+	"run": "Run",
+}
 const CREATURE_SPRITE_DIR := "res://assets/sprites/creatures/"
 
 const COLOR_TEXT := "cfd6e0"
@@ -54,6 +68,11 @@ var _forced_switch := false
 
 var _party_creatures: Array = []
 var _wild_creature: Creature = null
+## Set instead of _wild_creature for a battle against a person.
+var _tamer_team: Array = []
+var _tamer_name := ""
+var _tamer_purse := 0
+var _tamer_intro := PackedStringArray()
 var _coin_reward := Vector2i.ZERO
 
 @onready var _foe_name: Label = $FoePanel/CreatureName
@@ -81,16 +100,38 @@ func configure(party: Array, wild: Creature, coin_reward: Vector2i = Vector2i.ZE
 	_origin = origin
 
 
+## Called instead of configure() for a battle against a person. `intro` is
+## what they say on stopping you; `purse` is what beating them pays.
+func configure_tamer(party: Array, team: Array, who: String, purse: int,
+		intro: PackedStringArray = PackedStringArray()) -> void:
+	_party_creatures = party
+	_tamer_team = team
+	_tamer_name = who
+	_tamer_purse = purse
+	_tamer_intro = intro
+
+
 func _ready() -> void:
-	if _wild_creature == null:
+	if _tamer_team.is_empty() and _wild_creature == null:
 		_build_demo()
-	_state = BattleState.create(_party_creatures, _wild_creature)
-	_state.coin_reward = _coin_reward
+
+	var opening := PackedStringArray()
+	if not _tamer_team.is_empty():
+		_state = BattleState.create_tamer(
+			_party_creatures, _tamer_team, _tamer_name, _tamer_purse)
+		for line in _tamer_intro:
+			opening.append(line)
+		opening.append("%s sends out %s." % [
+			_tamer_name, _state.foe.creature.display_name()])
+	else:
+		_state = BattleState.create(_party_creatures, _wild_creature)
+		_state.coin_reward = _coin_reward
+		opening.append("A wild %s comes out of %s."
+			% [_state.foe.creature.display_name(), _origin])
+	opening.append("Go on, %s." % _state.active().creature.display_name())
+
 	_refresh_panels()
-	_queue(PackedStringArray([
-		"A wild %s comes out of %s." % [_state.foe.creature.display_name(), _origin],
-		"Go on, %s." % _state.active().creature.display_name(),
-	]))
+	_queue(opening)
 	_show_next_message()
 
 
@@ -224,7 +265,7 @@ func _open(ui: Ui) -> void:
 func _menu_length() -> int:
 	match _ui:
 		Ui.ACTIONS:
-			return ACTION_LABELS.size()
+			return _actions().size()
 		Ui.MOVES:
 			return _state.move_options().size()
 		Ui.ITEMS:
@@ -251,16 +292,17 @@ func _learn_creature_moves() -> PackedStringArray:
 func _confirm() -> void:
 	match _ui:
 		Ui.ACTIONS:
-			match _cursor:
-				0:
+			var ids := _actions()
+			match str(ids[_cursor]) if _cursor < ids.size() else "":
+				"fight":
 					_open(Ui.MOVES)
-				1:
+				"still":
 					_submit({"kind": BattleState.ACTION_STILL})
-				2:
+				"item":
 					_open(Ui.ITEMS)
-				3:
+				"party":
 					_open(Ui.PARTY)
-				4:
+				"run":
 					_submit({"kind": BattleState.ACTION_FLEE})
 		Ui.MOVES:
 			var options := _state.move_options()
@@ -346,11 +388,17 @@ func _render_menu() -> void:
 
 
 func _render_actions() -> void:
+	var ids := _actions()
 	var rows := PackedStringArray()
-	for i in ACTION_LABELS.size():
-		rows.append(_row(ACTION_LABELS[i], i == _cursor))
+	for i in ids.size():
+		rows.append(_row(str(ACTION_LABELS.get(ids[i], ids[i])), i == _cursor))
 	_set_menu(rows)
 	_message.text = "[color=#%s]What will you do?[/color]" % COLOR_DIM
+
+
+## The action menu as it stands in this battle.
+func _actions() -> Array:
+	return TAMER_ACTIONS if _state != null and _state.is_tamer else ACTIONS
 
 
 func _render_moves() -> void:
@@ -511,8 +559,13 @@ func _sprite_for(species_id: String) -> Texture2D:
 func _outcome_text() -> String:
 	match _state.phase:
 		BattleState.Phase.WON:
+			if _state.is_tamer:
+				return "%s has nothing left to send." % _state.tamer_name
 			return "The %s breaks and is gone." % _state.foe.creature.display_name()
 		BattleState.Phase.LOST:
+			if _state.is_tamer:
+				return "Nothing of yours is still standing. %s waits until you get up." \
+					% _state.tamer_name
 			return "Nothing of yours is still standing."
 		BattleState.Phase.FLED:
 			return "You put ground between you and it."

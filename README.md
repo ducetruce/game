@@ -273,6 +273,33 @@ it in with a `warp` object on each side.
 Edit it in a text editor and re-run the game. This is temporary — see
 `docs/DESIGN.md` § 8 for when maps move into Godot's TileMapLayer editor.
 
+## Tamers
+
+Other people walk the roads, and they fight. **Ostry** walks the fen road's
+western leg. A tamer sends out their whole team one creature at a time;
+Attunement is off against them (their creatures already belong to someone),
+so is running, and the Tempering Draught has nothing to hold back for. Beating
+one pays their purse. **Losing to one costs a flat 20% of your coin**, against
+the 5–10% a wild loss rolls.
+
+Beaten tamers want another go. About twenty minutes of play later a **pigeon
+finds you**, wherever you are, with a letter from them — go back and they will
+be waiting, with something new. Time spent on the title screen does not count.
+
+Placing one in `data/maps/*.json`:
+
+```json
+{ "type": "tamer", "id": "ostry", "name": "Ostry", "tile": [10, 15],
+  "patrol": [[10,12],[10,19],[11,19],[11,12]], "purse": 90,
+  "team": [{"species": "moorhound", "level": 8}],
+  "intro": ["..."], "rematch_intro": ["..."],
+  "beaten_text": ["..."], "letter": ["..."] }
+```
+
+The `id` is what remembers whether they have been beaten, so it must be unique
+across every map. `patrol` is the beat they walk, in tiles; leave it out and
+they stand still.
+
 ## Writing a quest
 
 `data/quests.json` holds every quest: an id, the area it belongs to, a
