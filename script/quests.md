@@ -48,3 +48,18 @@
 
 ### step hang_it
 - [PLACEHOLDER] Hang the new weight in the cradle under the sluice.
+
+## what_denned_in_the_kiln -- What Denned in the Kiln
+<!-- quest what_denned_in_the_kiln -->
+
+### name
+- What Denned in the Kiln
+
+### summary
+- [PLACEHOLDER] Something cinder-built has moved into Emberwick Row's kiln, and the village cannot fire anything while it's there.
+
+### step arrival
+- [PLACEHOLDER] Find out why the kiln has gone cold.
+
+### step cleared
+- [PLACEHOLDER] Clear whatever has denned in the brush south of the kiln.

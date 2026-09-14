@@ -294,14 +294,38 @@
       "text": [
         "[PLACEHOLDER] A marker showing the way to the gauntlet hall. Where this actually stands, and what it looks like, is not yet decided -- this is a placeholder location."
       ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        0,
+        3
+      ],
+      "target_map": "emberwick_row",
+      "target_tile": [
+        37,
+        10
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        0,
+        4
+      ],
+      "target_map": "emberwick_row",
+      "target_tile": [
+        37,
+        11
+      ]
     }
   ],
   "tiles": [
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTT",
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTppTTTTTTTTTTTT",
     "TTGGGGGGGGGGGGGGGGGGGGGGGGGpPGGGGGGGGGGTT",
-    "TTGGGGGGGGGGGGGGGGGGGGGGGGGPpGGGGGGGGGGTT",
-    "TTGGGGGGGGGGGGGGGGGGGGGGGGGpPGGGGGGGGGGTT",
+    "PpGGGGGGGGGGGGGGGGGGGGGGGGGPpGGGGGGGGGGTT",
+    "pPGGGGGGGGGGGGGGGGGGGGGGGGGpPGGGGGGGGGGTT",
     "TTGGGGGGGGGGGGGGGVVVVVVVVGGPpGGGGGGGGGGTT",
     "TTGGGGGGGGGGGGGGGHHHHHHHHGGpPGGGGGGGGGGTT",
     "TTGGGGGGGGGGGGGGGGGGGGGGGGGPpGGGGGGGGGGTT",

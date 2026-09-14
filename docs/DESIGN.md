@@ -2097,6 +2097,56 @@ when something looks wrong.
 
 ---
 
+## 40. Quest 3, and the first pure-content quest
+
+"What Denned in the Kiln," at a new village, Emberwick Row: something
+cinder-built has moved into the village kiln and it cannot be fired until
+whatever it is has been cleared out. Asked for by name in the recommendation
+that led to building it -- the point was to advance the quest count (2/10 to
+3/10) while exercising the one requirement kind nothing real had exercised
+yet, `defeated`, and to do both with zero new engine work. It delivers on
+that: nothing in `src/` changed for this quest. Everything it needed --
+encounter tables, `Journal.record_defeat`, the `defeated` requirement kind,
+`gives`/`requires` -- already existed from quests 1 and 2 and the validator
+built around them.
+
+Two steps only, `arrival` and `cleared`, both set and completed by the same
+object (the Kiln Warden) -- deliberately simpler than quest 2's four-step,
+two-location fetch chain, since a slay quest does not need the same shape.
+That simplicity has one visible consequence worth naming rather than
+"fixing": because `sets_step` and `completes_quest` fire on the *same*
+interaction, `_speech_for` (evaluated before `_advance_quest`, same as every
+other quest) can never show the "cleared" `quest_text` variant on the
+completing visit itself -- only on a later, separate re-visit, once the step
+really has moved. The completing visit shows the `arrival` line one last
+time, immediately followed by the overworld's own "[ quest -- done ]"
+banner. Quest 2's founder shows its later variant *on* the completing visit
+only because that variant's step was set earlier, by a different object (the
+cradle) on a separate visit -- not because of anything general about how
+`quest_text` resolves. Worth knowing before authoring a quest that wants its
+"just finished" line to differ from its "still working on it" line: split
+the setting and the completing across two objects (or two visits), the way
+quest 2 does, rather than one object doing both at once.
+
+Emberwick Row itself is a third exit off Aldenmere's plaza, cut through the
+west tree line the same way every other exit in the game is -- a two-tile
+path gap, a warp pair on each side. Its kiln is built from existing tile
+symbols (rock body, wall base, roof) with no new symbol needed, the same
+"reuse before you extend" instinct that placed the mere's Cairnling on plain
+rock rather than inventing a tile for it. Its encounter table pays 22-34
+coin at levels 12-17, weighted mostly to the creature the quest is about
+(`emberwick`, thematically apt for something that dens in a kiln and already
+in the roster) -- a level band sitting above the mere and below a gauntlet
+trial, matching where quest 3 falls in the ten.
+
+`tools/script.py` needed no changes either: quest 3's every line -- the
+warden's dialogue, the kiln's sign, the quest's own summary and two step
+objectives -- exports and imports through the exact same generic map/quest
+handling that quest 2 uses, and is marked `[PLACEHOLDER]` the same way.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
@@ -2117,13 +2167,13 @@ decisions to make, plus what has not been reached yet.
   half of the API now exists (§ 25).
 - Whether storage should ever be partitioned into boxes, which only matters
   once anyone fills 60 slots (§ 24).
-- The prose itself, quest 2 onward and the whole gauntlet (§§ 37-39) --
+- The prose itself, quest 2 onward and the whole gauntlet (§§ 37-40) --
   everything marked `[PLACEHOLDER]` is placed, gated, and reachable, and is
   waiting on the user's own words rather than a decision from either side.
 - Where the gauntlet hall's entrance actually belongs. It stands off
   Aldenmere's plaza for now, deliberately not tied to the "older than the
   well" building's existing dialogue (§ 39) -- both the location and whether
   that building is the right one to become it are the user's call.
-- Quests 3 through 10, and the settlements the proposed ten imply (§ 36).
-  Two quests exist, gated on ten; the gap is what stands between the
+- Quests 4 through 10, and the settlements the proposed ten imply (§ 36).
+  Three quests exist, gated on ten; the gap is what stands between the
   gauntlet being reachable by anything other than the debug menu.

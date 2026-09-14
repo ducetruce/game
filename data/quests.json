@@ -66,6 +66,28 @@
           "ninebark_tonic"
         ]
       }
+    },
+    {
+      "id": "what_denned_in_the_kiln",
+      "name": "What Denned in the Kiln",
+      "area": "emberwick_row",
+      "summary": "[PLACEHOLDER] Something cinder-built has moved into Emberwick Row's kiln, and the village cannot fire anything while it's there.",
+      "steps": [
+        {
+          "id": "arrival",
+          "objective": "[PLACEHOLDER] Find out why the kiln has gone cold."
+        },
+        {
+          "id": "cleared",
+          "objective": "[PLACEHOLDER] Clear whatever has denned in the brush south of the kiln."
+        }
+      ],
+      "reward": {
+        "coin": 140,
+        "items": [
+          "ninebark_tonic"
+        ]
+      }
     }
   ]
 }

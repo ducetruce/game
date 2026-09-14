@@ -1,0 +1,167 @@
+{
+  "id": "emberwick_row",
+  "display_name": "[PLACEHOLDER] Emberwick Row",
+  "player_start": [
+    36,
+    10
+  ],
+  "coin_reward": [
+    22,
+    34
+  ],
+  "arrival_quest": "what_denned_in_the_kiln",
+  "arrival_step": "arrival",
+  "tiles": [
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGT",
+    "TGGTTTTGGGGGGGGGGGGGGGGGGGGGGGTTTTTGGGGT",
+    "TGGTTTTGGGGGGGGGGGGGGGGGGGGGGGTTTTTGGGGT",
+    "TGGTTTTGGGGGGGGGGGGGGGGGGGGGGGTTTTTGGGGT",
+    "TGGGGGGGGGGGGGccccccccccccccGGGGGGGGGGGT",
+    "TGGGGGGGGGGGGGccccVVVVVVccccGGGGGGGGGGGT",
+    "TGGGGGGGGGGGGGccccRRRRRRccccGGGGGGGGGGGT",
+    "TGTTTGGGGGGGGGccccRRRRRRccccGGGGGGGGGGGT",
+    "TGTTTGGGGGGGGGccccHHHHHHccccPPPPPPPPPPPT",
+    "TGGGVVVVGGGGGGccccHHHHHHccccPPPPPPPPPPPT",
+    "TGGGHHHHGGGGGGccccHHHHHHccccGGVVVVGGGGGT",
+    "TGGGHHHHGGGGGGccccccccccccccGGHHHHGGGGGT",
+    "TGGGGGGGGGGGGGcbbbbbbbbbbbbcGGHHHHGGGGGT",
+    "TGGTTTTGGGGGGGcbbbbbbbbbbbbcGGGGGGGGGGGT",
+    "TGGTTTTGGGGGGGGbbbbbbbbbbbbGGGGGGGGGGGGT",
+    "TGGTTTTGGGGGGGGbbbbbbbbbbbbGGGGGGGGGGGGT",
+    "TGGTTTTGGGGGGGGbbbbbbbbbbbbGGGGGGGGGGGGT",
+    "TGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+  ],
+  "objects": [
+    {
+      "type": "warp",
+      "tile": [
+        38,
+        10
+      ],
+      "target_map": "village_square",
+      "target_tile": [
+        0,
+        3
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        38,
+        11
+      ],
+      "target_map": "village_square",
+      "target_tile": [
+        1,
+        4
+      ]
+    },
+    {
+      "type": "spring",
+      "tile": [
+        12,
+        10
+      ],
+      "text": [
+        "[PLACEHOLDER] The row's own well, upwind of the kiln smoke."
+      ]
+    },
+    {
+      "type": "npc",
+      "tile": [
+        20,
+        13
+      ],
+      "name": "[PLACEHOLDER] The Kiln Warden",
+      "tint": [
+        0.85,
+        0.55,
+        0.45
+      ],
+      "quest": "what_denned_in_the_kiln",
+      "text": [
+        "[PLACEHOLDER] Nobody has fired anything in this kiln for a week."
+      ],
+      "quest_text": [
+        {
+          "from": "arrival",
+          "text": [
+            "[PLACEHOLDER] You'll want to know why the kiln's cold. Everyone who walks in does.",
+            "[PLACEHOLDER] Something moved into the flue a week back. Cinder-built, by the marks it left.",
+            "[PLACEHOLDER] Every firing since has gone wrong. We can't work until it's out of there.",
+            "[PLACEHOLDER] It's denned in the brush south of the kiln, where the ground still holds the heat. Go and see to it."
+          ]
+        },
+        {
+          "from": "cleared",
+          "text": [
+            "[PLACEHOLDER] The kiln's already drawing better. Whatever you did, it worked."
+          ]
+        }
+      ],
+      "requires": {
+        "kind": "defeated",
+        "species": "emberwick",
+        "count": 3,
+        "text": [
+          "[PLACEHOLDER] It's still out there. You'll know when it isn't."
+        ]
+      },
+      "sets_step": "cleared",
+      "completes_quest": true
+    },
+    {
+      "type": "sign",
+      "tile": [
+        16,
+        9
+      ],
+      "text": [
+        "[PLACEHOLDER] The kiln. Built of the same stone as the row itself, and about as old."
+      ]
+    }
+  ],
+  "encounters": {
+    "b": {
+      "chance": 0.16,
+      "table": [
+        {
+          "species": "emberwick",
+          "weight": 50,
+          "levels": [
+            13,
+            17
+          ]
+        },
+        {
+          "species": "moorhound",
+          "weight": 20,
+          "levels": [
+            12,
+            16
+          ]
+        },
+        {
+          "species": "gloamkin",
+          "weight": 15,
+          "levels": [
+            12,
+            15
+          ]
+        },
+        {
+          "species": "rushwither",
+          "weight": 15,
+          "levels": [
+            12,
+            15
+          ]
+        }
+      ]
+    }
+  }
+}

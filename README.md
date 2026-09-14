@@ -193,7 +193,8 @@ selling the **Knitbone Salve** (heals mid-battle), the **Waking Root**
 (brings a fainted creature back halfway, out of battle) and the **Heartwood
 Root** (brings one back whole, for more than twice the price) — none of which
 the clearing's shopkeeper stocks. Walk back south through the same
-gap to return.
+gap to return. A gap in the *west* tree line leads to **Emberwick Row** — see
+below.
 
 North again, through the gap in Aldenmere's far tree line, is the **Fen
 Road** — the long crossing to the mere, levels 5–10 and weighted to the low
@@ -240,6 +241,14 @@ the cut, that is the thing you went to see.
 
 People say different things as the story moves, including people you have
 already talked to. It is worth going back.
+
+Two more quests exist past that one. The **Sluice Works**, a room beneath the
+fen road reached through a hatch beside the sluice, holds an empty
+counterweight cradle — someone in Aldenmere can cast a replacement, if you
+bring them something to cast it from. And **Emberwick Row**, through
+Aldenmere's west gap, has a kiln gone cold and something living in the brush
+behind it. `tools/script.py check` lists every line still to be written for
+either.
 
 ### Taming a wild creature
 
@@ -458,6 +467,6 @@ text editor to see exactly what got saved, or delete it to start over.
 8. 🚧 The ten quests and the Elder's Gauntlet — see `docs/DESIGN.md` § 36 for
    the proposed ten and the order to build them in. The gauntlet's mechanism
    is built (§ 39): three trials, two kinds, gated on `gauntlet_requirement`
-   quests. Two of the ten quests exist. Everything past the second is
+   quests. Three of the ten quests exist. Everything past the first is
    `[PLACEHOLDER]`, waiting on the user's own words — see "Writing the story"
    above and `python3 tools/script.py check` for exactly what is left
