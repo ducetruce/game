@@ -1480,7 +1480,10 @@ somewhere it has not been yet where it can: picking uniformly at random made
 read off `scenes/overworld/maps/` rather than named in the script, so a map
 added later is soaked without anyone remembering to add it, and a run too
 short to have had a trip due for every map says so instead of either failing
-for being short or quietly claiming a coverage it never attempted.
+for being short or quietly claiming a coverage it never attempted. Trips due
+are counted rather than flagged, since a single long battle can span three of
+them and a flag collapses those into one -- which failed the coverage check
+for something that was not the game's fault.
 
 F1 is in the key mix, so the debug menu gets scanned like everything else.
 That is how the tenth command got caught clipping off the bottom of a panel

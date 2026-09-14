@@ -114,10 +114,11 @@ var _nudges := 0
 var _returns_to_title := 0
 var _map_ids := PackedStringArray()
 var _travels := 0
-## Set when a trip comes due and cleared only once one actually happens: the
-## moment it falls on is as likely as not to be mid-battle or mid-fade, and a
-## trip that is simply skipped then is a map never visited.
-var _travel_due := false
+## Trips that have come due and not yet happened. A count rather than a flag:
+## the moment one falls on is as likely as not to be mid-battle, and a long
+## battle can span three due points -- which a flag collapses into one trip,
+## leaving maps unvisited through no fault of the game.
+var _travels_due := 0
 var _reported := false
 var _worst_freeze := 0
 var _failures: Array[String] = []
@@ -221,8 +222,8 @@ func _process(_delta: float) -> bool:
 	_drive_input()
 	_observe()
 	if _frames % TRAVEL_EVERY_FRAMES == 0:
-		_travel_due = true
-	if _travel_due:
+		_travels_due += 1
+	if _travels_due > 0:
 		_travel()
 
 	if _frames >= _total_frames:
@@ -290,7 +291,7 @@ func _travel() -> void:
 	var pick := pool[_rng.randi_range(0, pool.size() - 1)]
 	if pick == _map_id():
 		return
-	_travel_due = false
+	_travels_due -= 1
 	_travels += 1
 	_overworld.call("_on_debug_command", "goto_" + pick)
 
@@ -401,12 +402,16 @@ func _report() -> void:
 	maps.sort()
 	print("soak: walked %.0fpx across %d map(s) (%s), %d deliberate trip(s)"
 		% [_distance, maps.size(), ", ".join(maps), _travels])
-	# Only a fair demand if the run was long enough to have had a trip due for
-	# each map. Asserted unconditionally, a short soak fails for being short;
-	# skipped silently, a short soak claims a coverage it never attempted.
+	# Only a fair demand if the run actually had the chances. Asserted
+	# unconditionally, a short soak fails for being short; skipped silently, a
+	# short soak claims a coverage it never attempted, so both cases say so.
 	if _total_frames < TRAVEL_EVERY_FRAMES * _map_ids.size():
 		print("soak: too short to expect every map (needs %d frames); coverage not checked"
 			% (TRAVEL_EVERY_FRAMES * _map_ids.size()))
+		return
+	if _travels + 1 < _map_ids.size():
+		print("soak: only %d trip(s) happened, most of the run went elsewhere; coverage not checked"
+			% _travels)
 		return
 	for map_id in _map_ids:
 		if not _maps_seen.has(map_id):
