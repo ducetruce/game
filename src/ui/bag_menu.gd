@@ -72,8 +72,11 @@ func _refresh_items() -> void:
 		if item == null:
 			continue
 		var kind := str(item.effect.get("kind", ""))
+		# Keepsakes are listed so the player can see what they are carrying
+		# for whom, and refused on use: a thing you are meant to hand over is
+		# not a thing the bag can do anything with.
 		if kind in [ItemData.EFFECT_HEAL, ItemData.EFFECT_REVIVE,
-				ItemData.EFFECT_RESTORE_USES]:
+				ItemData.EFFECT_RESTORE_USES, ItemData.EFFECT_KEEPSAKE]:
 			_items.append(item_id)
 
 
@@ -133,6 +136,10 @@ func _confirm() -> void:
 		_close()
 		return
 	if _step == Step.ITEMS:
+		var picked := Content.get_item(_items[_cursor]) if _cursor < _items.size() else null
+		if picked != null and str(picked.effect.get("kind", "")) == ItemData.EFFECT_KEEPSAKE:
+			_say("The %s is for somebody else's hands." % picked.display_name)
+			return
 		_chosen = _cursor
 		_step = Step.TARGET
 		_cursor = 0

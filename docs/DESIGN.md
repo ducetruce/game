@@ -1910,6 +1910,106 @@ build the flesh before the skeleton.
 
 ---
 
+## 37. The Weight of the Lock, and a script the writer owns
+
+Quest two, built to prove out the `has_item` gate end to end: the sluice gate
+on the fen road turns on a counterweight that is missing. The player finds
+the empty cradle in a new interior below the road (the Sluice Works -- the
+project's first `s`/`M` tiles, worked stone floor and machinery, added to the
+placeholder generator and the tile legend alongside it, docs/DESIGN.md § 6's
+16x16 contract unchanged), carries scavenged plate iron to Aldenmere's
+founder, and carries the cast weight back to hang it. Two round trips between
+two areas, which is a shape none of the earlier quests needed and the
+validator's reachability checks had not been asked to prove out.
+
+**Keepsake items.** The iron and the weight are both `data/items.json`
+entries with a new effect kind, `keepsake`, which does nothing when used --
+using it is not what it is for. A keepsake exists to be carried to somebody
+and handed over, which `has_item`/`consume` already does; giving it its own
+inventory would have meant teaching the bag, the shops, the save file, and
+the obtainability check a second system for the same idea. The bag lists a
+keepsake (so the player can see what they're carrying and for whom) and
+refuses to let it be "used."
+
+**Objects can hand the player something now** (`gives: {item, count}`), the
+mirror of `requires`. Tied to the same step the object sets, so a shelf of
+scavengeable iron gives once rather than every time it's read -- unless an
+object sets no step, in which case it gives every time, which is a deliberate
+authoring choice (a renewable source) rather than an oversight.
+
+**A refusal is scoped to the object's actual job, not just its step.** The
+cradle both sets an early step (on first being seen) and completes the quest
+later (once paid). Gating its `requires` check on "has the step been
+reached" meant that once the step was set, walking back with the weight in
+hand found the gate already open and skipped taking the item -- the *step*
+had been reached, but the *completion* had not. The check now asks "is there
+still something for this object to do," which for a completer means "is the
+quest still open," and the bug (found by a scripted probe walking the whole
+quest, not by inspection) does not recur elsewhere because nothing else yet
+shares that shape -- worth watching for as more quests reuse an object for
+two beats.
+
+**One more small fix in the same pass:** `DialogueBox.show_pages` correctly
+refuses to interrupt a conversation already on screen, but that meant a
+follow-up message -- an item handed over, a quest's payout -- queued right
+after an object's own lines was silently dropped rather than shown. It now
+has `append_pages`, which extends the open conversation instead of trying to
+start a second one; the overworld's "you now have X" and quest-complete lines
+both go through it.
+
+## 38. The story becomes the user's, in `script/`
+
+The user asked to write the story personally, with no coding background, and
+to batch story questions to one sitting rather than mid-task. That rules out
+editing `data/*.json` directly -- a misplaced comma breaks the file, quotes
+need escaping, and nothing about it reads as prose -- and rules out routing
+every line through this session, which does not scale to fifteen villages of
+it and defeats the point of it being theirs.
+
+`tools/script.py` is the bridge: `export` pulls every piece of in-game text
+out of `data/*.json` into `script/*.md`, one file per map plus one each for
+quests, items, and creatures, as plain Markdown -- a `## heading` per
+object, a `- ` bullet per page of dialogue. `import` reads it back and
+rewrites only the text fields it understands, touching nothing structural.
+Each object carries an HTML-comment marker (`<!-- object 3 -->`,
+`<!-- quest the_dry_cut -->`) that ties its text back to the right place in
+the JSON; the marker is how re-identification survives the writer renaming a
+heading's human-readable half (`## npc at 16,9` can become anything) while
+still refusing a rename of the part that is structure (a `### step X`
+heading naming a step id that doesn't exist is an import error, not a
+silent no-op).
+
+Three properties were worth building in rather than trusting to convention,
+because the person using this tool is explicitly not going to be reading the
+Python:
+
+- **It fails loudly and changes nothing.** A bullet missing its `- `, a
+  quest step renamed in the heading, text sitting under no recognised
+  heading -- every one of these is a `ScriptError` naming the file and line,
+  raised before anything is written. There is no partial-write state to
+  reason about.
+- **`export` cannot silently eat a draft.** It always regenerates
+  `script/*.md` from `data/*.json`, which is correct until the writer has an
+  edit sitting in a `.md` file that `import` hasn't pulled in yet and this
+  session regenerates that same file for some other reason (new quest
+  content, say). `export` now dry-runs the import of every existing
+  `script/*.md` first and refuses to overwrite any file that would change --
+  i.e. any file with pending, unimported writing -- unless told `--force`.
+- **`check` round-trips through a scratch directory** (export, then import,
+  then diff against the original JSON) and reports every `[PLACEHOLDER]`
+  line left to write, so "does this tool still work" and "how much of the
+  game is unwritten" are the same command.
+
+`[PLACEHOLDER]` is the convention for unwritten prose: every line of new
+content built without the user's own words carries it, so `check` is a
+complete list of what the user still needs to pass over -- currently the
+Sluice Works quest end to end (signs, the founder's lines, the quest's own
+summary and four step objectives) and the two keepsake item descriptions
+from § 37.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
@@ -1930,4 +2030,6 @@ decisions to make, plus what has not been reached yet.
   half of the API now exists (§ 25).
 - Whether storage should ever be partitioned into boxes, which only matters
   once anyone fills 60 slots (§ 24).
-- Tamer battles, which Attunement is now explicitly not part of.
+- The prose itself, quest 2 onward (§ 38) -- everything marked
+  `[PLACEHOLDER]` is placed, gated, and reachable, and is waiting on the
+  user's own words rather than a decision from either side.

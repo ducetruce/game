@@ -26,6 +26,7 @@ const COMMANDS := [
 	["goto_hollow_clearing", "Go to the Hollow Clearing"],
 	["goto_village_square", "Go to Aldenmere"],
 	["goto_fen_road", "Go to the Fen Road"],
+	["goto_sluice_works", "Go to the Sluice Works"],
 	["goto_mere_shore", "Go to the Hollowmere"],
 	["restore", "Patch the party up"],
 	["encounter", "Force an encounter"],

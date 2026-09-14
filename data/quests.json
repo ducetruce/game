@@ -32,7 +32,39 @@
       ],
       "reward": {
         "coin": 150,
-        "items": ["heartwood_root"]
+        "items": [
+          "heartwood_root"
+        ]
+      }
+    },
+    {
+      "id": "the_weight_of_the_lock",
+      "name": "The Weight of the Lock",
+      "area": "sluice_works",
+      "summary": "[PLACEHOLDER] The sluice gate on the fen road is sound in every part but one: the counterweight that turns it is gone.",
+      "steps": [
+        {
+          "id": "way_down",
+          "objective": "[PLACEHOLDER] Look around the works under the sluice."
+        },
+        {
+          "id": "the_gap",
+          "objective": "[PLACEHOLDER] Find something the counterweight could be made from."
+        },
+        {
+          "id": "the_founder",
+          "objective": "[PLACEHOLDER] Take the iron to the founder in Aldenmere."
+        },
+        {
+          "id": "hang_it",
+          "objective": "[PLACEHOLDER] Hang the new weight in the cradle under the sluice."
+        }
+      ],
+      "reward": {
+        "coin": 120,
+        "items": [
+          "ninebark_tonic"
+        ]
       }
     }
   ]

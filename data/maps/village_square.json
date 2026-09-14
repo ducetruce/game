@@ -216,6 +216,50 @@
         21,
         1
       ]
+    },
+    {
+      "type": "npc",
+      "tile": [
+        10,
+        14
+      ],
+      "tint": [
+        0.7,
+        0.7,
+        0.8
+      ],
+      "quest": "the_weight_of_the_lock",
+      "text": [
+        "[PLACEHOLDER] The founder. Soot to the elbow, and a way of looking at you as though weighing you."
+      ],
+      "quest_text": [
+        {
+          "from": "the_founder",
+          "text": [
+            "[PLACEHOLDER] Plate iron from the works? That'll cast. Give it here and come back when the mould's cold."
+          ]
+        },
+        {
+          "from": "hang_it",
+          "text": [
+            "[PLACEHOLDER] It's done. Hang it true, or the gate will bind."
+          ]
+        }
+      ],
+      "requires": {
+        "kind": "has_item",
+        "item": "sluice_iron",
+        "count": 1,
+        "consume": true,
+        "text": [
+          "[PLACEHOLDER] I can cast anything you like, if you bring me something to cast it from."
+        ]
+      },
+      "gives": {
+        "item": "lock_weight",
+        "count": 1
+      },
+      "sets_step": "hang_it"
     }
   ],
   "tiles": [

@@ -30,14 +30,15 @@ EFFECT_KINDS = ("stat_stage", "heal")
 
 # Mirrors src/overworld/tile_legend.gd. Duplicated on purpose: the point of
 # this check is to catch the two drifting apart.
-WALKABLE_TILES = set("GgPpbcr")
-SOLID_TILES = set("WRTFHV")
+WALKABLE_TILES = set("GgPpbcrs")
+SOLID_TILES = set("WRTFHVM")
 OBJECT_TYPES = ("sign", "spring", "shop", "npc", "shrine", "warp", "tamer")
 
 # Mirrors ItemData.EFFECT_KINDS, which is what BattleState._do_item can
 # actually apply. Duplicated on purpose, same as the tile legend: the point is
 # to catch the two drifting apart.
-ITEM_EFFECT_KINDS = ("restrain_hit", "heal", "revive", "restore_uses")
+ITEM_EFFECT_KINDS = ("restrain_hit", "heal", "revive", "restore_uses",
+                     "keepsake")
 TEMPERAMENT_NAMES = ("skittish", "proud", "feral")
 # Mirrors the flavor_state values BattleState._tick_reactive_resonance /
 # _tick_feral_resonance actually look up -- a state missing here fails
@@ -88,8 +89,11 @@ def check_items(types_unused=None) -> dict:
             if key not in item:
                 err(where, "missing required key '%s'" % key)
         price = item.get("price")
-        if not isinstance(price, int) or price <= 0:
-            err(where, "price must be a positive integer, got %r" % price)
+        keepsake = isinstance(item.get("effect"), dict) \
+            and item["effect"].get("kind") == "keepsake"
+        if not isinstance(price, int) or price < 0 or (price == 0 and not keepsake):
+            err(where, "price must be a positive integer (zero only for a"
+                " keepsake, which is not for sale), got %r" % price)
 
         effect = item.get("effect")
         if not isinstance(effect, dict):
@@ -114,6 +118,12 @@ def check_items(types_unused=None) -> dict:
             # defeat penalty exists to charge for. See DESIGN.md section 23.
             if effect["kind"] == "revive" and item.get("usable_in_battle"):
                 err(where, "a revive must not be usable_in_battle")
+        elif effect["kind"] == "keepsake":
+            # Nothing to configure, but a keepsake in a battle menu is a row
+            # that does nothing when picked.
+            if item.get("usable_in_battle"):
+                err(where, "a keepsake must not be usable_in_battle; it does"
+                    " nothing when used")
         elif effect["kind"] == "restore_uses":
             uses = effect.get("uses")
             if not isinstance(uses, int) or uses <= 0:
@@ -636,6 +646,17 @@ def check_maps(types: list[str], creatures: dict, items: dict,
                 for point in spec.get("patrol", []):
                     walkable_at(point, "%s.patrol point" % label)
 
+            gift = spec.get("gives")
+            if gift is not None:
+                if not isinstance(gift, dict) or gift.get("item") not in items:
+                    err(where, "%s gives unknown item %r" % (label, gift))
+                else:
+                    sold.add(gift["item"])
+                    gift_count = gift.get("count", 1)
+                    if not isinstance(gift_count, int) or gift_count <= 0:
+                        err(where, "%s gives count must be a positive integer"
+                            % label)
+
             wants = spec.get("requires")
             if wants is not None:
                 if not isinstance(wants, dict):
@@ -963,8 +984,8 @@ def check_obtainable(creatures: dict, items: dict, sold: set, encountered: set) 
         if item_id in granted or item_id in sold:
             continue
         err("items.json '%s'" % item_id,
-            "is stocked by no shop on any map and is not granted at the start,"
-            " so there is no way to obtain it")
+            "is stocked by no shop, given by no object, and not granted at the"
+            " start, so there is no way to obtain it")
 
 
 def main() -> int:

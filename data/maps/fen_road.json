@@ -255,6 +255,28 @@
         "\"I have been walking this road thinking about the way you opened. I have an answer for it now.",
         "Come back up the fen when you can spare the afternoon. -- Ostry\""
       ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        15,
+        12
+      ],
+      "target_map": "sluice_works",
+      "target_tile": [
+        12,
+        15
+      ]
+    },
+    {
+      "type": "sign",
+      "tile": [
+        16,
+        13
+      ],
+      "text": [
+        "[PLACEHOLDER] An iron hatch in the bank beside the sluice, its ring worn bright. It is not locked."
+      ]
     }
   ],
   "encounters": {

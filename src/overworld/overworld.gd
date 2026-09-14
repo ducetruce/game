@@ -158,6 +158,7 @@ func _load_map(map_id: String, target: Variant) -> void:
 	_map.checkpoint_reached.connect(_autosave)
 	_map.quest_completed.connect(_on_quest_completed)
 	_map.challenge_requested.connect(_on_challenge_requested)
+	_map.item_received.connect(_on_item_received)
 
 	var position := _map.player_spawn_position()
 	if target is Vector2i:
@@ -571,6 +572,16 @@ func _on_battle_finished(outcome: int) -> void:
 		]))
 
 
+## Appends "you now have X" to whatever the object said. Queued onto the open
+## dialogue rather than shown as its own box, so the sequence reads as one
+## conversation.
+func _on_item_received(item_id: String, count: int) -> void:
+	var item := Content.get_item(item_id)
+	var name := item.display_name if item != null else item_id
+	var line := "[ %s -- %d ]" % [name, count] if count > 1 else "[ %s ]" % name
+	_dialogue.append_page(line)
+
+
 ## Says what a finished quest paid. The map emits and knows nothing about coin
 ## or dialogue; this is the only place that puts the two together.
 func _on_quest_completed(quest_id: String, reward: Dictionary) -> void:
@@ -602,7 +613,9 @@ func _on_quest_completed(quest_id: String, reward: Dictionary) -> void:
 	else:
 		lines.append("%d of the %d the elders count. %s to go."
 			% [done, needed, needed - done])
-	_dialogue.show_pages(lines)
+	# Appended, not shown: the object that finished the quest has just opened
+	# a conversation of its own, and show_pages() refuses over an open one.
+	_dialogue.append_pages(lines)
 
 
 func _fade_to(alpha: float) -> void:

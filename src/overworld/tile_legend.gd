@@ -18,6 +18,7 @@ const GROUND := {
 	"b": Vector2i(4, 0),  # bracken -- walkable, and where encounters happen
 	"c": Vector2i(5, 0),  # plaza -- walkable, flagstone village ground
 	"r": Vector2i(7, 0),  # reeds -- walkable, encounter terrain at the water
+	"s": Vector2i(6, 0),  # worked stone floor -- walkable, interiors
 }
 
 ## Painted into the Obstacles layer, which carries the tileset's physics layer.
@@ -30,6 +31,7 @@ const SOLID := {
 	"F": Vector2i(3, 1),  # fence
 	"H": Vector2i(5, 1),  # wall -- a building's ground floor
 	"V": Vector2i(6, 1),  # roof -- goes directly above an H tile
+	"M": Vector2i(4, 1),  # machinery -- solid, what an interior is full of
 }
 
 
@@ -41,6 +43,7 @@ const TERRAIN_NAMES := {
 	"r": "the reeds",
 	"G": "the long grass",
 	"g": "the long grass",
+	"s": "the dark under the gearing",
 }
 const DEFAULT_TERRAIN_NAME := "cover"
 

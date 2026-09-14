@@ -55,6 +55,26 @@
         "kind": "revive",
         "percent": 100
       }
+    },
+    {
+      "id": "sluice_iron",
+      "name": "Sluice Iron",
+      "description": "[PLACEHOLDER] Old plate iron from the works, heavy and pitted. Enough to cast something from.",
+      "price": 0,
+      "usable_in_battle": false,
+      "effect": {
+        "kind": "keepsake"
+      }
+    },
+    {
+      "id": "lock_weight",
+      "name": "Lock Weight",
+      "description": "[PLACEHOLDER] A cast counterweight, still warm at the core. Made to hang from one particular chain.",
+      "price": 0,
+      "usable_in_battle": false,
+      "effect": {
+        "kind": "keepsake"
+      }
     }
   ]
 }

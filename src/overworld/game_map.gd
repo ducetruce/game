@@ -15,6 +15,9 @@ signal shop_requested(catalog: PackedStringArray)
 signal storage_requested
 ## A rest spring was used. The overworld treats this as a save point.
 signal checkpoint_reached
+## An object handed the player something. The overworld says so after the
+## object's own lines.
+signal item_received(item_id: String, count: int)
 ## A tamer wants a fight. The overworld owns battles; the map only places the
 ## person and says who they are.
 signal challenge_requested(tamer_id: String)
@@ -324,7 +327,30 @@ func _on_read_requested(pages: PackedStringArray, spec: Dictionary = {}) -> void
 		dialogue_requested.emit(refusal)
 		return
 	dialogue_requested.emit(_speech_for(spec, pages))
+	_give(spec)
 	_advance_quest(spec)
+
+
+## Hands the player whatever this object `gives`, once. Tied to the quest step
+## the object sets, when it sets one: the gift is part of that beat, and a
+## beat already reached is not repeated. An object that gives but sets no
+## step gives every time it is read, which is what a shelf of something
+## would do and is a data-authoring choice rather than a bug.
+func _give(spec: Dictionary) -> void:
+	var gift: Dictionary = spec.get("gives", {})
+	if gift.is_empty():
+		return
+	var quest_id := str(spec.get("quest", ""))
+	var step := str(spec.get("sets_step", ""))
+	if not quest_id.is_empty() and not step.is_empty() \
+			and Journal.reached(quest_id, step):
+		return
+	var item_id := str(gift.get("item", ""))
+	var count := maxi(1, int(gift.get("count", 1)))
+	if Content.get_item(item_id) == null:
+		return
+	Inventory.add(item_id, count)
+	item_received.emit(item_id, count)
 
 
 ## Which lines an object says right now.
@@ -375,13 +401,20 @@ func _unmet_requirement(spec: Dictionary) -> PackedStringArray:
 	var wants: Dictionary = spec.get("requires", {})
 	if wants.is_empty():
 		return PackedStringArray()
-	# Only asked for while the quest is still waiting on it. Walking back past
-	# a door you have already opened should not be asked to open it again.
+	# Only asked for while the object still has something to do. Walking back
+	# past a door you have already opened should not be asked to open it
+	# again. "Something to do" is completing the quest if this object does
+	# that, else reaching its step -- keyed to the step alone, the cradle that
+	# both marks a step early and finishes the quest later was skipping its
+	# gate on the return trip, and the weight it asked for was never taken.
 	var quest_id := str(spec.get("quest", ""))
 	var step := str(spec.get("sets_step", ""))
-	if not quest_id.is_empty() and not step.is_empty() \
-			and Journal.reached(quest_id, step):
-		return PackedStringArray()
+	if not quest_id.is_empty():
+		if bool(spec.get("completes_quest", false)):
+			if Journal.is_complete(quest_id):
+				return PackedStringArray()
+		elif not step.is_empty() and Journal.reached(quest_id, step):
+			return PackedStringArray()
 
 	var kind := str(wants.get("kind", ""))
 	var met := false

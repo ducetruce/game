@@ -129,8 +129,9 @@ def speckle(c: Canvas, ox: int, oy: int, base, hi, lo, seed: int, density: int =
 
 
 # --- tile atlas ------------------------------------------------------------
-# Layout is 7 columns x 2 rows. Row 0 is walkable, row 1 is solid. The tileset
-# resource and src/overworld/tile_legend.gd both depend on these coordinates.
+# Layout is 8 columns x 2 rows. Row 0 is walkable, row 1 is solid. The tileset
+# resource and src/overworld/tile_legend.gd both depend on these coordinates,
+# and assets/tilesets/placeholder_tileset.tres has to declare each one it uses.
 
 BRACKEN = (52, 84, 54, A)
 BRACKEN_HI = (74, 112, 70, A)
@@ -153,6 +154,17 @@ TIMBER = (86, 62, 44, A)
 ROOF = (142, 76, 58, A)
 ROOF_HI = (168, 100, 78, A)
 ROOF_LO = (108, 54, 40, A)
+
+# Interiors. Colder and greyer than anything outdoors, so stepping inside
+# reads as stepping inside without a caption.
+STONE = (104, 104, 112, A)
+STONE_HI = (126, 126, 134, A)
+STONE_LO = (78, 78, 86, A)
+
+IRON = (86, 84, 92, A)
+IRON_HI = (122, 120, 128, A)
+IRON_LO = (54, 52, 60, A)
+RUST = (122, 78, 52, A)
 
 
 def build_atlas() -> Canvas:
@@ -235,6 +247,24 @@ def build_atlas() -> Canvas:
     c.rect(TILE * 5 + 6, TILE + 5, 4, 11, TIMBER)  # door
     c.rect(TILE * 5 + 2, TILE + 4, 2, 3, TIMBER)  # shutter, left
     c.rect(TILE * 5 + 12, TILE + 4, 2, 3, TIMBER)  # shutter, right
+
+    # (6,0) worked stone floor -- walkable. Interiors, where there is no
+    # ground to speak of: flagged, jointed, and swept enough to walk on.
+    speckle(c, TILE * 6, 0, STONE, STONE_HI, STONE_LO, 97, density=60)
+    for gy in (0, 8):
+        c.rect(TILE * 6, gy, TILE, 1, STONE_LO)
+    for gx, gy in ((0, 0), (8, 8)):
+        c.rect(TILE * 6 + gx, gy, 1, 8, STONE_LO)
+
+    # (4,1) machinery -- solid. Gearing, shafting, and the frames that hold
+    # them: what an interior is full of that is not wall.
+    speckle(c, TILE * 4, TILE, IRON, IRON_HI, IRON_LO, 101, density=40)
+    c.rect(TILE * 4 + 2, TILE + 2, 12, 12, IRON_LO)
+    c.rect(TILE * 4 + 4, TILE + 4, 8, 8, IRON)
+    # A cog: four teeth and a hub, which is as much as 16px will carry.
+    for tx, ty in ((7, 1), (7, 13), (1, 7), (13, 7)):
+        c.rect(TILE * 4 + tx, TILE + ty, 2, 2, IRON_HI)
+    c.rect(TILE * 4 + 6, TILE + 6, 4, 4, RUST)
 
     # (6,1) roof -- solid, the upper half of the same building.
     speckle(c, TILE * 6, TILE, ROOF, ROOF_HI, ROOF_LO, 83, density=90)

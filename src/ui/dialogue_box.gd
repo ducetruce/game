@@ -36,6 +36,26 @@ func show_pages(pages: PackedStringArray) -> void:
 	opened.emit()
 
 
+## Adds pages to the conversation already on screen, or starts one if nothing
+## is. Exists because show_pages() refuses while a box is open -- rightly, two
+## conversations at once is a mess -- which silently dropped everything that
+## followed an object's own lines: the item it handed over, the quest it
+## finished. Those belong at the end of what it said, not instead of it.
+func append_pages(pages: PackedStringArray) -> void:
+	if pages.is_empty():
+		return
+	if not is_open():
+		show_pages(pages)
+		return
+	for page in pages:
+		_pages.append(page)
+	_refresh()
+
+
+func append_page(page: String) -> void:
+	append_pages(PackedStringArray([page]))
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo():
 		return

@@ -1,0 +1,100 @@
+{
+  "id": "sluice_works",
+  "display_name": "The Sluice Works",
+  "player_start": [
+    12,
+    15
+  ],
+  "tiles": [
+    "RRRRRRRRRRRRRRRRRRRRRRRR",
+    "RMMMMMMMMMMMMMMMMMMMMMMR",
+    "RMMMMMMMMMMMMMMMMMMMMMMR",
+    "RMMssssssMMMMMMssssssMMR",
+    "RMMssssssMMMMMMssssssMMR",
+    "RMMssssssMMMMMMssWWssMMR",
+    "RMMssssssMMMMMMssWWssMMR",
+    "RMMssssssMMMMMMssssssMMR",
+    "RMMssssssMMMMMMssssssMMR",
+    "RMMssssssssssssssssssMMR",
+    "RMMssssssssssssssssssMMR",
+    "RMMMMMMMMMMsssMMMMMMMMMR",
+    "RMMMMMMMMMMsssMMMMMMMMMR",
+    "RMMMMMMMMMMsssMMMMMMMMMR",
+    "RMMMMMMMMMMsssMMMMMMMMMR",
+    "RMMMMMMMMMMsssMMMMMMMMMR",
+    "RMMMMMMMMMMsssMMMMMMMMMR",
+    "RRRRRRRRRRRRRRRRRRRRRRRR"
+  ],
+  "objects": [
+    {
+      "type": "warp",
+      "tile": [
+        12,
+        16
+      ],
+      "target_map": "fen_road",
+      "target_tile": [
+        15,
+        13
+      ]
+    },
+    {
+      "type": "sign",
+      "tile": [
+        12,
+        12
+      ],
+      "text": [
+        "[PLACEHOLDER] A dented brass plate names the works and the year it was sunk into the wall."
+      ]
+    },
+    {
+      "type": "sign",
+      "tile": [
+        5,
+        5
+      ],
+      "quest": "the_weight_of_the_lock",
+      "text": [
+        "[PLACEHOLDER] The counterweight cradle. Chain, pulley, frame -- all of it sound. The cradle is empty."
+      ],
+      "quest_text": [
+        {
+          "from": "hang_it",
+          "text": [
+            "[PLACEHOLDER] The cradle takes the weight. The chain draws taut, and somewhere above you a gate you cannot see begins, slowly, to turn."
+          ]
+        }
+      ],
+      "sets_step": "the_gap",
+      "requires": {
+        "kind": "has_item",
+        "item": "lock_weight",
+        "count": 1,
+        "consume": true,
+        "text": [
+          "The cradle sits empty on its chain, waiting for a weight nobody living remembers hanging."
+        ]
+      },
+      "completes_quest": true
+    },
+    {
+      "type": "sign",
+      "tile": [
+        19,
+        4
+      ],
+      "quest": "the_weight_of_the_lock",
+      "text": [
+        "[PLACEHOLDER] Plate iron, stacked against the wall and forgotten. Old, but iron does not care."
+      ],
+      "gives": {
+        "item": "sluice_iron",
+        "count": 1
+      },
+      "sets_step": "the_founder"
+    }
+  ],
+  "arrival_quest": "the_weight_of_the_lock",
+  "arrival_step": "way_down"
+}
