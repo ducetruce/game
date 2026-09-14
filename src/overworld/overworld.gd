@@ -62,6 +62,10 @@ var _battle_foe_species := ""
 ## The tamer the current battle is against, and the letters waiting for a
 ## quiet moment to be delivered.
 var _pending_tamer := ""
+## Index into Content.gauntlet_trials of the trial the current battle is for,
+## or -1 when the current battle (if any) is not one. See "the gauntlet"
+## section below.
+var _pending_gauntlet_trial := -1
 var _pending_letters: Array[String] = []
 
 ## Set while a screen was opened *from* the pause menu, so closing it goes
@@ -158,6 +162,7 @@ func _load_map(map_id: String, target: Variant) -> void:
 	_map.checkpoint_reached.connect(_autosave)
 	_map.quest_completed.connect(_on_quest_completed)
 	_map.challenge_requested.connect(_on_challenge_requested)
+	_map.gauntlet_challenge_requested.connect(_on_gauntlet_challenge_requested)
 	_map.item_received.connect(_on_item_received)
 
 	var position := _map.player_spawn_position()
@@ -252,7 +257,10 @@ func _on_debug_command(id: String) -> void:
 		"coin":
 			Inventory.coin += 200
 		"items":
-			for item_id in ["tempering_draught", "knitbone_salve", "waking_root"]:
+			# Read off Content rather than a fixed list -- a hardcoded roster
+			# here has drifted stale before (only three of what were by then
+			# five items), the same class of bug as an unreachable species.
+			for item_id in Content.item_ids():
 				Inventory.add(item_id, 5)
 		"recruit":
 			_debug_recruit()
@@ -261,6 +269,8 @@ func _on_debug_command(id: String) -> void:
 		"encounter":
 			_debug_encounter()
 			return  # the encounter closes the menu itself
+		"unlock_gauntlet":
+			Journal.debug_force_gauntlet_unlock()
 		_:
 			if id.begins_with("goto_"):
 				_debug_goto(id.trim_prefix("goto_"))
@@ -464,6 +474,115 @@ func _begin_tamer_battle(spec: Dictionary, team: Array, who: String) -> void:
 	_busy = false
 
 
+# --- the gauntlet ------------------------------------------------------------
+# See docs/DESIGN.md § 39. Trials are strictly ordered; Journal.gauntlet_stage
+# is the index of the one still to attempt, and this section is the only
+# place that reads or advances it in response to play.
+
+## An elder in the gauntlet hall was approached.
+func _on_gauntlet_challenge_requested(trial_id: String) -> void:
+	if _busy or _battle != null:
+		return
+	var index := _gauntlet_trial_index(trial_id)
+	if index < 0:
+		push_error("Overworld: gauntlet trial '%s' is not in data/gauntlet.json." % trial_id)
+		return
+	var trial: Dictionary = Content.gauntlet_trials[index]
+	var who := str(trial.get("name", "An elder"))
+
+	if Journal.gauntlet_trial_passed_at(index):
+		_dialogue.show_pages(_pages(trial.get("passed_text", [
+			"%s has nothing more to prove between you." % who,
+		])))
+		return
+	if index != Journal.gauntlet_stage:
+		_dialogue.show_pages(_pages(trial.get("waiting_text", [
+			"%s will not go before the one ahead of them." % who,
+		])))
+		return
+	if not Party.has_any() or Party.all_fainted():
+		_dialogue.show_pages(PackedStringArray([
+			"%s looks at what you are carrying and decides against it." % who,
+		]))
+		return
+
+	_pending_gauntlet_trial = index
+	_begin_gauntlet_trial(trial)
+
+
+func _gauntlet_trial_index(trial_id: String) -> int:
+	for i in Content.gauntlet_trials.size():
+		if str(Content.gauntlet_trials[i].get("id", "")) == trial_id:
+			return i
+	return -1
+
+
+func _begin_gauntlet_trial(trial: Dictionary) -> void:
+	_busy = true
+	_player.input_enabled = false
+	await _fade_to(1.0)
+
+	var who := str(trial.get("name", "An elder"))
+	var intro := _pages(trial.get("intro", ["%s is ready for you." % who]))
+	var kind := str(trial.get("kind", ""))
+
+	_battle = BATTLE_SCENE.instantiate()
+	if kind == "tamer":
+		var team := _tamer_team(trial)
+		_battle.configure_tamer(
+			Party.members, team, who, int(trial.get("purse", 0)), intro)
+	else:
+		var wild := Creature.create(str(trial.get("species", "")), int(trial.get("level", 5)))
+		# Set the same way a roaming encounter sets it: an attune trial is a
+		# formal wild encounter, so defeating it (rather than taming it)
+		# should count toward a "defeated" quest requirement the same way any
+		# other wild win does.
+		_battle_foe_species = wild.species_id
+		var no_flee_message := str(trial.get("no_flee_message", "There is nowhere to run to."))
+		_battle.configure_gauntlet_attune(
+			Party.members, wild, _coin_bracket(trial.get("coin_reward", [])),
+			intro, no_flee_message)
+	_battle.finished.connect(_on_battle_finished)
+	_battle_layer.add_child(_battle)
+
+	await _fade_to(0.0)
+	_busy = false
+
+
+## What actually happened at the end of a gauntlet trial, decided from the
+## battle's own outcome plus which kind of trial it was: a tamer trial passes
+## on WON, an attune trial passes only on ATTUNED -- defeating that one
+## outright still ends the battle and still pays as any wild battle does, but
+## does not clear the trial. Shows the trial's own text throughout rather than
+## the generic wild-encounter lines _on_battle_finished would otherwise show,
+## since none of those (a path, water nearby) mean anything inside the hall.
+func _finish_gauntlet_trial(outcome: int) -> void:
+	var index := _pending_gauntlet_trial
+	_pending_gauntlet_trial = -1
+	if index < 0 or index >= Content.gauntlet_trials.size():
+		return
+	var trial: Dictionary = Content.gauntlet_trials[index]
+	var kind := str(trial.get("kind", ""))
+	var passed := (
+		(kind == "tamer" and outcome == BattleState.Phase.WON)
+		or (kind == "attune" and outcome == BattleState.Phase.ATTUNED)
+	)
+
+	if passed:
+		Journal.advance_gauntlet(index)
+		_dialogue.append_pages(_pages(trial.get("victory", ["Passed."])))
+		if Journal.gauntlet_finished_check():
+			_dialogue.append_pages(Content.gauntlet_victory_text)
+		return
+	if outcome == BattleState.Phase.WON:
+		# Only reachable for an attune trial: won by defeating rather than
+		# taming, which this trial does not accept.
+		_dialogue.append_pages(_pages(trial.get("spared", ["Not what was asked."])))
+		return
+	if outcome == BattleState.Phase.LOST:
+		_dialogue.append_pages(_pages(trial.get("defeat", ["Try again."])))
+
+
 ## A pigeon, when a tamer has had long enough to want another go. Delivered
 ## wherever the player happens to be standing, because a notification you have
 ## to go somewhere to collect is not a notification.
@@ -491,6 +610,15 @@ func _deliver_letter() -> void:
 	for line in body:
 		pages.append(line)
 	_dialogue.show_pages(pages)
+
+
+## A [low, high] coin bracket from data/gauntlet.json, the same shape a map's
+## own coin_reward is in. Zero on anything malformed, which BattleState.
+## coin_award() already reads as "pays nothing" rather than erroring.
+func _coin_bracket(value: Variant) -> Vector2i:
+	if value is Array and (value as Array).size() >= 2:
+		return Vector2i(int(value[0]), int(value[1]))
+	return Vector2i.ZERO
 
 
 func _pages(value: Variant) -> PackedStringArray:
@@ -535,6 +663,12 @@ func _on_battle_finished(outcome: int) -> void:
 		_battle.queue_free()
 		_battle = null
 
+	# Captured before _finish_gauntlet_trial clears it, so the generic
+	# messaging below can be skipped for a trial without needing to guess from
+	# the outcome alone -- a trial can end in WON, ATTUNED, or LOST, and only
+	# the last of those overlaps the ordinary wild-encounter case.
+	var was_gauntlet_trial := _pending_gauntlet_trial >= 0
+
 	# Counted before the battle node goes, since the tally is keyed on what was
 	# fought. "Slay this thing" is a quest shape and a step that asks for it
 	# needs somewhere to count -- see docs/DESIGN.md § 34.
@@ -564,7 +698,13 @@ func _on_battle_finished(outcome: int) -> void:
 	_player.input_enabled = true
 	_busy = false
 
-	if lost:
+	if was_gauntlet_trial:
+		# Entirely its own messaging -- a path and water nearby mean nothing
+		# standing in the gauntlet hall, and an attune trial can end in a way
+		# ("won, but not by taming it") the generic wording below has no
+		# concept of at all.
+		_finish_gauntlet_trial(outcome)
+	elif lost:
 		_dialogue.show_pages(PackedStringArray([
 			"You come to on the path, further back than you remember walking.",
 			"What you carry is still down, and lighter by whatever it cost to drag you here.",

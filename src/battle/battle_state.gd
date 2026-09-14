@@ -81,6 +81,13 @@ var _foe_healed_this_turn := false
 
 var _flee_attempts := 0
 
+## Set by a caller that wants running disallowed even though the foe is wild
+## -- a gauntlet trial, formally entered, rather than a chance meeting in a
+## field. `is_tamer` already refuses running for its own reason; this is the
+## same refusal for a battle that is not against a tamer at all.
+var no_flee := false
+var no_flee_message := "There is nowhere to run to."
+
 ## Moves a creature earned but had no room for, as {creature, move_id}. The
 ## battle screen drains these after a turn's messages and asks which move to
 ## give up -- silently dropping the move the player just earned is the one
@@ -387,6 +394,11 @@ func _do_flee(side: Side) -> void:
 		# thing from walking away from a field, and the game does not have it.
 		log_lines.append("%s is standing between you and the way out."
 			% _tamer_label())
+		return
+	if no_flee:
+		# A formal challenge, not an ordinary field encounter -- a gauntlet
+		# trial sets this even though the foe is wild. See docs/DESIGN.md § 39.
+		log_lines.append(no_flee_message)
 		return
 	_flee_attempts += 1
 	# Speed matters, but repeated attempts matter more, so a slow party is never

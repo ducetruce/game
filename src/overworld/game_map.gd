@@ -21,6 +21,9 @@ signal item_received(item_id: String, count: int)
 ## A tamer wants a fight. The overworld owns battles; the map only places the
 ## person and says who they are.
 signal challenge_requested(tamer_id: String)
+## A gauntlet trial-giver wants a fight. Same division: the map only places
+## them, the overworld knows what a gauntlet trial actually is.
+signal gauntlet_challenge_requested(trial_id: String)
 ## A quest was finished here, and paid what `reward` says. The overworld says
 ## so; the map knows nothing about how.
 signal quest_completed(quest_id: String, reward: Dictionary)
@@ -191,6 +194,8 @@ func _spawn_objects(objects: Array) -> void:
 				_spawn_shrine(spec)
 			"tamer":
 				_spawn_tamer(spec)
+			"gauntlet_trial":
+				_spawn_gauntlet_trial(spec)
 			"warp":
 				_register_warp(spec)
 			_:
@@ -296,6 +301,32 @@ func _on_challenge_requested(tamer_id: String) -> void:
 	challenge_requested.emit(tamer_id)
 
 
+## A gauntlet trial-giver, placed with just an `id` (matched against
+## data/gauntlet.json) and a `tile`. Everything else about the trial -- who
+## they are, what they fight with, what they say -- lives centrally in
+## Content.gauntlet_trials rather than per-map, since a trial belongs to the
+## gauntlet and not to any one place; only where its giver stands is the
+## map's to say. Reuses the Tamer scene for the visual (a person who can be
+## challenged) with its patrol left empty, so an elder stands their ground
+## rather than wandering. See docs/DESIGN.md § 39.
+func _spawn_gauntlet_trial(spec: Dictionary) -> void:
+	var trial: Tamer = TAMER_SCENE.instantiate()
+	trial.tamer_id = str(spec.get("id", ""))
+	if trial.tamer_id.is_empty():
+		push_error("%s: a gauntlet_trial needs an 'id' matching one in"
+			% map_data_path + " data/gauntlet.json.")
+	trial.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
+	if spec.has("tint"):
+		trial.tint = _color_from(spec["tint"])
+	trial.challenge_requested.connect(_on_gauntlet_trial_requested)
+	_apply_solidity(trial, spec)
+	_objects.add_child(trial)
+
+
+func _on_gauntlet_trial_requested(trial_id: String) -> void:
+	gauntlet_challenge_requested.emit(trial_id)
+
+
 ## Who a tamer on this map is, as the data declared them. Empty for an id this
 ## map does not have.
 func tamer_spec(tamer_id: String) -> Dictionary:
@@ -313,8 +344,22 @@ func _color_from(value: Variant) -> Color:
 	return Color(float(rgb[0]), float(rgb[1]), float(rgb[2]))
 
 
+## Solid unless the spec says otherwise -- or, if `blocks_until_met` is set
+## alongside a `requires`, solid until that requirement holds. Evaluated once,
+## at spawn: nothing on this map re-checks itself while the player stands on
+## it, the same as a shop's stock never restocking mid-visit, so becoming
+## eligible while already on the map takes leaving and coming back to show.
+## See docs/DESIGN.md § 39.
 func _apply_solidity(node: CollisionObject2D, spec: Dictionary) -> void:
 	var solid := bool(spec.get("solid", true))
+	if bool(spec.get("blocks_until_met", false)):
+		var wants: Dictionary = spec.get("requires", {})
+		# Never allowed to consume here: solidity is decided once at spawn,
+		# for every object on the map, well before the player has chosen to
+		# interact with any single one of them. A has_item requirement that
+		# consumed on this check would spend the player's item just for
+		# walking within render distance of a gate.
+		solid = not _requirement_met(wants, false)
 	node.collision_layer = LAYER_SOLID_PROP if solid else LAYER_WALKABLE_PROP
 
 
@@ -416,25 +461,34 @@ func _unmet_requirement(spec: Dictionary) -> PackedStringArray:
 		elif not step.is_empty() and Journal.reached(quest_id, step):
 			return PackedStringArray()
 
+	if _requirement_met(wants, true):
+		return PackedStringArray()
+	return _to_string_array(wants.get("text", ["Not yet."]))
+
+
+## The boolean core of a `requires` block, shared by the refusal message above
+## and the solidity gate in _apply_solidity. `allow_consume` is false from the
+## solidity path -- decided for every object at spawn, before the player has
+## chosen to interact with any of them -- and true from an actual interaction,
+## which is the only place a has_item requirement may spend what it asked for.
+func _requirement_met(wants: Dictionary, allow_consume: bool) -> bool:
 	var kind := str(wants.get("kind", ""))
-	var met := false
 	match kind:
 		"has_item":
 			var item_id := str(wants.get("item", ""))
 			var count := maxi(1, int(wants.get("count", 1)))
-			met = Inventory.count(item_id) >= count
-			if met and bool(wants.get("consume", false)):
+			var met := Inventory.count(item_id) >= count
+			if met and allow_consume and bool(wants.get("consume", false)):
 				for _i in count:
 					Inventory.consume(item_id)
+			return met
 		"defeated":
-			met = Journal.defeats_of(str(wants.get("species", ""))) \
-				>= maxi(1, int(wants.get("count", 1)))
+			return Journal.defeats_of(str(wants.get("species", ""))) >= maxi(1, int(wants.get("count", 1)))
+		"gauntlet_unlocked":
+			return Journal.gauntlet_unlocked()
 		_:
 			push_warning("%s: unknown requirement kind '%s'." % [map_data_path, kind])
-			met = true
-	if met:
-		return PackedStringArray()
-	return _to_string_array(wants.get("text", ["Not yet."]))
+			return true
 
 
 # --- encounters ------------------------------------------------------------

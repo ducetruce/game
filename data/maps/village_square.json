@@ -260,6 +260,40 @@
         "count": 1
       },
       "sets_step": "hang_it"
+    },
+    {
+      "type": "warp",
+      "tile": [
+        31,
+        10
+      ],
+      "target_map": "gauntlet_hall",
+      "target_tile": [
+        10,
+        16
+      ]
+    },
+    {
+      "type": "warp",
+      "tile": [
+        31,
+        11
+      ],
+      "target_map": "gauntlet_hall",
+      "target_tile": [
+        11,
+        16
+      ]
+    },
+    {
+      "type": "sign",
+      "tile": [
+        30,
+        10
+      ],
+      "text": [
+        "[PLACEHOLDER] A marker showing the way to the gauntlet hall. Where this actually stands, and what it looks like, is not yet decided -- this is a placeholder location."
+      ]
     }
   ],
   "tiles": [

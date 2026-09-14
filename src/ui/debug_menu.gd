@@ -28,12 +28,14 @@ const COMMANDS := [
 	["goto_fen_road", "Go to the Fen Road"],
 	["goto_sluice_works", "Go to the Sluice Works"],
 	["goto_mere_shore", "Go to the Hollowmere"],
+	["goto_gauntlet_hall", "Go to the Gauntlet Hall"],
 	["restore", "Patch the party up"],
 	["encounter", "Force an encounter"],
 	["coin", "+200 coin"],
 	["items", "Five of every item"],
 	["recruit", "Add a Lv12 creature"],
 	["level", "Party +3 levels"],
+	["unlock_gauntlet", "Finish enough quests to unlock the gauntlet"],
 ]
 
 var _cursor := 0

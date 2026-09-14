@@ -364,14 +364,43 @@ and may then carry:
   whose step the player has reached wins, falling back to the plain `text`
 - `sets_step` — moves the quest to that step when read
 - `completes_quest` — finishes it and pays, but only from the last step
-- `requires` — `{"kind": "has_item", "item": ..., "count": 1, "consume": true}`
-  or `{"kind": "defeated", "species": ..., "count": 3}`, plus a `text` saying
-  what is missing. Checked before anything moves; the refusal replaces the
-  object's lines rather than preceding them.
+- `gives` — `{"item": ..., "count": 1}`, hands the player something once (tied
+  to the same step `sets_step` moves to, so it isn't handed out twice)
+- `requires` — `{"kind": "has_item", "item": ..., "count": 1, "consume": true}`,
+  `{"kind": "defeated", "species": ..., "count": 3}`, or
+  `{"kind": "gauntlet_unlocked"}`, plus a `text` saying what is missing.
+  Checked before anything moves; the refusal replaces the object's lines
+  rather than preceding them. Add `"blocks_until_met": true` alongside
+  `requires` to make the object physically solid until it holds, checked once
+  when the map loads — the gauntlet hall's entrance works this way.
 
 A map may carry `arrival_quest` and `arrival_step`, for places that are
 themselves the beat. `tools/validate_data.py` checks all of it, including that
 every step is set by something somewhere and every quest has a completer.
+
+## The Elder's Gauntlet
+
+The endgame. Once `gauntlet_requirement` quests are finished, the entrance
+off Aldenmere's plaza (itself a placeholder location — see `docs/DESIGN.md`
+§ 39) opens, leading to a hall of trials defined in `data/gauntlet.json` and
+attempted strictly in order.
+
+Two kinds:
+
+- **`tamer`** — a formal battle against a team, exactly like a tamer fight
+  (`team`, `purse`, `intro`).
+- **`attune`** — a single wild creature (`species`, `level`, `coin_reward`)
+  that only counts as passed if you *tame* it — defeating it outright still
+  pays as any wild win does, but does not clear the trial, and shows
+  `spared` instead. Neither kind allows running.
+
+Each trial carries `intro`, `victory`, `defeat`, and optionally `passed_text`
+(re-approached after passing) and `waiting_text` (approached out of order).
+Passing the last trial shows the gauntlet's own `victory_text`. Place a trial
+in a map with `{"type": "gauntlet_trial", "id": "trial_one", "tile": [...]}` —
+the id has to match one in `data/gauntlet.json`; everything else about the
+trial lives there, not on the map. `F1` → *Finish enough quests to unlock the
+gauntlet* opens it for testing before ten real quests exist.
 
 ## Tuning Attunement
 
@@ -381,9 +410,12 @@ battle log picks from — no GDScript changes needed to retune or add a
 temperament. `data/items.json` holds each item's price and effect — the
 Tempering Draught's per-hit damage cap, the Knitbone Salve's heal
 percentage, the Ninebark Tonic's move uses. The effect kinds are
-`restrain_hit`, `heal`, `revive` and `restore_uses`; an item combining an
-existing kind with new numbers needs no code at all. Re-run `tools/validate_data.py` after editing either; it
-checks every temperament has the flavour lines the code actually looks up.
+`restrain_hit`, `heal`, `revive`, `restore_uses`, and `keepsake` (an item
+that does nothing when used — it exists to be carried to somebody and handed
+over via a quest's `requires`/`gives`, priced at 0 since it is never sold);
+an item combining an existing kind with new numbers needs no code at all.
+Re-run `tools/validate_data.py` after editing either; it checks every
+temperament has the flavour lines the code actually looks up.
 
 ## Saving and loading
 
@@ -423,5 +455,9 @@ text editor to see exactly what got saved, or delete it to start over.
    the level curve has somewhere to happen; one story, with a reason to
    walk north and something at the end of it; quests and an endgame to aim
    them at; and tamers who walk the roads and write to you afterwards
-8. ⬜ The ten quests and the Elder's Gauntlet — see `docs/DESIGN.md` § 36 for
-   the proposed ten and the order to build them in
+8. 🚧 The ten quests and the Elder's Gauntlet — see `docs/DESIGN.md` § 36 for
+   the proposed ten and the order to build them in. The gauntlet's mechanism
+   is built (§ 39): three trials, two kinds, gated on `gauntlet_requirement`
+   quests. Two of the ten quests exist. Everything past the second is
+   `[PLACEHOLDER]`, waiting on the user's own words — see "Writing the story"
+   above and `python3 tools/script.py check` for exactly what is left

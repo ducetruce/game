@@ -32,7 +32,9 @@ EFFECT_KINDS = ("stat_stage", "heal")
 # this check is to catch the two drifting apart.
 WALKABLE_TILES = set("GgPpbcrs")
 SOLID_TILES = set("WRTFHVM")
-OBJECT_TYPES = ("sign", "spring", "shop", "npc", "shrine", "warp", "tamer")
+OBJECT_TYPES = ("sign", "spring", "shop", "npc", "shrine", "warp", "tamer",
+                "gauntlet_trial")
+REQUIREMENT_KINDS = ("has_item", "defeated", "gauntlet_unlocked")
 
 # Mirrors ItemData.EFFECT_KINDS, which is what BattleState._do_item can
 # actually apply. Duplicated on purpose, same as the tile legend: the point is
@@ -452,15 +454,106 @@ def encounters_declared(doc: dict) -> bool:
     return isinstance(table, dict) and bool(table)
 
 
+def check_gauntlet(creatures: dict) -> dict:
+    """Returns {trial_id: kind} for the map checks to cross-reference."""
+    doc = load("gauntlet.json")
+    if doc is None:
+        return {}
+    trials_raw = require(doc, "trials", list, "gauntlet.json")
+    if trials_raw is None:
+        return {}
+    if not doc.get("hall_map"):
+        err("gauntlet.json", "needs a 'hall_map' naming the map the trials"
+            " are placed on")
+    if trials_raw and not doc.get("victory_text"):
+        warn("gauntlet.json", "no 'victory_text' -- nothing is shown when the"
+            " last trial is passed")
+
+    trials: dict = {}
+    for i, trial in enumerate(trials_raw):
+        where = "gauntlet.json[%d]" % i
+        if not isinstance(trial, dict):
+            err(where, "entry must be an object")
+            continue
+        trial_id = trial.get("id")
+        if not trial_id or not isinstance(trial_id, str):
+            err(where, "missing 'id'")
+            continue
+        where = "gauntlet.json '%s'" % trial_id
+        if trial_id in trials:
+            err(where, "duplicate trial id")
+        kind = trial.get("kind")
+        if kind not in ("tamer", "attune"):
+            err(where, "kind '%s' is not 'tamer' or 'attune'" % kind)
+            continue
+        trials[trial_id] = kind
+
+        if not trial.get("name"):
+            err(where, "needs a 'name'")
+        for key in ("intro", "victory", "defeat"):
+            lines = trial.get(key)
+            if not isinstance(lines, list) or not lines:
+                err(where, "needs a non-empty '%s'" % key)
+
+        if kind == "tamer":
+            purse = trial.get("purse", 0)
+            if not isinstance(purse, int) or purse < 0:
+                err(where, "purse must be a non-negative integer, got %r" % purse)
+            team = trial.get("team")
+            if not isinstance(team, list) or not team:
+                err(where, "needs a non-empty 'team'")
+            else:
+                if len(team) > 6:
+                    err(where, "team of %d exceeds the player's own limit of"
+                        " 6 -- more than that is not a fight" % len(team))
+                for j, member in enumerate(team):
+                    member_where = "%s.team[%d]" % (where, j)
+                    if not isinstance(member, dict):
+                        err(member_where, "must be an object")
+                        continue
+                    if member.get("species") not in creatures:
+                        err(member_where, "names unknown species '%s'"
+                            % member.get("species"))
+                    level = member.get("level")
+                    if not isinstance(level, int) or not (1 <= level <= MAX_LEVEL):
+                        err(member_where, "level must be an integer 1-%d,"
+                            " got %r" % (MAX_LEVEL, level))
+        else:  # attune
+            if trial.get("species") not in creatures:
+                err(where, "names unknown species '%s'" % trial.get("species"))
+            level = trial.get("level")
+            if not isinstance(level, int) or not (1 <= level <= MAX_LEVEL):
+                err(where, "level must be an integer 1-%d, got %r"
+                    % (MAX_LEVEL, level))
+            bracket = trial.get("coin_reward")
+            if bracket is not None:
+                if (not isinstance(bracket, list) or len(bracket) != 2
+                        or not all(isinstance(v, int) for v in bracket)):
+                    err(where, "coin_reward must be [low, high] integers,"
+                        " got %r" % (bracket,))
+                elif not (0 <= bracket[0] <= bracket[1]):
+                    err(where, "coin_reward %r must satisfy 0 <= low <= high"
+                        % (bracket,))
+            spared = trial.get("spared")
+            if not isinstance(spared, list) or not spared:
+                err(where, "an attune trial needs a non-empty 'spared' --"
+                    " shown when the foe is defeated rather than tamed,"
+                    " which does not clear the trial")
+
+    return trials
+
+
 def check_maps(types: list[str], creatures: dict, items: dict,
                sold: set, encountered: set, quests: dict,
-               staged: dict, completers: dict, tamers: dict) -> int:
+               staged: dict, completers: dict, tamers: dict,
+               gauntlet_trials: dict, placed_trials: dict) -> int:
     """Validates every map in data/maps/. Returns how many were checked.
 
     Fills `sold` with every item id any shop stocks and `encountered` with
     every species id any encounter table names, for check_obtainable, and
     `staged` with {quest id: set of steps} some map can actually move the
-    player on to, and `completers` with the map that finishes each quest.
+    player on to, `completers` with the map that finishes each quest, and
+    `placed_trials` with {trial id: where} for every gauntlet_trial placed.
     """
     maps_dir = os.path.join(DATA, "maps")
     if not os.path.isdir(maps_dir):
@@ -646,6 +739,21 @@ def check_maps(types: list[str], creatures: dict, items: dict,
                 for point in spec.get("patrol", []):
                     walkable_at(point, "%s.patrol point" % label)
 
+            if obj_type == "gauntlet_trial":
+                trial_id = spec.get("id")
+                if not trial_id or not isinstance(trial_id, str):
+                    err(where, "%s needs an 'id' matching one in"
+                        " gauntlet.json" % label)
+                elif trial_id not in gauntlet_trials:
+                    err(where, "%s id '%s' is not a trial in gauntlet.json"
+                        % (label, trial_id))
+                elif trial_id in placed_trials:
+                    err(where, "%s duplicates trial id '%s', already placed"
+                        " in %s -- a trial belongs to one place"
+                        % (label, trial_id, placed_trials[trial_id]))
+                else:
+                    placed_trials[trial_id] = where
+
             gift = spec.get("gives")
             if gift is not None:
                 if not isinstance(gift, dict) or gift.get("item") not in items:
@@ -671,13 +779,17 @@ def check_maps(types: list[str], creatures: dict, items: dict,
                         if wants.get("species") not in creatures:
                             err(where, "%s requires defeating unknown species"
                                 " '%s'" % (label, wants.get("species")))
-                    else:
-                        err(where, "%s requirement kind '%s' is not one of"
-                            " has_item, defeated" % (label, kind))
+                    elif kind not in REQUIREMENT_KINDS:
+                        err(where, "%s requirement kind '%s' is not one of %s"
+                            % (label, kind, ", ".join(REQUIREMENT_KINDS)))
                     if not wants.get("text"):
                         err(where, "%s 'requires' needs a 'text' to say what is"
                             " missing; without it the object refuses silently"
                             % label)
+
+            if spec.get("blocks_until_met") and not isinstance(wants, dict):
+                err(where, "%s sets blocks_until_met but has no 'requires' to"
+                    " gate on" % label)
 
             solid = spec.get("solid")
             if solid is not None and not isinstance(solid, bool):
@@ -1003,16 +1115,24 @@ def main() -> int:
             warn("moves.json", "no move has type '%s'" % t)
 
     quests = check_quests()
+    gauntlet_trials = check_gauntlet(creatures)
 
     sold: set = set()
     encountered: set = set()
     staged: dict = {}
     completers: dict = {}
     tamers: dict = {}
+    placed_trials: dict = {}
     map_count = check_maps(types, creatures, items, sold, encountered,
-                           quests, staged, completers, tamers)
+                           quests, staged, completers, tamers,
+                           gauntlet_trials, placed_trials)
     check_obtainable(creatures, items, sold, encountered)
     check_quests_reachable(quests, completers, staged)
+    for trial_id in gauntlet_trials:
+        if trial_id not in placed_trials:
+            err("gauntlet.json '%s'" % trial_id,
+                "no map places a gauntlet_trial with this id, so it can never"
+                " be attempted")
 
     for line in warnings:
         print("warning  %s" % line)
@@ -1020,9 +1140,11 @@ def main() -> int:
         print("ERROR    %s" % line)
 
     print("\n%d types, %d moves, %d creatures, %d item(s), %d map(s), "
-          "%d quest(s), %d tamer(s) -- %d error(s), %d warning(s)"
+          "%d quest(s), %d tamer(s), %d gauntlet trial(s) -- %d error(s),"
+          " %d warning(s)"
           % (len(types), len(moves), len(creatures), len(items), map_count,
-             len(quests), len(tamers), len(errors), len(warnings)))
+             len(quests), len(tamers), len(gauntlet_trials), len(errors),
+             len(warnings)))
     return 1 if errors else 0
 
 

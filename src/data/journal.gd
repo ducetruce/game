@@ -54,6 +54,9 @@ var _beaten_tamers := {}
 ## Tamers already announced as wanting a rematch, so the pigeon comes once.
 var _challenges_sent := {}
 
+## See debug_force_gauntlet_unlock().
+var _debug_gauntlet_override := false
+
 
 func _ready() -> void:
 	reset_for_new_game()
@@ -66,6 +69,8 @@ func reset_for_new_game() -> void:
 	playtime = 0.0
 	_beaten_tamers.clear()
 	_challenges_sent.clear()
+	gauntlet_stage = 0
+	_debug_gauntlet_override = false
 
 
 # --- asking -----------------------------------------------------------------
@@ -153,7 +158,64 @@ func current_objective() -> String:
 
 
 func gauntlet_unlocked() -> bool:
-	return completed_count() >= Content.gauntlet_requirement
+	return _debug_gauntlet_override or completed_count() >= Content.gauntlet_requirement
+
+
+## Debug-menu only (its caller is itself gated on OS.is_debug_build()) --
+## forces gauntlet_unlocked() true without touching _done, so there is no need
+## to invent placeholder quest ids to pad the count and nothing here survives
+## a save: this is a session-only escape hatch for testing the gauntlet before
+## ten real quests exist to finish. See docs/DESIGN.md § 39.
+func debug_force_gauntlet_unlock() -> void:
+	_debug_gauntlet_override = true
+
+
+# --- the gauntlet -------------------------------------------------------------
+# A separate, much smaller state machine from quests, on purpose: the trials
+# are strictly ordered (no skipping one, no revisiting a passed one out of
+# curiosity) and there is no text variation to key off a step id the way a
+# quest's dialogue does, so a single index is all there is. See
+## docs/DESIGN.md § 39.
+
+signal gauntlet_trial_passed(trial_id: String)
+signal gauntlet_finished
+
+## Saved in place of an index when every trial has been passed -- there is no
+## "next trial" id to save at that point.
+const GAUNTLET_COMPLETE_SENTINEL := "__complete__"
+
+## Index into Content.gauntlet_trials of the trial still to be attempted.
+## Equal to Content.gauntlet_trials.size() once every trial is behind the
+## player, which is what gauntlet_finished() reads.
+var gauntlet_stage := 0
+
+
+## True once the trial at `index` has already been passed.
+func gauntlet_trial_passed_at(index: int) -> bool:
+	return index < gauntlet_stage
+
+
+## True once the last trial has been passed. False on an empty trial list --
+## nothing has been cleared if there was nothing to clear.
+func gauntlet_finished_check() -> bool:
+	return not Content.gauntlet_trials.is_empty() 		and gauntlet_stage >= Content.gauntlet_trials.size()
+
+
+## Records trial `index` as passed. Ignored if `index` is not the trial
+## actually waiting -- out of order is a caller bug, not a state to reach --
+## so this can never be driven into skipping one or double-counting another.
+## Emits gauntlet_finished once the trial that clears was the last one.
+func advance_gauntlet(index: int) -> bool:
+	if index != gauntlet_stage:
+		return false
+	var trial_id := ""
+	if index < Content.gauntlet_trials.size():
+		trial_id = str(Content.gauntlet_trials[index].get("id", ""))
+	gauntlet_stage += 1
+	gauntlet_trial_passed.emit(trial_id)
+	if gauntlet_finished_check():
+		gauntlet_finished.emit()
+	return true
 
 
 # --- moving ------------------------------------------------------------------
@@ -275,7 +337,22 @@ func to_dict() -> Dictionary:
 		"playtime": playtime,
 		"tamers": _beaten_tamers.duplicate(),
 		"challenged": _challenges_sent.keys(),
+		"gauntlet_stage": _gauntlet_stage_id(),
 	}
+
+
+## Saved by the *id* of the trial still to come, not the raw index -- the same
+## reason a quest step is: inserting a trial in the middle of the gauntlet
+## must not silently move every existing save to a different trial.
+## GAUNTLET_COMPLETE_SENTINEL covers "every trial is behind me", which has no
+## id of its own to save; "" covers an empty trial list, which has no trial to
+## name either.
+func _gauntlet_stage_id() -> String:
+	if gauntlet_finished_check():
+		return GAUNTLET_COMPLETE_SENTINEL
+	if gauntlet_stage < Content.gauntlet_trials.size():
+		return str(Content.gauntlet_trials[gauntlet_stage].get("id", ""))
+	return ""
 
 
 func from_dict(data: Dictionary) -> void:
@@ -306,6 +383,25 @@ func from_dict(data: Dictionary) -> void:
 		_beaten_tamers[str(tamer_id)] = float(tamers[tamer_id])
 	for tamer_id in data.get("challenged", []):
 		_challenges_sent[str(tamer_id)] = true
+
+	var stage_id := str(data.get("gauntlet_stage", ""))
+	if stage_id == GAUNTLET_COMPLETE_SENTINEL:
+		gauntlet_stage = Content.gauntlet_trials.size()
+	elif not stage_id.is_empty():
+		var found := -1
+		for i in Content.gauntlet_trials.size():
+			if str(Content.gauntlet_trials[i].get("id", "")) == stage_id:
+				found = i
+				break
+		if found < 0:
+			# A save written before a trial was renamed, removed, or
+			# reordered. Same call as an unknown quest step: guessing at a
+			# position that no longer exists is worse than the beginning,
+			# which is at least a state the current trial list covers.
+			push_warning("Journal: save names unknown gauntlet trial '%s'; "
+				% stage_id + "starting the gauntlet over.")
+		else:
+			gauntlet_stage = found
 
 
 # --- reading the data --------------------------------------------------------

@@ -74,6 +74,11 @@ var _tamer_name := ""
 var _tamer_purse := 0
 var _tamer_intro := PackedStringArray()
 var _coin_reward := Vector2i.ZERO
+## Non-empty only for a gauntlet trial that must be won by Attunement rather
+## than by defeating the foe outright -- the signal _ready() uses to tell that
+## configuration apart from an ordinary wild encounter, the same way
+## _tamer_team being non-empty marks a tamer battle. See docs/DESIGN.md § 39.
+var _no_flee_message := ""
 
 @onready var _foe_name: Label = $FoePanel/CreatureName
 @onready var _foe_fill: ColorRect = $FoePanel/HealthFill
@@ -111,6 +116,20 @@ func configure_tamer(party: Array, team: Array, who: String, purse: int,
 	_tamer_intro = intro
 
 
+## Called instead of configure() for a gauntlet trial that only counts as
+## cleared if the foe is Attuned -- defeating it outright pays as normal but
+## does not advance the trial, which the overworld reads off the returned
+## phase. Running is refused, with `no_flee_message` in place of the usual
+## "you break away."
+func configure_gauntlet_attune(party: Array, wild: Creature, coin_reward: Vector2i,
+		intro: PackedStringArray, no_flee_message: String) -> void:
+	_party_creatures = party
+	_wild_creature = wild
+	_coin_reward = coin_reward
+	_tamer_intro = intro
+	_no_flee_message = no_flee_message
+
+
 func _ready() -> void:
 	if _tamer_team.is_empty() and _wild_creature == null:
 		_build_demo()
@@ -123,6 +142,13 @@ func _ready() -> void:
 			opening.append(line)
 		opening.append("%s sends out %s." % [
 			_tamer_name, _state.foe.creature.display_name()])
+	elif not _no_flee_message.is_empty():
+		_state = BattleState.create(_party_creatures, _wild_creature)
+		_state.coin_reward = _coin_reward
+		_state.no_flee = true
+		_state.no_flee_message = _no_flee_message
+		for line in _tamer_intro:
+			opening.append(line)
 	else:
 		_state = BattleState.create(_party_creatures, _wild_creature)
 		_state.coin_reward = _coin_reward

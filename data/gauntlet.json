@@ -1,0 +1,114 @@
+{
+  "_comment": "The Elder's Gauntlet: the game's endgame, challengeable once Content.gauntlet_requirement quests are finished (see data/quests.json). Trials are attempted strictly in order -- Journal.gauntlet_stage is an index into 'trials' below, exactly as a quest tracks a position in its own 'steps'. Two kinds exist: 'tamer' (a formal battle against a person's team, same rules as an ordinary tamer battle -- see docs/DESIGN.md section 35 -- fought via BattleState.create_tamer) and 'attune' (a formal encounter with one wild creature that only counts as passed if it is Attuned, not merely defeated -- fought via BattleState.create() with no_flee set). Both kinds refuse running. See docs/DESIGN.md section 39.",
+  "hall_map": "gauntlet_hall",
+  "trials": [
+    {
+      "id": "trial_one",
+      "kind": "tamer",
+      "name": "[PLACEHOLDER] Elder One",
+      "purse": 200,
+      "team": [
+        {
+          "species": "moorhound",
+          "level": 30
+        },
+        {
+          "species": "sloughback",
+          "level": 30
+        },
+        {
+          "species": "gloamkin",
+          "level": 31
+        }
+      ],
+      "intro": [
+        "[PLACEHOLDER] The first elder looks up from whatever they were doing and does not seem surprised to see you."
+      ],
+      "victory": [
+        "[PLACEHOLDER] The first elder inclines their head, once."
+      ],
+      "defeat": [
+        "[PLACEHOLDER] Come back when you are ready, the first elder says, not unkindly."
+      ],
+      "passed_text": [
+        "[PLACEHOLDER] The first elder has nothing more to prove between you."
+      ],
+      "waiting_text": [
+        "[PLACEHOLDER] The first elder shakes their head. Not out of order."
+      ]
+    },
+    {
+      "id": "trial_two",
+      "kind": "attune",
+      "name": "[PLACEHOLDER] Elder Two",
+      "species": "drownbell",
+      "level": 33,
+      "coin_reward": [
+        80,
+        80
+      ],
+      "intro": [
+        "[PLACEHOLDER] The second elder does not fight you directly. Something else stands between you, and it is not looking for a fight either."
+      ],
+      "victory": [
+        "[PLACEHOLDER] It settles. The second elder nods, as if that was always going to be the answer."
+      ],
+      "spared": [
+        "[PLACEHOLDER] It goes down, and the second elder's face does not change. That is not what was asked of you."
+      ],
+      "defeat": [
+        "[PLACEHOLDER] The second elder says nothing. You will need to come back to this."
+      ],
+      "passed_text": [
+        "[PLACEHOLDER] The second elder already knows what you proved here."
+      ],
+      "waiting_text": [
+        "[PLACEHOLDER] The second elder will not be rushed, and will not go first."
+      ],
+      "no_flee_message": "[PLACEHOLDER] There is no leaving this one unfinished."
+    },
+    {
+      "id": "trial_three",
+      "kind": "tamer",
+      "name": "[PLACEHOLDER] Elder Three",
+      "purse": 300,
+      "team": [
+        {
+          "species": "emberwick",
+          "level": 34
+        },
+        {
+          "species": "reedwitch",
+          "level": 34
+        },
+        {
+          "species": "cairnling",
+          "level": 35
+        },
+        {
+          "species": "rushwither",
+          "level": 35
+        }
+      ],
+      "intro": [
+        "[PLACEHOLDER] The third elder is already standing, and has been waiting for you specifically, and not for very long."
+      ],
+      "victory": [
+        "[PLACEHOLDER] The third elder says the thing the other two were waiting for someone to say first."
+      ],
+      "defeat": [
+        "[PLACEHOLDER] Not yet, the third elder says. Not far off, either."
+      ],
+      "passed_text": [
+        "[PLACEHOLDER] The third elder has already said what there was to say."
+      ],
+      "waiting_text": [
+        "[PLACEHOLDER] The third elder points, without a word, at the one you have not yet faced."
+      ]
+    }
+  ],
+  "victory_text": [
+    "[PLACEHOLDER] All three elders, together, say the thing the whole gauntlet was built to ask.",
+    "[PLACEHOLDER] This is the ending placeholder. The real one is not written yet."
+  ]
+}

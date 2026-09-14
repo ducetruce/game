@@ -138,6 +138,36 @@ def export_quests(doc) -> str:
     return "\n".join(out).rstrip("\n") + "\n"
 
 
+# Trial fields, all pages except "name" and "no_flee_message". Both are
+# shared across kinds in the schema (an attune-only field costs nothing to
+# export for a tamer trial that has not set it -- the "if field in trial"
+# guard just skips it).
+GAUNTLET_LINE_FIELDS = ["name", "no_flee_message"]
+GAUNTLET_PAGE_FIELDS = [
+    "intro", "victory", "defeat", "passed_text", "waiting_text", "spared",
+]
+
+
+def export_gauntlet(doc) -> str:
+    # victory_text is a document-level field, not an object's -- it belongs
+    # to the gauntlet as a whole, shown once after the last trial -- so it
+    # goes under the file-level marker directly, the same way quests.md's
+    # default_objective does, with no ## heading of its own.
+    out = ["# The Gauntlet", "<!-- gauntlet -->", "",
+           "### victory_text"] + bullets(doc.get("victory_text", [])) + [""]
+    for trial in doc.get("trials", []):
+        trial_id = trial.get("id")
+        out += ["## %s -- %s" % (trial_id, trial.get("name", "")),
+                "<!-- trial %s -->" % trial_id, ""]
+        for field in GAUNTLET_LINE_FIELDS:
+            if field in trial:
+                out += ["### %s" % field, "- %s" % trial[field], ""]
+        for field in GAUNTLET_PAGE_FIELDS:
+            if field in trial:
+                out += ["### %s" % field] + bullets(trial[field]) + [""]
+    return "\n".join(out).rstrip("\n") + "\n"
+
+
 def export_named(title: str, marker: str, entries, id_key: str = "id") -> str:
     out = ["# %s" % title, "<!-- %s -->" % marker, ""]
     for entry in entries:
@@ -159,6 +189,8 @@ def _pending_edits(path: str) -> bool:
     try:
         if stem == "quests":
             return import_quests(path, dry_run=True) > 0
+        if stem == "gauntlet":
+            return import_gauntlet(path, dry_run=True) > 0
         if stem == "items":
             return import_named(path, "items", "item", "items", dry_run=True) > 0
         if stem == "creatures":
@@ -208,6 +240,7 @@ def export_all(force: bool = False) -> int:
         written.append(path)
     for name, exporter in (
         ("quests", lambda d: export_quests(d)),
+        ("gauntlet", lambda d: export_gauntlet(d)),
         ("items", lambda d: export_named("Items", "item", d.get("items", []))),
         ("creatures", lambda d: export_named("Creatures", "creature", d.get("creatures", []))),
     ):
@@ -404,6 +437,42 @@ def import_quests(path: str, dry_run: bool = False) -> int:
     return changed
 
 
+def import_gauntlet(path: str, dry_run: bool = False) -> int:
+    json_path = os.path.join(DATA, "gauntlet.json")
+    doc = load(json_path)
+    by_id = {t.get("id"): t for t in doc.get("trials", [])}
+    _, sections = parse_markdown(path)
+    changed = 0
+    for key, heading, lines, number in sections:
+        where = "%s:%d" % (os.path.relpath(path, ROOT), number)
+        if key == "gauntlet":
+            if heading != "victory_text":
+                raise ScriptError("%s: unknown heading '%s'" % (where, heading))
+            if doc.get("victory_text") != lines:
+                doc["victory_text"] = lines
+                changed += 1
+            continue
+        match = re.match(r"^trial (\S+)$", key or "")
+        if not match or match.group(1) not in by_id:
+            raise ScriptError("%s: heading '%s' is not under a known trial"
+                              % (where, heading))
+        trial = by_id[match.group(1)]
+        if heading in GAUNTLET_LINE_FIELDS:
+            value = one_line(lines, path, heading)
+            if trial.get(heading) != value:
+                trial[heading] = value
+                changed += 1
+        elif heading in GAUNTLET_PAGE_FIELDS:
+            if trial.get(heading) != lines:
+                trial[heading] = lines
+                changed += 1
+        else:
+            raise ScriptError("%s: unknown trial heading '%s'" % (where, heading))
+    if changed and not dry_run:
+        save(json_path, doc)
+    return changed
+
+
 def import_named(path: str, name: str, marker: str, list_key: str, dry_run: bool = False) -> int:
     json_path = os.path.join(DATA, name + ".json")
     doc = load(json_path)
@@ -440,6 +509,8 @@ def import_all() -> int:
         stem = filename[: -len(".md")]
         if stem == "quests":
             n = import_quests(path)
+        elif stem == "gauntlet":
+            n = import_gauntlet(path)
         elif stem == "items":
             n = import_named(path, "items", "item", "items")
         elif stem == "creatures":

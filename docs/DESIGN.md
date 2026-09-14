@@ -2010,6 +2010,93 @@ from § 37.
 
 ---
 
+## 39. The Elder's Gauntlet
+
+The endgame: three trials in a hall, entered once ten quests are behind the
+player, ending with the thing the whole game has been pointing at. Answering
+the brief directly -- "more varied than five consecutive battles" -- by making
+the trials two different *kinds* rather than five copies of the same fight.
+
+**Two trial kinds, one battle engine.** A `tamer` trial is exactly a tamer
+battle (§ 35) -- a team, a purse, no running -- fought through
+`BattleState.create_tamer`. An `attune` trial is a formal encounter with one
+wild creature that only counts as passed if it is *Attuned*, not merely
+defeated: fought through the ordinary `BattleState.create`, which needed
+nothing new except a way to refuse running from a wild battle by choice
+rather than by `is_tamer`. That is `no_flee` -- a flag `is_tamer` already
+implied but a formal wild challenge did not have a name for -- checked in
+`_do_flee` right where the tamer refusal already lives. Defeating an attune
+trial's creature outright still ends the battle and still pays coin, same as
+any wild win; it just does not clear the trial, and the battle log calls it
+"spared" rather than a loss.
+
+**Trials are strictly ordered**, the same position-in-a-list model quests
+use (§ 34) applied once more: `Journal.gauntlet_stage` is an index into
+`Content.gauntlet_trials`, saved by the *id* of the trial still to come
+(`_gauntlet_stage_id`) for the same reason a quest step is -- inserting a
+trial in the middle must not silently move an existing save to a different
+one. `advance_gauntlet(index)` only moves the index that is actually
+current; an out-of-order call is a caller bug, not a state to reach, and is
+simply ignored.
+
+**The hall's entrance is physically gated**, not just refused in dialogue.
+`_apply_solidity` gained a `blocks_until_met` option: an object with
+`requires` and `blocks_until_met: true` is solid until that requirement
+holds, checked once at spawn -- the same "leave and come back to see a
+change" rule every other per-map state in this engine already follows (a
+shop's stock does not restock while you watch either), so nothing here
+needed to become live-reactive. The check itself had to stay side-effect
+free: a `has_item`/`consume` requirement gating a shop's whole rope-bridge
+would otherwise spend the player's item just for walking near it, before
+they had chosen to interact with anything, so the shared `_requirement_met`
+helper takes an `allow_consume` flag that `_apply_solidity` always passes
+false and an actual interaction always passes true. `gauntlet_unlocked` is a
+new requirement kind alongside `has_item` and `defeated`, reading
+`Journal.gauntlet_unlocked()` directly.
+
+**The gatekeeper's location is a placeholder**, not a decision. It sits off
+Aldenmere's plaza rather than in the "older than the well" building the
+NPC at (24, 9) already has dialogue about -- that building's existing lines
+are the user's story to resolve, not mine to fold a game mechanism into
+without asking. A sign at the new entrance says as much in-fiction.
+
+**Debug support:** `goto_gauntlet_hall` and `unlock_gauntlet` (which sets a
+session-only override on `Journal`, touching nothing `_done` and surviving
+no save) let the whole thing be tested before ten real quests exist to
+unlock it honestly. Fixed a real bug on the way: the debug menu's "Five of
+every item" command read from a list of three item ids hardcoded before the
+catalogue grew to seven -- the exact "data exists but a hardcoded list
+forgot about it" class § 29 built machinery against, just in a dev tool this
+time rather than shipped content. It now reads `Content.item_ids()`.
+
+**Testing this took two real detours worth recording**, since both are
+exactly the kind of thing that would bite again. First: a scripted probe
+forced a battle's outcome the instant `_battle` became non-null, which can be
+a few frames before `_begin_gauntlet_trial`'s own entering fade-out has
+actually finished (`_battle` is set partway through that coroutine, `_busy`
+only clears at its very end) -- racing the entering transition against the
+finishing one, so `_busy` briefly read `false` a full battle-resolution
+before `Journal.advance_gauntlet` actually ran, and the probe read gauntlet
+state one step too early. No real player can trigger this: input stays
+disabled for the entire entering transition, so nothing a person does can
+land a battle-ending press before it completes. The fix was in the probe
+(wait for `_busy == false` *and* `_battle != null` together, not just the
+second), not the game -- but it is the kind of race that is invisible by
+inspection and obvious the moment something drives the game fast enough to
+find it, so it is recorded here rather than only in a diff.
+
+Second, purely a tooling mistake worth naming so it is not repeated: editing
+`tools/script.py` itself with a plain (non-raw) Python triple-quoted string
+containing the *text* `\n` silently turned that text into a real newline
+byte inside generated Python source, corrupting `export_gauntlet` into a
+syntax error nothing caught until the script was actually run. `ast.parse()`
+on the target file, right after any edit that generates Python source
+containing its own escape sequences, is now worth doing on reflex, not just
+when something looks wrong.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
@@ -2030,6 +2117,13 @@ decisions to make, plus what has not been reached yet.
   half of the API now exists (§ 25).
 - Whether storage should ever be partitioned into boxes, which only matters
   once anyone fills 60 slots (§ 24).
-- The prose itself, quest 2 onward (§ 38) -- everything marked
-  `[PLACEHOLDER]` is placed, gated, and reachable, and is waiting on the
-  user's own words rather than a decision from either side.
+- The prose itself, quest 2 onward and the whole gauntlet (§§ 37-39) --
+  everything marked `[PLACEHOLDER]` is placed, gated, and reachable, and is
+  waiting on the user's own words rather than a decision from either side.
+- Where the gauntlet hall's entrance actually belongs. It stands off
+  Aldenmere's plaza for now, deliberately not tied to the "older than the
+  well" building's existing dialogue (§ 39) -- both the location and whether
+  that building is the right one to become it are the user's call.
+- Quests 3 through 10, and the settlements the proposed ten imply (§ 36).
+  Two quests exist, gated on ten; the gap is what stands between the
+  gauntlet being reachable by anything other than the debug menu.

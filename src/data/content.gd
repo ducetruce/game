@@ -11,6 +11,7 @@ const CREATURES_PATH := "res://data/creatures.json"
 const ITEMS_PATH := "res://data/items.json"
 const TEMPERAMENTS_PATH := "res://data/temperaments.json"
 const QUESTS_PATH := "res://data/quests.json"
+const GAUNTLET_PATH := "res://data/gauntlet.json"
 const MAP_PATH_FORMAT := "res://data/maps/%s.json"
 
 var type_chart: TypeChart = null
@@ -32,6 +33,16 @@ var quests: Array = []
 var gauntlet_requirement := 0
 var default_objective := ""
 
+## The gauntlet's own trials, in the fixed order they must be attempted --
+## see docs/DESIGN.md § 39. Each is a raw dictionary; Journal tracks position
+## in this list the same way it tracks a quest's position in its steps, and
+## for the same reason (§ 34's model, applied once more).
+var gauntlet_trials: Array = []
+## Map id the gauntlet is entered through.
+var gauntlet_hall_map := ""
+## Shown once, the moment the last trial is passed.
+var gauntlet_victory_text: PackedStringArray = PackedStringArray()
+
 ## False if anything failed to parse. Callers that can degrade gracefully
 ## should check it; everything else can rely on the pushed errors.
 var loaded := false
@@ -52,6 +63,9 @@ func reload() -> void:
 	type_chart = null
 	temperaments.clear()
 	quests.clear()
+	gauntlet_trials.clear()
+	gauntlet_hall_map = ""
+	gauntlet_victory_text = PackedStringArray()
 	_moves.clear()
 	_species.clear()
 	_species_order = PackedStringArray()
@@ -126,6 +140,23 @@ func reload() -> void:
 				% [QUESTS_PATH, entry["id"]])
 			return
 		quests.append(entry)
+
+	var gauntlet_doc := _read_json(GAUNTLET_PATH)
+	if not (gauntlet_doc.get("trials", null) is Array):
+		push_error("%s: missing 'trials' array." % GAUNTLET_PATH)
+		return
+	gauntlet_hall_map = str(gauntlet_doc.get("hall_map", ""))
+	for line in gauntlet_doc.get("victory_text", []):
+		gauntlet_victory_text.append(str(line))
+	for entry in gauntlet_doc["trials"]:
+		if not (entry is Dictionary) or not entry.has("id"):
+			push_error("%s: every trial needs an 'id'." % GAUNTLET_PATH)
+			return
+		if str(entry.get("kind", "")) not in ["tamer", "attune"]:
+			push_error("%s: trial '%s' has kind '%s', not 'tamer' or 'attune'."
+				% [GAUNTLET_PATH, entry["id"], entry.get("kind")])
+			return
+		gauntlet_trials.append(entry)
 
 	loaded = _cross_check()
 

@@ -94,3 +94,9 @@
 
 ### requires
 - [PLACEHOLDER] I can cast anything you like, if you bring me something to cast it from.
+
+## sign at 30,10
+<!-- object 15 -->
+
+### text
+- [PLACEHOLDER] A marker showing the way to the gauntlet hall. Where this actually stands, and what it looks like, is not yet decided -- this is a placeholder location.
