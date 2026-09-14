@@ -371,5 +371,8 @@ text editor to see exactly what got saved, or delete it to start over.
    a title screen and pause menu, so starting over, saving on demand, and
    quitting are all reachable in-game; an economy — battles pay coin, and
    Aldenmere sells a healing item; a road between the village and the mere so
-   the level curve has somewhere to happen; and one story, with a reason to
-   walk north and something at the end of it
+   the level curve has somewhere to happen; one story, with a reason to
+   walk north and something at the end of it; quests and an endgame to aim
+   them at; and tamers who walk the roads and write to you afterwards
+8. ⬜ The ten quests and the Elder's Gauntlet — see `docs/DESIGN.md` § 36 for
+   the proposed ten and the order to build them in

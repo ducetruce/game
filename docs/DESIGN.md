@@ -1853,6 +1853,63 @@ field and more than that is not a fight.
 
 ---
 
+## 36. The ten, as proposed
+
+A proposal, not a decision -- written down so it can be argued with rather
+than living in a chat message. One quest per area, because the gauntlet counts
+quests in *distinct* areas and the validator enforces it.
+
+They are ordered roughly by when a player meets them, and each one is picked
+partly for what it exercises: a quest that is only text is a quest the engine
+learns nothing from.
+
+1. **The Dry Cut** — the Hollowmere. *Investigate.* Built. Why the mere will
+   not drain, and the first sight of the thing the rest of this is about.
+2. **The Weight of the Lock** — the Sluice Works, an interior under the fen
+   road. *Repair.* The gate's mechanism is sound and its counterweight is
+   gone; find or have one made. Exercises `has_item` with `consume`.
+3. **What Denned in the Kiln** — Emberwick Row, a firing village. *Slay.*
+   Something has moved into a working kiln and the village cannot fire
+   without it out. Exercises `defeated` with a count.
+4. **Nobody's Flock** — Wether Fell, upland pasture. *Investigate, then
+   drive.* Wild creatures are moving as a body, which they do not do, and
+   something is behind them. First quest with a multi-area step.
+5. **The Long Tally** — Cairnmouth, a major city's counting house.
+   *Social.* The city's water records do not match the water. Somebody has
+   been writing them down wrong on purpose. No fighting in it at all, which is
+   worth one of the ten.
+6. **The Lamp That Went Out** — Wick Row, a district of Cairnmouth.
+   *Repair, against a clock.* The district's lamps before a festival. First
+   quest with a failure state that is not death.
+7. **Bones of the Carriage** — the Drownroad, a flooded causeway. *Recover.*
+   Something is in a sunken carriage and the causeway is only passable at
+   certain points. Terrain as the obstacle rather than creatures.
+8. **Ninebark and Nothing** — Fallow Green, a village. *Gather.* A healer is
+   out and the road is cut; the ingredients grow somewhere that does not want
+   you there. Ties the item catalogue to the world that makes it.
+9. **The Hollow Choir** — the Singing Fen. *Choose.* One creature's cry is
+   emptying a hamlet. Kill it or tame it, and the two endings differ — the
+   first quest where Attunement is the answer rather than an option.
+10. **What the Elders Kept** — Highcairn, where the gauntlet is. *Social.*
+    One last errand that says why the elders have been quiet about the water,
+    and the hinge into the endgame.
+
+Settlements among these: Aldenmere (built), Emberwick Row, Cairnmouth
+(major), Wick Row (a district of it), Fallow Green, the Singing Fen's hamlet,
+and Highcairn (major). With the villages that carry no quest, that lands near
+the 15-20 total and the 25/75 split the target asks for, at **three major
+cities rather than five** -- a major city is roughly four villages of writing,
+shops and people, and three of them is already a great deal of world.
+
+The order to build in is the spine first: the ten quest areas and the
+gauntlet, then the settlements that carry no quest. A quest area is not
+necessarily a town -- half of these are a works, a fell, a causeway, a fen --
+and treating the town count as the target rather than the quest count would
+build the flesh before the skeleton.
+
+
+---
+
 ## Open questions
 
 Everything below is downstream of § 20 -- numbers to feel rather than
