@@ -1,0 +1,65 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/travel_menu.gd" id="1_travel"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_box"]
+bg_color = Color(0.0705882, 0.0823529, 0.105882, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.427451, 0.470588, 0.541176, 1)
+
+[node name="TravelMenu" type="CanvasLayer"]
+layer = 3
+script = ExtResource("1_travel")
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 20.0
+offset_top = 14.0
+offset_right = 300.0
+offset_bottom = 168.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Title" type="Label" parent="Panel"]
+offset_left = 6.0
+offset_top = 4.0
+offset_right = 274.0
+offset_bottom = 16.0
+theme_override_colors/font_color = Color(0.85098, 0.658824, 0.360784, 1)
+theme_override_font_sizes/font_size = 8
+text = "Bag"
+
+[node name="Separator" type="ColorRect" parent="Panel"]
+offset_left = 6.0
+offset_top = 19.0
+offset_right = 274.0
+offset_bottom = 20.0
+color = Color(0.427451, 0.470588, 0.541176, 0.6)
+
+[node name="ListText" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 24.0
+offset_right = 274.0
+offset_bottom = 84.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="DetailText" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 88.0
+offset_right = 274.0
+offset_bottom = 134.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8
+
+[node name="Footer" type="RichTextLabel" parent="Panel"]
+offset_left = 6.0
+offset_top = 136.0
+offset_right = 274.0
+offset_bottom = 148.0
+bbcode_enabled = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 8

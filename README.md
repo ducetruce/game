@@ -19,11 +19,14 @@ No third-party assets, code, or creature designs.
 | `WASD` / arrows | Move (free 8-directional) |
 | `Shift` | Run |
 | `Z` / `Space` / `Enter` | Interact, advance text, confirm menus |
-| `X` / `Esc` | Back out of a menu — or, in the overworld, pause (resume / party / bag / save / quit to title) |
+| `X` / `Esc` | Back out of a menu — or, in the overworld, pause (resume / party / bag / quests / travel / save / quit to title) |
 | `M` / `Tab` | Open/close the party screen |
 | `F1` | Debug menu — jump between maps, heal, force a fight, grant coin/items/levels. Debug builds only |
 
-The pause menu shows your purse and what you are meant to be doing next.
+The pause menu shows your purse and what you are meant to be doing next. Its
+**Travel** entry lists every rest spring you have ever used and warps you
+there instantly and for free — see "Editing the map" for how a spring gets
+onto that list.
 
 ## Project layout
 
@@ -319,7 +322,9 @@ rolled uniformly; leave it out for an area with no encounters. The `objects`
 array places props on the grid: `sign` and `npc` show text,
 `spring` restores the party and doubles as a save point, `shop` opens a buy
 menu, `shrine` opens creature storage, and `warp` — invisible, no art — sends
-the player to a tile on another map when they walk onto it. Any of them can
+the player to a tile on another map when they walk onto it. A `spring` needs
+its own `id` (what a save remembers as reached) and `name` (what the Travel
+screen in the pause menu shows for it) — see `docs/DESIGN.md` § 41. Any of them can
 set `"solid": false` to be walked over while still being readable, which is
 what the plaque in Aldenmere's plaza does. Every map scene lives at
 `res://scenes/overworld/maps/<id>.tscn` and is loaded by that id; add a map

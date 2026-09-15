@@ -546,7 +546,8 @@ def check_gauntlet(creatures: dict) -> dict:
 def check_maps(types: list[str], creatures: dict, items: dict,
                sold: set, encountered: set, quests: dict,
                staged: dict, completers: dict, tamers: dict,
-               gauntlet_trials: dict, placed_trials: dict) -> int:
+               gauntlet_trials: dict, placed_trials: dict,
+               springs: dict) -> int:
     """Validates every map in data/maps/. Returns how many were checked.
 
     Fills `sold` with every item id any shop stocks and `encountered` with
@@ -753,6 +754,20 @@ def check_maps(types: list[str], creatures: dict, items: dict,
                         % (label, trial_id, placed_trials[trial_id]))
                 else:
                     placed_trials[trial_id] = where
+
+            if obj_type == "spring":
+                spring_id = spec.get("id")
+                if not spring_id or not isinstance(spring_id, str):
+                    err(where, "%s needs an 'id'; it is what fast travel"
+                        " remembers as reached" % label)
+                elif spring_id in springs:
+                    err(where, "%s duplicates spring id '%s', already placed"
+                        " in %s" % (label, spring_id, springs[spring_id]))
+                else:
+                    springs[spring_id] = where
+                if not spec.get("name"):
+                    err(where, "%s needs a 'name' to show in the travel menu"
+                        % label)
 
             gift = spec.get("gives")
             if gift is not None:
@@ -1123,9 +1138,10 @@ def main() -> int:
     completers: dict = {}
     tamers: dict = {}
     placed_trials: dict = {}
+    springs: dict = {}
     map_count = check_maps(types, creatures, items, sold, encountered,
                            quests, staged, completers, tamers,
-                           gauntlet_trials, placed_trials)
+                           gauntlet_trials, placed_trials, springs)
     check_obtainable(creatures, items, sold, encountered)
     check_quests_reachable(quests, completers, staged)
     for trial_id in gauntlet_trials:

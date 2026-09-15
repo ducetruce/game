@@ -3,7 +3,9 @@ extends StaticBody2D
 ## A place to put the party back together. Solid, like the signpost, so
 ## interacting with it means standing in front of it.
 
-signal used(pages: PackedStringArray)
+## `spring_id` goes out with the signal so the overworld can record which
+## spring was just reached, for fast travel -- see docs/DESIGN.md § 41.
+signal used(spring_id: String, pages: PackedStringArray)
 
 const WATER := Color("2e4e6e")
 const WATER_HI := Color("44688c")
@@ -11,11 +13,12 @@ const STONE := Color("60626a")
 const STONE_HI := Color("7e808a")
 
 var pages := PackedStringArray()
+var spring_id := ""
 
 
 func interact(_who: Node) -> void:
 	Party.restore_all()
-	used.emit(pages)
+	used.emit(spring_id, pages)
 
 
 func _draw() -> void:

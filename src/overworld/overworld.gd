@@ -31,6 +31,7 @@ const TITLE_SCENE := "res://scenes/ui/title_screen.tscn"
 @onready var _bag_menu: Node = $BagMenu
 @onready var _storage_menu: Node = $StorageMenu
 @onready var _quest_log: Node = $QuestLog
+@onready var _travel_menu: Node = $TravelMenu
 @onready var _debug_menu: Node = $DebugMenu
 @onready var _camera: Camera2D = $Player/Camera
 @onready var _battle_layer: CanvasLayer = $BattleLayer
@@ -93,6 +94,9 @@ func _ready() -> void:
 	_bag_menu.closed.connect(_on_sub_screen_closed)
 	_quest_log.opened.connect(_on_ui_opened)
 	_quest_log.closed.connect(_on_sub_screen_closed)
+	_travel_menu.opened.connect(_on_ui_opened)
+	_travel_menu.closed.connect(_on_sub_screen_closed)
+	_travel_menu.travel_requested.connect(_on_travel_requested)
 	_storage_menu.opened.connect(_on_ui_opened)
 	_storage_menu.closed.connect(_on_ui_closed)
 	_pause_menu.opened.connect(_on_ui_opened)
@@ -100,6 +104,7 @@ func _ready() -> void:
 	_pause_menu.party_requested.connect(_on_pause_party_requested)
 	_pause_menu.bag_requested.connect(_on_pause_bag_requested)
 	_pause_menu.quests_requested.connect(_on_pause_quests_requested)
+	_pause_menu.travel_requested.connect(_on_pause_travel_requested)
 	_pause_menu.save_requested.connect(_on_pause_save_requested)
 	_pause_menu.quit_to_title_requested.connect(_on_pause_quit_requested)
 	# Absent from a release export rather than merely hidden: a key nobody
@@ -159,7 +164,7 @@ func _load_map(map_id: String, target: Variant) -> void:
 	_map.dialogue_requested.connect(_dialogue.show_pages)
 	_map.shop_requested.connect(_shop.open_with)
 	_map.storage_requested.connect(_storage_menu.open_menu)
-	_map.checkpoint_reached.connect(_autosave)
+	_map.checkpoint_reached.connect(_on_checkpoint_reached)
 	_map.quest_completed.connect(_on_quest_completed)
 	_map.challenge_requested.connect(_on_challenge_requested)
 	_map.gauntlet_challenge_requested.connect(_on_gauntlet_challenge_requested)
@@ -182,6 +187,16 @@ func _load_map(map_id: String, target: Variant) -> void:
 
 func _autosave() -> bool:
 	return SaveGame.save(_map.id, _player.global_position)
+
+
+## A rest spring was used: record it for fast travel (docs/DESIGN.md § 41),
+## then save, same as every checkpoint always has. One handler rather than
+## two separate signal connections, since checkpoint_reached now carries the
+## spring's id and _autosave()'s own signature -- used directly in several
+## other places -- takes none.
+func _on_checkpoint_reached(spring_id: String) -> void:
+	Journal.record_spring_visited(spring_id)
+	_autosave()
 
 
 # --- pause menu ------------------------------------------------------------
@@ -216,6 +231,11 @@ func _on_sub_screen_closed() -> void:
 func _on_pause_quests_requested() -> void:
 	_returns_to_pause = true
 	_quest_log.open_menu()
+
+
+func _on_pause_travel_requested() -> void:
+	_returns_to_pause = true
+	_travel_menu.open_menu()
 
 
 func _on_pause_save_requested() -> void:
@@ -408,6 +428,37 @@ func _begin_warp(warp: Dictionary) -> void:
 	await _fade_to(0.0)
 	_player.input_enabled = true
 	_busy = false
+
+
+## The travel menu confirmed a spring: resolve it against Content.springs for
+## where it actually leads, then reuse the same transition a doorway warp
+## uses. _returns_to_pause is cleared here rather than through
+## _on_sub_screen_closed -- travelling never goes back to the pause menu, it
+## drops the player in the world exactly like any other warp does.
+func _on_travel_requested(spring_id: String) -> void:
+	_returns_to_pause = false
+	var spring := _spring_by_id(spring_id)
+	if spring.is_empty():
+		return
+	_begin_warp({
+		"target_map": str(spring.get("map_id", "")),
+		"target_tile": _tile_from(spring.get("tile", [0, 0])),
+	})
+
+
+func _spring_by_id(spring_id: String) -> Dictionary:
+	for spring in Content.springs:
+		if str(spring.get("id", "")) == spring_id:
+			return spring
+	return {}
+
+
+## Same [x, y] -> Vector2i conversion GameMap does for its own warp targets
+## (Content.springs stores a spring's tile exactly as the map JSON wrote it).
+func _tile_from(value: Variant) -> Vector2i:
+	if value is Array and (value as Array).size() >= 2:
+		return Vector2i(int(value[0]), int(value[1]))
+	return Vector2i.ZERO
 
 
 # --- tamers ----------------------------------------------------------------

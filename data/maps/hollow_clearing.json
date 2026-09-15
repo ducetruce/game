@@ -26,6 +26,8 @@
     },
     {
       "type": "spring",
+      "id": "clearing_seep",
+      "name": "The Clearing Seep",
       "tile": [
         26,
         16

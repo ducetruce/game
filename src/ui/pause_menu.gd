@@ -11,6 +11,7 @@ signal closed
 signal party_requested
 signal bag_requested
 signal quests_requested
+signal travel_requested
 signal save_requested
 signal quit_to_title_requested
 
@@ -22,10 +23,11 @@ const COLOR_BAD := "c4614f"
 const COLOR_COIN := "c8a94e"
 const COLOR_OBJECTIVE := "8fb4d9"
 
-enum Entry { RESUME, PARTY, BAG, QUESTS, SAVE, QUIT }
+enum Entry { RESUME, PARTY, BAG, QUESTS, TRAVEL, SAVE, QUIT }
 
 const ENTRIES := [
-	Entry.RESUME, Entry.PARTY, Entry.BAG, Entry.QUESTS, Entry.SAVE, Entry.QUIT,
+	Entry.RESUME, Entry.PARTY, Entry.BAG, Entry.QUESTS, Entry.TRAVEL,
+	Entry.SAVE, Entry.QUIT,
 ]
 
 var _cursor := 0
@@ -110,6 +112,9 @@ func _choose() -> void:
 		Entry.QUESTS:
 			_hide_panel()
 			quests_requested.emit()
+		Entry.TRAVEL:
+			_hide_panel()
+			travel_requested.emit()
 		Entry.SAVE:
 			save_requested.emit()
 		Entry.QUIT:
@@ -150,6 +155,8 @@ func _label_for(entry: int) -> String:
 			return "Bag"
 		Entry.QUESTS:
 			return "Quests"
+		Entry.TRAVEL:
+			return "Travel"
 		Entry.SAVE:
 			return "Save"
 		_:

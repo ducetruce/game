@@ -71,6 +71,7 @@ func reset_for_new_game() -> void:
 	_challenges_sent.clear()
 	gauntlet_stage = 0
 	_debug_gauntlet_override = false
+	_visited_springs.clear()
 
 
 # --- asking -----------------------------------------------------------------
@@ -218,6 +219,35 @@ func advance_gauntlet(index: int) -> bool:
 	return true
 
 
+# --- fast travel ---------------------------------------------------------------
+# Every rest spring the player has actually stood at and used, by id. A flat
+# set rather than anything ordered: unlike a quest or the gauntlet, there is
+# no sequence to a spring being reached, only whether it has been. See
+# docs/DESIGN.md § 41.
+
+var _visited_springs := {}
+
+
+func has_visited_spring(spring_id: String) -> bool:
+	return _visited_springs.has(spring_id)
+
+
+func record_spring_visited(spring_id: String) -> void:
+	if not spring_id.is_empty():
+		_visited_springs[spring_id] = true
+
+
+## Ids of every spring reached so far, in Content.springs' own order --
+## stable and matching the order the travel screen lists everything else in.
+func visited_spring_ids() -> PackedStringArray:
+	var ids := PackedStringArray()
+	for spring in Content.springs:
+		var spring_id := str(spring.get("id", ""))
+		if has_visited_spring(spring_id):
+			ids.append(spring_id)
+	return ids
+
+
 # --- moving ------------------------------------------------------------------
 
 ## Moves `quest_id` to `step`, starting it if it had not begun. Returns true
@@ -338,6 +368,7 @@ func to_dict() -> Dictionary:
 		"tamers": _beaten_tamers.duplicate(),
 		"challenged": _challenges_sent.keys(),
 		"gauntlet_stage": _gauntlet_stage_id(),
+		"springs": _visited_springs.keys(),
 	}
 
 
@@ -383,6 +414,8 @@ func from_dict(data: Dictionary) -> void:
 		_beaten_tamers[str(tamer_id)] = float(tamers[tamer_id])
 	for tamer_id in data.get("challenged", []):
 		_challenges_sent[str(tamer_id)] = true
+	for spring_id in data.get("springs", []):
+		_visited_springs[str(spring_id)] = true
 
 	var stage_id := str(data.get("gauntlet_stage", ""))
 	if stage_id == GAUNTLET_COMPLETE_SENTINEL:

@@ -149,6 +149,8 @@
     },
     {
       "type": "spring",
+      "id": "sluice_seep",
+      "name": "The Sluice Seep",
       "tile": [
         18,
         10

@@ -62,6 +62,8 @@
     },
     {
       "type": "spring",
+      "id": "emberwick_row_well",
+      "name": "[PLACEHOLDER] Emberwick Row's Well",
       "tile": [
         12,
         10

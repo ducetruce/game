@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://src/overworld/overworld.gd" id="1_overworld"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/player.tscn" id="3_player"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/storage_menu.tscn" id="9_storage"]
 [ext_resource type="PackedScene" path="res://scenes/ui/quest_log.tscn" id="11_quests"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_menu.tscn" id="10_debug"]
+[ext_resource type="PackedScene" path="res://scenes/ui/travel_menu.tscn" id="12_travel"]
 
 [node name="Overworld" type="Node2D"]
 script = ExtResource("1_overworld")
@@ -31,6 +32,8 @@ script = ExtResource("1_overworld")
 [node name="StorageMenu" parent="." instance=ExtResource("9_storage")]
 
 [node name="QuestLog" parent="." instance=ExtResource("11_quests")]
+
+[node name="TravelMenu" parent="." instance=ExtResource("12_travel")]
 
 [node name="DebugMenu" parent="." instance=ExtResource("10_debug")]
 

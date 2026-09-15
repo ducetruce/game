@@ -13,8 +13,9 @@ signal dialogue_requested(pages: PackedStringArray)
 signal shop_requested(catalog: PackedStringArray)
 ## A shrine was used. The overworld opens storage; the map knows nothing of it.
 signal storage_requested
-## A rest spring was used. The overworld treats this as a save point.
-signal checkpoint_reached
+## A rest spring was used. The overworld treats this as a save point, and
+## records `spring_id` as visited for fast travel -- see docs/DESIGN.md § 41.
+signal checkpoint_reached(spring_id: String)
 ## An object handed the player something. The overworld says so after the
 ## object's own lines.
 signal item_received(item_id: String, count: int)
@@ -213,6 +214,10 @@ func _spawn_sign(spec: Dictionary) -> void:
 
 func _spawn_spring(spec: Dictionary) -> void:
 	var spring: RestSpring = SPRING_SCENE.instantiate()
+	spring.spring_id = str(spec.get("id", ""))
+	if spring.spring_id.is_empty():
+		push_error("%s: a spring needs an 'id'; it is what fast travel"
+			% map_data_path + " remembers as reached.")
 	spring.pages = _to_string_array(spec.get("text", []))
 	spring.position = tile_to_world(_tile_from(spec.get("tile", [0, 0])))
 	spring.used.connect(_on_spring_used)
@@ -220,9 +225,9 @@ func _spawn_spring(spec: Dictionary) -> void:
 	_objects.add_child(spring)
 
 
-func _on_spring_used(pages: PackedStringArray) -> void:
+func _on_spring_used(spring_id: String, pages: PackedStringArray) -> void:
 	dialogue_requested.emit(pages)
-	checkpoint_reached.emit()
+	checkpoint_reached.emit(spring_id)
 
 
 func _spawn_shop(spec: Dictionary) -> void:

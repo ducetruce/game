@@ -37,6 +37,8 @@
     },
     {
       "type": "spring",
+      "id": "hollowmere_seep",
+      "name": "The Hollowmere Seep",
       "tile": [
         30,
         13

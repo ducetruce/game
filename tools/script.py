@@ -56,6 +56,7 @@ OBJECT_PAGE_FIELDS = {
 # Single-string fields on a map object.
 OBJECT_LINE_FIELDS = {
     "tamer": ["name"],
+    "spring": ["name"],
 }
 
 

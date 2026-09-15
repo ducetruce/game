@@ -2144,6 +2144,95 @@ warden's dialogue, the kiln's sign, the quest's own summary and two step
 objectives -- exports and imports through the exact same generic map/quest
 handling that quest 2 uses, and is marked `[PLACEHOLDER]` the same way.
 
+## 41. Fast travel between springs
+
+Backtracking had become real: a quest 2-style round trip crosses two 41-tile
+maps four times over, several minutes of straight walking on top of the
+fade transitions. The fix reuses a node network the game already has --
+every rest spring is already placed, already named in the player's memory
+as "the place I healed," and already free. Fast travel just makes returning
+to one instant, from a new "Travel" entry in the pause menu.
+
+**Data.** A spring is a map object like any other, so it gained the two
+fields every placed, addressable thing in this game already carries: `id`
+(what a save remembers) and `name` (what the player sees). Nothing about
+where springs live changed -- each is still declared in its own map's JSON,
+same as a sign or a shop. What is new is `Content.springs`, a flat registry
+built once at content-load time by scanning every file in `data/maps/`
+for `spring` objects (`Content._scan_springs()`), the same on-demand,
+scan-don't-declare instinct `Content.map_name()` already used for single
+maps, just extended to all of them at once -- fast travel needs the whole
+game's springs regardless of which map is currently loaded, and a second
+central file listing them again would just be a second place for a spring's
+name to drift out of sync with its map file.
+
+Reached springs are a flat *set*, not a position: `Journal._visited_springs`
+(a `{spring_id: true}` dict), gained through
+`Journal.record_spring_visited()` and read through `visited_spring_ids()`
+(which orders results by `Content.springs`' own declaration order and
+drops anything not currently in it, so a removed or renamed spring cannot
+leave a dangling id in an old save). This is a different shape from every
+other piece of Journal state so far -- quest steps and the gauntlet stage
+are each a position in an ordered sequence, because reaching one always
+implies passing through everything before it. Springs have no such order:
+reaching the mere first and the kiln second visits the same two springs as
+the other way around, so there is nothing to be a position *in*. Persisted
+in `to_dict()`/`from_dict()` as a plain id list, same as everything else
+Journal saves.
+
+**The screens.** `RestSpring.used` now carries `spring_id` alongside the
+dialogue pages it already sent, and `GameMap.checkpoint_reached` forwards
+it, so `Overworld._on_checkpoint_reached(spring_id)` can record the visit
+in the same place it already autosaves -- a spring being *used* is what
+fast travel remembers, not merely being seen. The travel screen itself
+(`TravelMenu`) is `QuestLog`'s own windowed-list pattern verbatim: cursor,
+scroll, a five-row box. It differs from every other pause-menu screen in
+one way -- confirming a row does not show more detail, it leaves. Rather
+than the `opened`/`closed` pair every other screen uses symmetrically, it
+only ever emits `closed` on a genuine cancel; confirming hides the panel
+and emits `travel_requested(spring_id)` instead, handing off to a warp
+already underway. `Overworld._on_travel_requested()` resolves the id
+against `Content.springs` for a `{target_map, target_tile}` pair and calls
+the same `_begin_warp()` a doorway warp already uses -- fast travel is not
+a second way to change maps, it is the existing one, fed a destination
+that did not come from stepping on a tile. It also clears
+`_returns_to_pause` itself rather than going through `_on_sub_screen_closed`
+the way Party/Bag/Quests do: travelling never goes back to the pause menu,
+it drops the player in the world exactly like any other warp -- only
+*cancelling* out of the travel screen returns to the pause menu, so that
+path still runs through the shared handler unchanged.
+
+**Two things worth recording because they were easy to get wrong.**
+
+First: connecting a signal that emits N arguments to a callable that takes
+fewer than N throws in Godot 4 -- `Method expected X arguments, but called
+with Y` -- rather than silently dropping the extras, which is what I
+expected going in and would have written straight into `_ready()`
+(`_map.checkpoint_reached.connect(_autosave)`, wrong the moment
+`checkpoint_reached` grew a `spring_id`). Verified with a throwaway
+standalone `-s` script before touching real code, given how many other
+timing and signal assumptions have turned out wrong over the course of this
+project. The actual fix is one handler,
+`_on_checkpoint_reached(spring_id)`, that does both jobs
+(`Journal.record_spring_visited()`, then `_autosave()`) -- worth checking
+for whenever a signal already in use gains an argument and has more than
+one listener.
+
+Second: the pause menu had no slack for a seventh row (72px of menu already
+filling all but a few px of a 180px-tall panel). Rather than guess at a
+resize, the Objective box's actual content height was measured directly --
+load the scene standalone, set the longest real objective string, compare
+`label.get_content_height()` against `label.size.y` -- which found exactly
+12px going unused (36px allocated, 24px needed). That 12px moved from
+Objective to Menu, with Menu's far edge held fixed so Status needed no
+change at all. `UiFit` (§ 29) confirmed nothing clipped after, but the
+measurement is what made the resize a known-good number instead of a guess
+`UiFit` would have had to catch after the fact.
+
+No new tile symbols, no new object type, no new screen pattern -- everything
+here is an existing pattern (the registry scan, the windowed list, the warp
+call) pointed at a fifth kind of thing.
+
 
 ---
 

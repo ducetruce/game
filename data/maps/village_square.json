@@ -32,6 +32,8 @@
     },
     {
       "type": "spring",
+      "id": "aldenmere_well",
+      "name": "Aldenmere Well",
       "tile": [
         20,
         10

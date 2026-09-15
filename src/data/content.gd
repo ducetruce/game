@@ -43,6 +43,14 @@ var gauntlet_hall_map := ""
 ## Shown once, the moment the last trial is passed.
 var gauntlet_victory_text: PackedStringArray = PackedStringArray()
 
+## Every rest spring in the game, gathered by scanning every map file at load
+## time rather than declared centrally: a spring's placement already belongs
+## to its map (it is a plain object in that map's own JSON, like a sign or a
+## shop), and fast travel is the one thing that needs to know about all of
+## them at once regardless of which map is currently loaded. Each entry is
+## {id, name, map_id, tile}. See docs/DESIGN.md § 41.
+var springs: Array = []
+
 ## False if anything failed to parse. Callers that can degrade gracefully
 ## should check it; everything else can rely on the pushed errors.
 var loaded := false
@@ -158,6 +166,8 @@ func reload() -> void:
 			return
 		gauntlet_trials.append(entry)
 
+	_scan_springs()
+
 	loaded = _cross_check()
 
 
@@ -203,6 +213,37 @@ func _cross_check() -> bool:
 ## save summary and the quest log -- both want it without one loaded. Loading
 ## a map to read a string would be a great deal of machinery for a label, and
 ## two copies of the same file-reading was how it started.
+## Walks every map file once, at load time, pulling out every spring object.
+## A map that fails to parse is skipped here rather than failing the whole
+## load -- _cross_check() and tools/validate_data.py are where a malformed
+## map is actually an error; this only wants what a well-formed one has to
+## offer, so it can hand out complete data as widely as possible.
+func _scan_springs() -> void:
+	springs.clear()
+	var dir := DirAccess.open("res://data/maps")
+	if dir == null:
+		return
+	var filenames := dir.get_files()
+	filenames.sort()  # stable order for the travel list, not directory order
+	for filename in filenames:
+		if not filename.ends_with(".json"):
+			continue
+		var map_id := filename.trim_suffix(".json")
+		var doc := _read_json(MAP_PATH_FORMAT % map_id)
+		if doc.is_empty():
+			continue
+		for entry in doc.get("objects", []):
+			if not (entry is Dictionary) or entry.get("type") != "spring":
+				continue
+			var tile: Variant = entry.get("tile", [0, 0])
+			springs.append({
+				"id": str(entry.get("id", "")),
+				"name": str(entry.get("name", "")),
+				"map_id": map_id,
+				"tile": tile,
+			})
+
+
 func map_name(map_id: String) -> String:
 	if map_id.is_empty():
 		return "Somewhere"
