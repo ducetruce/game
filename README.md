@@ -126,11 +126,12 @@ It also checks two things that are not schema errors and so escaped every
 other check. **Obtainability**: every creature must appear in some encounter
 table or in the starting party, and every item must be stocked by some shop
 or granted at the start — a Cairnling with perfect stats that appears nowhere
-and a Waking Root sold by nobody had both shipped. And the **story**: every
-`stage_text`, `sets_stage` and `arrival_stage` must name a real stage in
-`data/story.json`, and every stage past the first must be set by something
-somewhere, or the story stops one stage short and everything written past it
-is unreachable. Exits non-zero on error.
+and a Waking Root sold by nobody had both shipped. And **quest reachability**:
+every quest step referenced by `quest_text`, `sets_step`, or `arrival_step`
+must be a real step of a real quest in `data/quests.json`, and every step
+past a quest's first must actually be set by something somewhere in the
+world, or the quest stops one step short and everything written past it is
+unreachable. Exits non-zero on error.
 
 ## Checking the level curve
 
@@ -309,13 +310,10 @@ plus the objects placed on it. The symbol table is in
 - Solid: `W` water, `R` rock, `T` tree, `F` fence, `H` wall, `V` roof (put a
   `V` row directly above a matching `H` row to get a two-tile building facade)
 
-Story beats live in the map files too. Any readable object may carry a
-`stage_text` array of `{"from": "<stage id>", "text": [...]}` — the entry that
-wins is the last one whose stage the player has reached, falling back to the
-plain `text` — and a `sets_stage` that moves the story on when it is read. A
-map may carry an `arrival_stage`, which fires just by walking in. The stages
-themselves are `data/story.json`: an ordered list of ids and the objective
-line the pause menu shows for each.
+Quests live in the map files too — any readable object can carry `quest_text`,
+`sets_step`, and `completes_quest`, and a map itself can carry `arrival_quest`
+/ `arrival_step` for a place that is the beat. See "Writing a quest" below for
+the full schema.
 
 `coin_reward` is the `[low, high]` bracket any battle in that area pays,
 rolled uniformly; leave it out for an area with no encounters. The `objects`
